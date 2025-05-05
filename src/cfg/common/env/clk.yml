@@ -1,0 +1,2 @@
+parameters:
+    REF_CLK             : = 100              # MHz

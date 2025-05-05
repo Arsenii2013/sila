@@ -1,0 +1,19 @@
+import : main
+
+options:
+    suffix    : _DIR
+
+
+parameters:
+    ROOT           : = os.path.abspath(str(Dir('#')))
+    LIB            : = os.path.join(ROOT,   'lib')
+    SRC            : = os.path.join(ROOT,   'src')
+    COMMON         : = os.path.join(SRC,    'cfg', 'common')
+    CFG            : = os.path.join(SRC,    'cfg', main.VARIANT_NAME)
+    SCRIPT         : = os.path.join(CFG,    'script')
+    SRC_SYN        : = os.path.join(SRC,    'syn')
+    SRC_SIM        : = os.path.join(SRC,    'sim')
+    CFG_LOCAL      : = os.path.join(CFG,    'env')
+    CFG_COMMON     : = os.path.join(COMMON, 'env')
+    SCRIPT_COMMON  : = os.path.join(COMMON, 'script')
+    BUILD          : = os.path.join(ROOT,   'build', main.VARIANT_NAME)
