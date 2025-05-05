@@ -332,19 +332,20 @@ def read_src_list(fn: str, search_path=[]):
             usedin = cfg['usedin']
            
         flist = [] 
-        for i in cfg['sources']:
-            p = re.search('\$(\w+)', i)
-            if p:
-                fpath = p.group(1)
-                if fpath in params:
-                    if params[fpath]:
-                        flist.append(i.replace('$' + fpath, params[fpath]))
+        if cfg['sources']:
+            for i in cfg['sources']:
+                p = re.search('\$(\w+)', i)
+                if p:
+                    fpath = p.group(1)
+                    if fpath in params:
+                        if params[fpath]:
+                            flist.append(i.replace('$' + fpath, params[fpath]))
+                    else:
+                        print_error('E: undefined substitution parameter "' + fpath + '"')
+                        print_error('    File: ' + path )
+                        Exit(-2)
                 else:
-                    print_error('E: undefined substitution parameter "' + fpath + '"')
-                    print_error('    File: ' + path )
-                    Exit(-2)
-            else:
-                flist.append(i)
+                    flist.append(i)
                 
         return flist, usedin, path
     else:
