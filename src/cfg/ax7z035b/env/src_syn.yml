@@ -1,0 +1,7 @@
+import : main
+
+sources:
+    - src/syn/top.sv
+    - src/lib/axi/axi4_lite_if.svh
+    - src/lib/common/blink.sv
+    - src/lib/common/sys_clk_gen.sv
