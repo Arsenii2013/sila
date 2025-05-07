@@ -2,6 +2,8 @@ import : main
 
 sources:
     - src/syn/top.sv
+    - src/syn/PS_wrapper.sv
+    - src/syn/mem_wrapper.sv
     - src/lib/axi/axi4_lite_if.svh
     - src/lib/common/blink.sv
     - src/lib/common/sys_clk_gen.sv
