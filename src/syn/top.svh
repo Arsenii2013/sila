@@ -4,4 +4,9 @@
 
 //      Common
 localparam CLK_PRD         = 10;
+
+//      Processing system
+localparam GP0_ADDR_W      = 32;
+localparam GP0_DATA_W      = 32;
+
 `endif //__TOP_SVH__
