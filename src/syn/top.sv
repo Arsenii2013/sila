@@ -29,6 +29,15 @@ module top(
     inout wire          FIXED_IO_ps_srstb,
     `endif //SYNTHESIS 
 
+        //-------------SFP---------------\\
+    input  logic       REFCLK_SFP_n,
+    input  logic       REFCLK_SFP_p,
+
+    input  logic       sfp_rx_n[4],
+    input  logic       sfp_rx_p[4],
+    output logic       sfp_tx_n[4],
+    output logic       sfp_tx_p[4],
+
     input  logic       sysclk_n,
     input  logic       sysclk_p,
     output logic [3:0] led
@@ -89,29 +98,53 @@ module top(
         .clk(PS_clk),
         .led(led[0])
     );
-    blink #(
-        .FREQ_HZ(200000000),
-        .LED_PERIOD_NS(1000000000)
-    ) blink2 (
-        .reset(PS_reset),
-        .clk(PS_clk),
-        .led(led[1])
+
+    logic        sfp_reset;
+    logic        sfp_tx_clk[4];
+    logic        sfp_rx_clk[4];
+    logic [31:0] sfp_tx_data[4];
+    logic [31:0] sfp_rx_data[4];
+    logic [3:0]  sfp_tx_is_k[4];
+    logic [3:0]  sfp_rx_is_k[4];
+    logic        tx_reset_done[4];
+    logic        rx_reset_done[4];
+    logic        sfp_aligned[4];
+
+    gtwizard_wrapper gtwizard_i (
+        .refclk_n(REFCLK_SFP_n),
+        .refclk_p(REFCLK_SFP_p),
+        .sysclk(PS_clk), 
+        .soft_reset(PS_reset),
+        .tx_reset_done(tx_reset_done),
+        .rx_reset_done(rx_reset_done),
+        .tx_clk(sfp_tx_clk),
+        .rx_clk(sfp_rx_clk),
+        .aligned(sfp_aligned),
+        .tx_data(sfp_tx_data),
+        .rx_data(sfp_rx_data),
+        .txcharisk(sfp_tx_is_k),
+        .rxcharisk(sfp_rx_is_k),
+        .rx_n(sfp_rx_n),
+        .rx_p(sfp_rx_p),
+        .tx_n(sfp_tx_n),
+        .tx_p(sfp_tx_p)
     );
-    blink #(
-        .FREQ_HZ(200000000),
-        .LED_PERIOD_NS(1500000000)
-    ) blink3 (
-        .reset(PS_reset),
-        .clk(PS_clk),
-        .led(led[2])
-    );
-    blink #(
-        .FREQ_HZ(200000000),
-        .LED_PERIOD_NS(2000000000)
-    ) blink4 (
-        .reset(PS_reset),
-        .clk(PS_clk),
-        .led(led[3])
-    );
+
+    assign led[1] = tx_reset_done[0];
+    assign led[2] = rx_reset_done[0];
+    assign led[3] = sfp_aligned[0];
+
+    genvar i;
+    generate
+    for (i=0; i < 4; i++) begin
+        frame_gen frame_gen_i (
+            .clk(sfp_tx_clk[i]),
+            .rst(PS_reset) ,
+            .tx_data(sfp_tx_data[i]),
+            .txcharisk(sfp_tx_is_k[i]),
+            .data('h01234567)
+        );
+    end
+    endgenerate
 
 endmodule
