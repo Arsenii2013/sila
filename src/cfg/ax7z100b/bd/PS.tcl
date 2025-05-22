@@ -86,9 +86,13 @@
     CONFIG.PCW_ENET0_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_ENET0_PERIPHERAL_ENABLE {1} \
     CONFIG.PCW_ENET0_PERIPHERAL_FREQMHZ {1000 Mbps} \
+    CONFIG.PCW_ENET0_RESET_ENABLE {1} \
+    CONFIG.PCW_ENET0_RESET_IO {MIO 7} \
     CONFIG.PCW_ENET1_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_ENET1_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_ENET_RESET_ENABLE {1} \
     CONFIG.PCW_ENET_RESET_POLARITY {Active Low} \
+    CONFIG.PCW_ENET_RESET_SELECT {Share reset pin} \
     CONFIG.PCW_EN_4K_TIMER {0} \
     CONFIG.PCW_EN_CAN0 {0} \
     CONFIG.PCW_EN_CAN1 {0} \
@@ -128,7 +132,7 @@
     CONFIG.PCW_EN_EMIO_WP_SDIO1 {0} \
     CONFIG.PCW_EN_ENET0 {1} \
     CONFIG.PCW_EN_ENET1 {0} \
-    CONFIG.PCW_EN_GPIO {0} \
+    CONFIG.PCW_EN_GPIO {1} \
     CONFIG.PCW_EN_I2C0 {0} \
     CONFIG.PCW_EN_I2C1 {0} \
     CONFIG.PCW_EN_MODEM_UART0 {0} \
@@ -171,10 +175,12 @@
     CONFIG.PCW_GP1_NUM_READ_THREADS {4} \
     CONFIG.PCW_GP1_NUM_WRITE_THREADS {4} \
     CONFIG.PCW_GPIO_EMIO_GPIO_ENABLE {0} \
-    CONFIG.PCW_GPIO_MIO_GPIO_ENABLE {0} \
+    CONFIG.PCW_GPIO_MIO_GPIO_ENABLE {1} \
+    CONFIG.PCW_GPIO_MIO_GPIO_IO {MIO} \
     CONFIG.PCW_GPIO_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_I2C0_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_I2C1_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_I2C_RESET_ENABLE {1} \
     CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
     CONFIG.PCW_IMPORT_BOARD_PRESET {None} \
     CONFIG.PCW_INCLUDE_ACP_TRANS_CHECK {0} \
@@ -238,8 +244,44 @@
     CONFIG.PCW_MIO_27_IOTYPE {LVCMOS 1.8V} \
     CONFIG.PCW_MIO_27_PULLUP {enabled} \
     CONFIG.PCW_MIO_27_SLEW {slow} \
+    CONFIG.PCW_MIO_28_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_28_PULLUP {enabled} \
+    CONFIG.PCW_MIO_28_SLEW {slow} \
+    CONFIG.PCW_MIO_29_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_29_PULLUP {enabled} \
+    CONFIG.PCW_MIO_29_SLEW {slow} \
     CONFIG.PCW_MIO_2_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_2_SLEW {slow} \
+    CONFIG.PCW_MIO_30_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_30_PULLUP {enabled} \
+    CONFIG.PCW_MIO_30_SLEW {slow} \
+    CONFIG.PCW_MIO_31_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_31_PULLUP {enabled} \
+    CONFIG.PCW_MIO_31_SLEW {slow} \
+    CONFIG.PCW_MIO_32_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_32_PULLUP {enabled} \
+    CONFIG.PCW_MIO_32_SLEW {slow} \
+    CONFIG.PCW_MIO_33_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_33_PULLUP {enabled} \
+    CONFIG.PCW_MIO_33_SLEW {slow} \
+    CONFIG.PCW_MIO_34_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_34_PULLUP {enabled} \
+    CONFIG.PCW_MIO_34_SLEW {slow} \
+    CONFIG.PCW_MIO_35_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_35_PULLUP {enabled} \
+    CONFIG.PCW_MIO_35_SLEW {slow} \
+    CONFIG.PCW_MIO_36_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_36_PULLUP {enabled} \
+    CONFIG.PCW_MIO_36_SLEW {slow} \
+    CONFIG.PCW_MIO_37_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_37_PULLUP {enabled} \
+    CONFIG.PCW_MIO_37_SLEW {slow} \
+    CONFIG.PCW_MIO_38_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_38_PULLUP {enabled} \
+    CONFIG.PCW_MIO_38_SLEW {slow} \
+    CONFIG.PCW_MIO_39_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_39_PULLUP {enabled} \
+    CONFIG.PCW_MIO_39_SLEW {slow} \
     CONFIG.PCW_MIO_3_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_3_SLEW {slow} \
     CONFIG.PCW_MIO_40_IOTYPE {LVCMOS 1.8V} \
@@ -290,16 +332,18 @@
     CONFIG.PCW_MIO_5_SLEW {slow} \
     CONFIG.PCW_MIO_6_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_6_SLEW {slow} \
+    CONFIG.PCW_MIO_7_IOTYPE {LVCMOS 3.3V} \
+    CONFIG.PCW_MIO_7_SLEW {slow} \
     CONFIG.PCW_MIO_8_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_8_SLEW {slow} \
     CONFIG.PCW_MIO_9_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_9_PULLUP {enabled} \
     CONFIG.PCW_MIO_9_SLEW {slow} \
     CONFIG.PCW_MIO_PRIMITIVE {54} \
-    CONFIG.PCW_MIO_TREE_PERIPHERALS {Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#unassigned#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad\
-SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#SD\
+    CONFIG.PCW_MIO_TREE_PERIPHERALS {Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#ENET Reset#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad\
+SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#SD\
 0#SD 0#SD 0#SD 0#SD 0#SD 0#SD 1#SD 1#SD 1#SD 1#SD 1#SD 1#Enet 0#Enet 0} \
-    CONFIG.PCW_MIO_TREE_SIGNALS {qspi1_ss_b#qspi0_ss_b#qspi0_io[0]#qspi0_io[1]#qspi0_io[2]#qspi0_io[3]/HOLD_B#qspi0_sclk#unassigned#qspi_fbclk#qspi1_sclk#qspi1_io[0]#qspi1_io[1]#qspi1_io[2]#qspi1_io[3]#rx#tx#tx_clk#txd[0]#txd[1]#txd[2]#txd[3]#tx_ctl#rx_clk#rxd[0]#rxd[1]#rxd[2]#rxd[3]#rx_ctl#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#clk#cmd#data[0]#data[1]#data[2]#data[3]#data[0]#cmd#clk#data[1]#data[2]#data[3]#mdc#mdio}\
+    CONFIG.PCW_MIO_TREE_SIGNALS {qspi1_ss_b#qspi0_ss_b#qspi0_io[0]#qspi0_io[1]#qspi0_io[2]#qspi0_io[3]/HOLD_B#qspi0_sclk#reset#qspi_fbclk#qspi1_sclk#qspi1_io[0]#qspi1_io[1]#qspi1_io[2]#qspi1_io[3]#rx#tx#tx_clk#txd[0]#txd[1]#txd[2]#txd[3]#tx_ctl#rx_clk#rxd[0]#rxd[1]#rxd[2]#rxd[3]#rx_ctl#gpio[28]#gpio[29]#gpio[30]#gpio[31]#gpio[32]#gpio[33]#gpio[34]#gpio[35]#gpio[36]#gpio[37]#gpio[38]#gpio[39]#clk#cmd#data[0]#data[1]#data[2]#data[3]#data[0]#cmd#clk#data[1]#data[2]#data[3]#mdc#mdio}\
 \
     CONFIG.PCW_M_AXI_GP0_ENABLE_STATIC_REMAP {0} \
     CONFIG.PCW_M_AXI_GP0_ID_WIDTH {12} \
@@ -488,6 +532,7 @@ SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 
     CONFIG.PCW_UIPARAM_GENERATE_SUMMARY {NA} \
     CONFIG.PCW_USB0_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_USB1_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_USB_RESET_ENABLE {1} \
     CONFIG.PCW_USB_RESET_POLARITY {Active Low} \
     CONFIG.PCW_USE_AXI_FABRIC_IDLE {0} \
     CONFIG.PCW_USE_AXI_NONSECURE {0} \
