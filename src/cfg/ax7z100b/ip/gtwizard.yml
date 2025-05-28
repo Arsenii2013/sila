@@ -45,13 +45,25 @@ config:
   identical_val_rx_reference_clock : "125.000"
   identical_val_tx_line_rate : 5
   identical_val_tx_reference_clock : "125.000"
-  gt0_val : "true"
-  gt1_val : "true"
-  gt2_val : "true"
-  gt3_val : "true"
+  gt0_val : "false"
+  gt1_val : "false"
+  gt2_val : "false"
+  gt3_val : "false"
   gt0_val_rx_buffer_bypass_mode : "Manual"
   gt0_val_rxbuf_en : "false"
   gt0_val_tx_buffer_bypass_mode : "Manual"
   gt0_val_txbuf_en : "false"
   gt0_val_txoutclk_source : "true"
   gt0_val_rxusrclk : "RXOUTCLK"
+  gt4_val : true
+  gt4_val_rx_refclk : "REFCLK1_Q1"
+  gt4_val_tx_refclk : "REFCLK1_Q1"
+  gt5_val : true
+  gt5_val_rx_refclk : "REFCLK1_Q1"
+  gt5_val_tx_refclk : "REFCLK1_Q1"
+  gt6_val : true
+  gt6_val_rx_refclk : "REFCLK1_Q1"
+  gt6_val_tx_refclk : "REFCLK1_Q1"
+  gt7_val : true
+  gt7_val_rx_refclk : "REFCLK1_Q1"
+  gt7_val_tx_refclk : "REFCLK1_Q1"

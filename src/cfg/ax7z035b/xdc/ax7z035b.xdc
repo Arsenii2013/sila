@@ -6,3 +6,26 @@ set_property -dict { PACKAGE_PIN AE13   IOSTANDARD LVCMOS33 } [get_ports { led[3
 set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { sysclk_n }];
 set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { sysclk_p }];
 create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports sysclk_p]
+
+set_property PACKAGE_PIN AF8 [get_ports {sfp_tx_p[0]}]
+set_property PACKAGE_PIN AD8 [get_ports {sfp_rx_p[0]}]
+set_property PACKAGE_PIN AF4 [get_ports {sfp_tx_p[1]}]
+set_property PACKAGE_PIN AE6 [get_ports {sfp_rx_p[1]}]
+set_property PACKAGE_PIN AE2 [get_ports {sfp_tx_p[2]}]
+set_property PACKAGE_PIN AC6 [get_ports {sfp_rx_p[2]}]
+set_property PACKAGE_PIN AC2 [get_ports {sfp_tx_p[3]}]
+set_property PACKAGE_PIN AD4 [get_ports {sfp_rx_p[3]}]
+
+set_property -dict { PACKAGE_PIN AF17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[0] }];
+set_property -dict { PACKAGE_PIN AE17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[1] }];
+
+set_property LOC GTXE2_CHANNEL_X0Y8 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt0_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y9 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt1_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y10 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt2_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y11 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt3_gtwizard_i/gtxe2_i]
+set_property RXSLIDE_MODE PMA [get_cells -hierarchical -filter {NAME =~ *gtxe2_i}]
+
+set_property PACKAGE_PIN AA6 [get_ports {REFCLK_SFP_p}]
+set_property PACKAGE_PIN AA5 [get_ports {REFCLK_SFP_n}]
+create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { REFCLK_SFP_p }];
+set_property LOC GTXE2_COMMON_X0Y2 [get_cells gtwizard_i/gtwizard_i/inst/common0_i/gtxe2_common_i]
