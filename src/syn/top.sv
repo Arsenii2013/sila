@@ -42,6 +42,10 @@ module top(
     input  logic       sysclk_p,
     output logic [3:0] led
 );
+    logic app_clk;
+    logic app_aresetn;
+    logic app_reset;
+
     logic sysclk;
     IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
 
@@ -82,23 +86,39 @@ module top(
         .peripheral_reset(PS_reset)
     );
 
+    assign app_clk     = PS_clk;
+
+    logic POR_reset;
+
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    assign app_aresetn = PS_aresetn && ~POR_reset;
+    assign app_reset   = PS_reset || POR_reset;
+
     mem_wrapper
     mem_wrapper_i (
-        .aclk(PS_clk),
-        .aresetn(PS_aresetn),
+        .aclk(app_clk),
+        .aresetn(app_aresetn),
         .axi(GP_0),
         .offset('0)
     );
 
     blink #(
-        .FREQ_HZ(200000000),
+        .FREQ_HZ(100000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
-        .reset(PS_reset),
-        .clk(PS_clk),
+        .reset(app_reset),
+        .clk(app_clk),
         .led(led[0])
     );
-
+    
     logic        sfp_reset;
     logic        sfp_tx_clk[4];
     logic        sfp_rx_clk[4];
@@ -113,8 +133,8 @@ module top(
     gtwizard_wrapper gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
-        .sysclk(PS_clk), 
-        .soft_reset(PS_reset),
+        .sysclk(app_clk), 
+        .soft_reset(app_reset),
         .tx_reset_done(tx_reset_done),
         .rx_reset_done(rx_reset_done),
         .tx_clk(sfp_tx_clk),
@@ -139,7 +159,7 @@ module top(
     for (i=0; i < 4; i++) begin
         frame_gen frame_gen_i (
             .clk(sfp_tx_clk[i]),
-            .rst(PS_reset) ,
+            .rst(app_reset) ,
             .tx_data(sfp_tx_data[i]),
             .txcharisk(sfp_tx_is_k[i]),
             .data('h01234567)
