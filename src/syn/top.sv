@@ -2,6 +2,7 @@
 
 `include "axi4_lite_if.svh"
 `include "top.svh"
+`include "cfg_params.svh"
 
 module top(
         //-------Processing System-------\\
@@ -37,6 +38,7 @@ module top(
     input  logic       sfp_rx_p[4],
     output logic       sfp_tx_n[4],
     output logic       sfp_tx_p[4],
+    output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
     input  logic       sysclk_p,
@@ -129,6 +131,8 @@ module top(
     logic        tx_reset_done[4];
     logic        rx_reset_done[4];
     logic        sfp_aligned[4];
+
+    assign sfp_tx_disable = '0;
 
     gtwizard_wrapper gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
