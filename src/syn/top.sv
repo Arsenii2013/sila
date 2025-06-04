@@ -113,7 +113,7 @@ module top(
     );
 
     blink #(
-        .FREQ_HZ(100000000),
+        .FREQ_HZ(125000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
         .reset(app_reset),
