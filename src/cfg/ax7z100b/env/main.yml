@@ -4,3 +4,5 @@ parameters:
     TOP_NAME            : top
     TESTBENCH_NAME      : topTB
     DEVICE              : xc7z100ffg900-2
+    
+    TARGET_AX7Z100B     : = ''

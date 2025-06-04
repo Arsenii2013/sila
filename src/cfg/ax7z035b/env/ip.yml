@@ -1,3 +1,4 @@
 
 sources:
     - ip/axi_memory.yml
+    - ip/gtwizard.yml
