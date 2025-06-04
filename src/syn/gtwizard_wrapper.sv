@@ -1,4 +1,6 @@
 `timescale 1ns/1ns
+
+`include "cfg_params.svh"
 /*
 Wrapper for GTX Wizard IP
 */
@@ -58,7 +60,7 @@ module gtwizard_wrapper(
 
 //Alignment logic
     localparam WA_DETECT_INTERVAL = 32;
-    localparam WA_RXSLIDE_MAX_CNT = 20;
+    localparam WA_RXSLIDE_MAX_CNT = 40;
 
     localparam WA_WORD_CNT_W      = $clog2(WA_DETECT_INTERVAL);
     localparam WA_SLIDE_CNT_W     = $clog2(WA_RXSLIDE_MAX_CNT);
@@ -148,6 +150,9 @@ module gtwizard_wrapper(
                 wafsmALIGNED: begin
                     next[j] = wafsmALIGNED;
                 end
+                default: begin
+                    next[j] = wafsmPATTERN_SEARCH;
+                end
             endcase
         end
     end
@@ -155,13 +160,18 @@ module gtwizard_wrapper(
     endgenerate;
 
 //Wizard instance
-    gtwizard gtwizard__i 
+    gtwizard gtwizard_i 
     (
         .soft_reset_tx_in               (soft_reset),
         .soft_reset_rx_in               (soft_reset),
         .dont_reset_on_data_error_in    ('b0),
+    `ifdef TARGET_AX7Z035B
     .q2_clk1_gtrefclk_pad_n_in(refclk_n),
     .q2_clk1_gtrefclk_pad_p_in(refclk_p),
+    `elsif TARGET_AX7Z100B
+    .q1_clk1_gtrefclk_pad_n_in(refclk_n),
+    .q1_clk1_gtrefclk_pad_p_in(refclk_p),
+    `endif
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[0]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[0]),
         .gt0_data_valid_in              (data_valid_in[0]),
@@ -232,7 +242,7 @@ module gtwizard_wrapper(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               (wa_rst_req[0]),
-        //.gt0_rxpmareset_in              (gt0_rxpmareset_i),
+        .gt0_rxpmareset_in              ('b0),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -293,7 +303,7 @@ module gtwizard_wrapper(
         .gt1_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt1_gtrxreset_in               (wa_rst_req[1]),
-        //.gt1_rxpmareset_in              (gt1_rxpmareset_i),
+        .gt1_rxpmareset_in              ('b0),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt1_rxslide_in                 (rxslide[1]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -354,7 +364,7 @@ module gtwizard_wrapper(
         .gt2_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt2_gtrxreset_in               (wa_rst_req[2]),
-        //.gt2_rxpmareset_in              (gt2_rxpmareset_i),
+        .gt2_rxpmareset_in              ('b0),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt2_rxslide_in                 (rxslide[2]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -415,7 +425,7 @@ module gtwizard_wrapper(
         .gt3_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt3_gtrxreset_in               (wa_rst_req[3]),
-        //.gt3_rxpmareset_in              (gt3_rxpmareset_i),
+        .gt3_rxpmareset_in              ('b0),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt3_rxslide_in                 (rxslide[3]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
