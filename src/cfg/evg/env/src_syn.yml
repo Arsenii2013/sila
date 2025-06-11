@@ -1,0 +1,8 @@
+import : main
+
+sources:
+    - src/syn/top.svh
+    - src/lib/axi/axi4_lite_if.svh
+    - src/lib/axi/axi_stream.svh
+    - src/syn/evg/evg.sv
+    - src/syn/evg/evn.svh

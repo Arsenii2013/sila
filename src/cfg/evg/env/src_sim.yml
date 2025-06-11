@@ -1,0 +1,4 @@
+
+sources:
+    - src/sim/evgTB.sv
+    - src/lib/common/sys_clk_gen.sv
