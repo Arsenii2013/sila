@@ -1,4 +1,5 @@
 
 sources:
     - src/sim/evgTB.sv
+    - src/syn/evg/dc/measureTB.sv
     - src/lib/common/sys_clk_gen.sv

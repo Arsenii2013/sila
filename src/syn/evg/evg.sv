@@ -33,6 +33,8 @@ module evg
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
 
+    typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
+
 // Event
     logic ev_valid;
     assign ev_valid = ev != '0;
@@ -108,4 +110,26 @@ module evg
         end 
     end
 
-endmodule
+// Delay measurement
+    delay_t delay;
+    logic [4:0] delay_st;
+    logic delay_upd;
+
+    delay_measure #(
+        .INT_W(DELAY_INT_W),
+        .FRAC_W(DELAY_FRAC_W)
+    )
+    measure_i(
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        
+        .beacon_tx(tx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .tx_clk(tx_clk)
+        .beacon_rx(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .rx_clk(rx_clk),
+        .beacon_clk(beacon_clk),
+
+        .delay_upd(delay_upd),
+        .delay(delay),
+        .delay_status(delay_upd)
+    );
