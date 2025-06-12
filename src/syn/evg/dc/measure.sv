@@ -147,7 +147,7 @@ module delay_measure #(
         .clk(app_clk),
         .rst(app_rst || lock_lost),
 
-        .in(delay_t'(sample) << FRAC_W),
+        .in(delay_t'(sample) << (FRAC_W-1)),
         .in_upd(sample_upd),
         .out(average),
         .out_upd(average_upd)
@@ -222,18 +222,18 @@ module sampler #(
     xpm_cdc_pulse sample_upd_sunchronizer_i(
         .dest_clk(app_clk),
         .dest_pulse(sample_upd),
-        .dest_rst('b0),
+        .dest_rst(1'b0),
         .src_clk(beacon_clk),
         .src_pulse(sample_upd_sync),
-        .src_rst('b0)
+        .src_rst(1'b0)
     );
     xpm_cdc_pulse error_sunchronizer_i(
         .dest_clk(app_clk),
         .dest_pulse(error),
-        .dest_rst('b0),
+        .dest_rst(1'b0),
         .src_clk(beacon_clk),
         .src_pulse(error_sync),
-        .src_rst('b0)
+        .src_rst(1'b0)
     );
 
     state_t     state = mfsmWAIT;
@@ -315,10 +315,10 @@ module beacon_cdc(
     xpm_cdc_pulse beacon_rx_sunchronizer_i(
         .dest_clk(beacon_clk),
         .dest_pulse(beacon_rx_sync),
-        .dest_rst('b0),
+        .dest_rst(1'b0),
         .src_clk(rx_clk),
         .src_pulse(beacon_rx_expand),
-        .src_rst('b0)
+        .src_rst(1'b0)
     );
 
 
@@ -338,10 +338,10 @@ module beacon_cdc(
     xpm_cdc_pulse beacon_tx_sunchronizer_i(
         .dest_clk(beacon_clk),
         .dest_pulse(beacon_tx_sync),
-        .dest_rst('b0),
+        .dest_rst(1'b0),
         .src_clk(tx_clk),
         .src_pulse(beacon_tx_expand),
-        .src_rst('b0)
+        .src_rst(1'b0)
     );
 endmodule
 
