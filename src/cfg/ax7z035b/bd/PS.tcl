@@ -20,6 +20,11 @@
   set peripheral_aresetn [ create_bd_port -dir O -from 0 -to 0 -type rst peripheral_aresetn ]
   set peripheral_reset [ create_bd_port -dir O -from 0 -to 0 -type rst peripheral_reset ]
   set peripheral_clock [ create_bd_port -dir O peripheral_clock ]
+  set app_clk [ create_bd_port -dir I -type clk -freq_hz 125000000 app_clk ]
+  set app_aresetn [ create_bd_port -dir I -type rst app_aresetn ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_LOW} \
+ ] $app_aresetn
 
   # Create instance: processing_system7_0, and set properties
   set processing_system7_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0 ]
@@ -31,7 +36,7 @@
     CONFIG.PCW_ACT_DCI_PERIPHERAL_FREQMHZ {10.158730} \
     CONFIG.PCW_ACT_ENET0_PERIPHERAL_FREQMHZ {125.000000} \
     CONFIG.PCW_ACT_ENET1_PERIPHERAL_FREQMHZ {10.000000} \
-    CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ {200.000000} \
+    CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ {125.000000} \
     CONFIG.PCW_ACT_FPGA1_PERIPHERAL_FREQMHZ {10.000000} \
     CONFIG.PCW_ACT_FPGA2_PERIPHERAL_FREQMHZ {10.000000} \
     CONFIG.PCW_ACT_FPGA3_PERIPHERAL_FREQMHZ {10.000000} \
@@ -61,7 +66,7 @@
     CONFIG.PCW_CAN1_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_CAN_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_CAN_PERIPHERAL_VALID {0} \
-    CONFIG.PCW_CLK0_FREQ {200000000} \
+    CONFIG.PCW_CLK0_FREQ {125000000} \
     CONFIG.PCW_CLK1_FREQ {10000000} \
     CONFIG.PCW_CLK2_FREQ {10000000} \
     CONFIG.PCW_CLK3_FREQ {10000000} \
@@ -183,7 +188,6 @@
     CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
     CONFIG.PCW_IMPORT_BOARD_PRESET {None} \
     CONFIG.PCW_INCLUDE_ACP_TRANS_CHECK {0} \
-    CONFIG.PCW_IRQ_F2P_MODE {DIRECT} \
     CONFIG.PCW_MIO_0_IOTYPE {LVCMOS 3.3V} \
     CONFIG.PCW_MIO_0_PULLUP {enabled} \
     CONFIG.PCW_MIO_0_SLEW {slow} \
@@ -575,17 +579,23 @@ SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 
   set_property CONFIG.MI_PROTOCOL {AXI4LITE} $axi_protocol_convert_0
 
 
+  # Create instance: axi_clock_converter_0, and set properties
+  set axi_clock_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_clock_converter:2.1 axi_clock_converter_0 ]
+
   # Create interface connections
-  connect_bd_intf_net -intf_net axi_protocol_convert_0_M_AXI [get_bd_intf_ports GP_0] [get_bd_intf_pins axi_protocol_convert_0/M_AXI]
+  connect_bd_intf_net -intf_net axi_clock_converter_0_M_AXI [get_bd_intf_ports GP_0] [get_bd_intf_pins axi_clock_converter_0/M_AXI]
+  connect_bd_intf_net -intf_net axi_protocol_convert_0_M_AXI [get_bd_intf_pins axi_protocol_convert_0/M_AXI] [get_bd_intf_pins axi_clock_converter_0/S_AXI]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins processing_system7_0/FIXED_IO]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins axi_protocol_convert_0/S_AXI] [get_bd_intf_pins processing_system7_0/M_AXI_GP0]
 
   # Create port connections
-  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_ports peripheral_aresetn] [get_bd_pins axi_protocol_convert_0/aresetn]
+  connect_bd_net -net app_aresetn_1 [get_bd_ports app_aresetn] [get_bd_pins axi_clock_converter_0/m_axi_aresetn]
+  connect_bd_net -net app_clk_1 [get_bd_ports app_clk] [get_bd_pins axi_clock_converter_0/m_axi_aclk]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_ports peripheral_aresetn] [get_bd_pins axi_protocol_convert_0/aresetn] [get_bd_pins axi_clock_converter_0/s_axi_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_reset [get_bd_pins proc_sys_reset_0/peripheral_reset] [get_bd_ports peripheral_reset]
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_ports peripheral_clock] [get_bd_pins axi_protocol_convert_0/aclk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_ports peripheral_clock] [get_bd_pins axi_clock_converter_0/s_axi_aclk]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins proc_sys_reset_0/ext_reset_in]
 
   # Create address segments
-  assign_bd_address -offset 0x43C00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs GP_0/Reg] -force
+  assign_bd_address -offset 0x40000000 -range 0x40000000 -target_address_space [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs GP_0/Reg] -force

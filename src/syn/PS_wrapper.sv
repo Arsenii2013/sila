@@ -29,6 +29,8 @@ module PS_wrapper_sv(
     output logic       peripheral_aresetn,
     output logic       peripheral_clock,
     output logic       peripheral_reset,
+    input  logic       app_aresetn,
+    input  logic       app_clk,
     axi4_lite_if.m     GP_0
    );
    
@@ -77,7 +79,9 @@ module PS_wrapper_sv(
 
         .peripheral_aresetn(peripheral_aresetn),
         .peripheral_clock(peripheral_clock),
-        .peripheral_reset(peripheral_reset)
+        .peripheral_reset(peripheral_reset),
+        .app_aresetn(app_aresetn),
+        .app_clk(app_clk)
     );
     `endif //SYNTHESIS 
 

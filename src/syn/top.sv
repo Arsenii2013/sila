@@ -85,7 +85,9 @@ module top(
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
-        .peripheral_reset(PS_reset)
+        .peripheral_reset(PS_reset),
+        .app_aresetn(app_aresetn),
+        .app_clk(app_clk)
     );
 
     assign app_clk     = PS_clk;
@@ -101,8 +103,8 @@ module top(
         .out(POR_reset)
     );
 
-    assign app_aresetn = PS_aresetn && ~POR_reset;
-    assign app_reset   = PS_reset || POR_reset;
+    always_ff @( app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
+    always_ff @( app_clk ) app_reset   <= PS_reset || POR_reset;
 
     mem_wrapper
     mem_wrapper_i (

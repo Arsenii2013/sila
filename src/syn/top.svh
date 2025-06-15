@@ -3,7 +3,7 @@
 `define __TOP_SVH__
 
 //      Common
-localparam CLK_PRD         = 10;
+localparam CLK_PRD         = 8;
 
 //      Processing system
 localparam GP0_ADDR_W      = 32;
