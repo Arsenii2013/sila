@@ -226,17 +226,19 @@ module evg_axi_core#(
 
     always_ff @(posedge app_clk) begin
         if (app_rst) begin
-            mmr.arready        <= 0;
-            mmr.rvalid         <= 0;
-            mmr.awready        <= 0;
-            mmr.wready         <= 0;
-            mmr.bvalid         <= 0;
-            mmr.rresp <= '0;
-            mmr.bresp <= '0;
-            mmr.rdata <= '0;
-            read       <= 0;
-            write_addr <= 0;
-            write_data <= 0;
+            mmr.arready <= 0;
+            mmr.rvalid  <= 0;
+            mmr.awready <= 0;
+            mmr.wready  <= 0;
+            mmr.bvalid  <= 0;
+            mmr.rresp   <= '0;
+            mmr.bresp   <= '0;
+            mmr.rdata   <= '0;
+            read        <= 0;
+            write_addr  <= 0;
+            write_data  <= 0;
+
+            tgt_delay   <= '0;
         end
         else begin
             mmr.arready <= 0;

@@ -29,7 +29,7 @@ module evr
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet
 );
-    assign app_clk = tx_clk;
+    assign app_clk = rx_clk;
 
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
@@ -44,13 +44,19 @@ module evr
     assign trig_valid = trig != '0;
     
 // Beacon
+    logic beacon_pulse;
+    pf_m pf_beacon(
+        .clk(rx_clk),
+        .in(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .out(beacon_pulse)
+    );
     logic beacon_pulse_sync;
     xpm_cdc_pulse beacon_sunchronizer_i(
         .dest_clk(tx_clk),
         .dest_pulse(beacon_pulse_sync),
         .dest_rst(app_rst),
         .src_clk(rx_clk),
-        .src_pulse(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .src_pulse(beacon_pulse),
         .src_rst(app_rst)
     );
 

@@ -1,6 +1,7 @@
 `timescale 1ns/1ns
 
 `include "cfg_params.svh"
+`include "evn.svh"
 /*
 Wrapper for GTX Wizard IP
 */
@@ -105,7 +106,7 @@ module gtwizard_wrapper(
             state[j] <= next[j];
             case (state[j])
                 wafsmPATTERN_SEARCH: begin
-                    if (~rxcharisk[j][3] && ~rxcharisk[j][2] && ~rxcharisk[j][1] && rxcharisk[j][0] && rx_data[j][7:0] == 8'hBC)
+                    if (rxcharisk[j] == ALIGNMENT_IS_K && rx_data[j] == ALIGNMENT_WORD)
                         if (~test)
                             detect[j] <= 1;
                     word_cnt[j] <= word_cnt[j] + word_cnt_t'(1);
