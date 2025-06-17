@@ -5,6 +5,7 @@
 module evg
 (
     input  logic            beacon_clk,
+    input  logic            ref_clk,
 
     //------GTP signals-------
     input  logic            aligned,
@@ -29,7 +30,26 @@ module evg
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet
 );
-    assign app_clk = tx_clk;
+    logic ready;
+    logic mmcm_locked;
+    assign ready = aligned && mmcm_locked;
+
+    logic clk_in_sel_prev = 0;
+    always_ff @(posedge rx_clk) begin
+        clk_in_sel_prev <= aligned;
+    end
+    assign mmcm_resetn = !(aligned ^ clk_in_sel_prev);
+
+    mmcm_wrapper mmcm_wrapper_i(
+        .clk_in1(tx_clk),
+        .clk_in2(ref_clk),
+        .clk_in_sel(tx_resetdone), // 0 - clk_in2, 1 - clk_in1
+        .clk_out1(app_clk),
+        .psclk(app_clk),
+        .psen(0),
+        .resetn(mmcm_resetn),
+        .locked(mmcm_locked)
+    );
 
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;

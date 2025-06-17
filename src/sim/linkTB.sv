@@ -4,7 +4,7 @@
 module linkTB(
 
     );
-    localparam PROPAGATION_DELAY = 1234.56ns;
+    localparam PROPAGATION_DELAY = 12345.56ns;
 
     logic     evg_tx_clk; // из опоры evg
     logic     evg_rx_clk; // = evr_tx_clk + набег фазы равный задержке 
@@ -95,6 +95,7 @@ module linkTB(
 
     evg evgDUT(
         .beacon_clk(beacon_clk),
+        .ref_clk(evr_tx_clk),
 
         //------GTP signals-------
         .aligned(~app_rst),
