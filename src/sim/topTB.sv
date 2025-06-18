@@ -80,7 +80,7 @@ module topTB(
 
 initial begin
     @(posedge led[3]);
-    #5000;
+    #500ms;
     $stop();
 end
 endmodule

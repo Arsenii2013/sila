@@ -185,7 +185,6 @@ module top(
 
     evg evg1(
         .beacon_clk(app_clk),
-        .ref_clk(PS_clk),
 
         //------GTP signals-------
         .aligned(sfp_aligned[0]),
@@ -209,6 +208,16 @@ module top(
         .trig(),
         .in_packet(evg1_in_packet[0]),
         .out_packet(evg1_out_packet[0])
+    );
+
+
+    ila_0 ila_tx(
+        .clk(app_clk),
+        .probe0(evg1.measure_i.state),
+        .probe1(evg1.measure_i.sampler_i.state),
+        .probe2(evg1.measure_i.sampler_i.cnt),
+        .probe3(evg1.measure_i.sampler_i.beacon_tx),
+        .probe4(evg1.measure_i.sampler_i.beacon_rx)
     );
 
     axi_stream_if #(.DW(32)) evr1_in_packet[4]();
