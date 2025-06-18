@@ -149,11 +149,15 @@ module top(
 
     assign sfp_tx_disable = '0;
 
+    logic sfp_loss [4];
+
+
     gtwizard_wrapper gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(app_clk), 
         .soft_reset(app_reset),
+        .sfp_loss(sfp_loss),
         .tx_reset_done(tx_reset_done),
         .rx_reset_done(rx_reset_done),
         .tx_clk(sfp_tx_clk),
@@ -169,12 +173,11 @@ module top(
         .tx_p(sfp_tx_p)
     );
 
-    ila_2 ila_tx(
-        .clk(app_clk),
-        .probe0(sfp_rx_data[0]),
-        .probe1(sfp_tx_data[0]),
-        .probe2(sfp_rx_data[2]),
-        .probe3(sfp_tx_data[2])
+    sfp_control sfp_control_i(
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[RESERVED2]),
+        .sfp_loss(sfp_loss)
     );
 
     axi_stream_if #(.DW(32)) evg1_in_packet[4]();

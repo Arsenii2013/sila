@@ -111,6 +111,7 @@ module PS_wrapper_sv(
     end
 
     typedef logic [63: 0] uint64_t;
+    localparam uint64_t RSRV2_BASE_ADDR= GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * RESERVED2;
     localparam uint64_t EVG1_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG1;
 
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
@@ -146,6 +147,11 @@ module PS_wrapper_sv(
     initial begin
         $timeformat(-3, 5, " ms");
 
+        @(posedge app_aresetn);
+        @(posedge app_aresetn);
+        #50us;
+        axi_master.write(RSRV2_BASE_ADDR + 'h10, 'h0);
+
         wait(DUT1.evg1.delay_st == 5'h1);
         $display("Get INITIAL state at %t\n", $realtime);
         #10us;
@@ -155,6 +161,9 @@ module PS_wrapper_sv(
         $display("status:\t %x", status);
         $display("topology ID:\t %x", topo_id);
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        #5us;
+        axi_master.write(RSRV2_BASE_ADDR + 'h10, 'hF);
 
         wait(DUT1.evg1.delay_st == 5'h3);
         $display("Get ONE_CYCLE state at %t\n", $realtime);

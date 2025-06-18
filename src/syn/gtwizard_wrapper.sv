@@ -15,6 +15,7 @@ module gtwizard_wrapper(
     output logic        tx_clk[4],
     output logic        rx_clk[4],
     output logic        aligned[4],
+    input  logic        sfp_loss[4],
     //input  logic       data_valid_in,
 
     output logic [31:0] rx_data[4],
@@ -94,7 +95,7 @@ module gtwizard_wrapper(
     assign rxslide[j] = state[j] == wafsmCHECK && !detect[j];
     assign aligned[j] = state[j] == wafsmALIGNED;
 
-    always_ff @(posedge rx_clk[j]) begin
+    always_ff @(posedge rx_clk[j] or negedge rx_reset_done[j]) begin // async reset becouse rx_clk loss when rx_reset_done fall
         if (!rx_reset_done[j]) begin
             state[j]      <= wafsmPATTERN_SEARCH;
             detect[j]     <= 0;
@@ -242,8 +243,8 @@ module gtwizard_wrapper(
         //------------- Receive Ports - RX Fabric Output Control Ports -------------
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
-        .gt0_gtrxreset_in               (wa_rst_req[0]),
-        .gt0_rxpmareset_in              ('b0),
+        .gt0_gtrxreset_in               ('b0),
+        .gt0_rxpmareset_in              (wa_rst_req[0] || sfp_loss[0]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -251,7 +252,7 @@ module gtwizard_wrapper(
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt0_rxresetdone_out            (rxresetdone[0]),
         //------------------- TX Initialization and Reset Ports --------------------
-        .gt0_gttxreset_in               (wa_rst_req[0]),
+        .gt0_gttxreset_in               ('b0),
         .gt0_txuserrdy_in               ('b1),
         //---------------- Transmit Ports - TX Data Path interface -----------------
         .gt0_txdata_in                  (tx_data[0]),
@@ -303,8 +304,8 @@ module gtwizard_wrapper(
         //------------- Receive Ports - RX Fabric Output Control Ports -------------
         .gt1_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
-        .gt1_gtrxreset_in               (wa_rst_req[1]),
-        .gt1_rxpmareset_in              ('b0),
+        .gt1_gtrxreset_in               ('b0),
+        .gt1_rxpmareset_in              (wa_rst_req[1] || sfp_loss[1]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt1_rxslide_in                 (rxslide[1]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -312,7 +313,7 @@ module gtwizard_wrapper(
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt1_rxresetdone_out            (rxresetdone[1]),
         //------------------- TX Initialization and Reset Ports --------------------
-        .gt1_gttxreset_in               (wa_rst_req[1]),
+        .gt1_gttxreset_in               ('b0),
         .gt1_txuserrdy_in               ('b1),
         //---------------- Transmit Ports - TX Data Path interface -----------------
         .gt1_txdata_in                  (tx_data[1]),
@@ -364,8 +365,8 @@ module gtwizard_wrapper(
         //------------- Receive Ports - RX Fabric Output Control Ports -------------
         .gt2_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
-        .gt2_gtrxreset_in               (wa_rst_req[2]),
-        .gt2_rxpmareset_in              ('b0),
+        .gt2_gtrxreset_in               (1'b0),
+        .gt2_rxpmareset_in              (wa_rst_req[2] || sfp_loss[2]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt2_rxslide_in                 (rxslide[2]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -373,7 +374,7 @@ module gtwizard_wrapper(
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt2_rxresetdone_out            (rxresetdone[2]),
         //------------------- TX Initialization and Reset Ports --------------------
-        .gt2_gttxreset_in               (wa_rst_req[2]),
+        .gt2_gttxreset_in               ('b0),
         .gt2_txuserrdy_in               ('b1),
         //---------------- Transmit Ports - TX Data Path interface -----------------
         .gt2_txdata_in                  (tx_data[2]),
@@ -425,8 +426,8 @@ module gtwizard_wrapper(
         //------------- Receive Ports - RX Fabric Output Control Ports -------------
         .gt3_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
-        .gt3_gtrxreset_in               (wa_rst_req[3]),
-        .gt3_rxpmareset_in              ('b0),
+        .gt3_gtrxreset_in               (1'b0),
+        .gt3_rxpmareset_in              (wa_rst_req[3] || sfp_loss[3]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt3_rxslide_in                 (rxslide[3]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -434,7 +435,7 @@ module gtwizard_wrapper(
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt3_rxresetdone_out            (rxresetdone[3]),
         //------------------- TX Initialization and Reset Ports --------------------
-        .gt3_gttxreset_in               (wa_rst_req[3]),
+        .gt3_gttxreset_in               ('b0),
         .gt3_txuserrdy_in               ('b1),
         //---------------- Transmit Ports - TX Data Path interface -----------------
         .gt3_txdata_in                  (tx_data[3]),

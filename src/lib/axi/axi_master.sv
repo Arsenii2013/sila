@@ -52,6 +52,7 @@ module axi_master(
         axi.wvalid  <= 1;
         axi.wstrb   <= 'hFFFF;
         axi.bready  <= 1;
+        axi.rready  <= 0;
 
         for(;;) begin
             @(posedge aclk)

@@ -3,6 +3,7 @@ import : main
 sources:
     - src/syn/top.sv
     - src/syn/mmcm_wrapper.sv
+    - src/syn/sfp_control.sv
     - src/syn/evg/evg.sv
     - src/syn/evg/dc/measure.sv
     - src/syn/evr/evr.sv

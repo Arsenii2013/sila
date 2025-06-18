@@ -6,7 +6,7 @@
 localparam CLK_PRD         = 8;
 
 //      Processing system
-localparam GP0_ADDR_W      = 32;
+localparam GP0_ADDR_W      = 21;
 localparam GP0_DATA_W      = 32;
 
 //      MMR
@@ -19,7 +19,7 @@ localparam EVR1            = EVG2      + 1;
 localparam EVR2            = EVR1      + 1;
 localparam MMR_DEV_CNT     = EVR2      + 1;
 
-localparam MMR_DEV_CNT2    = 256; // 0x1000000 per device
+localparam MMR_DEV_CNT2    = 32; // 0x10000 per device
 
 localparam MMR_ADDR_W      = GP0_ADDR_W - $clog2(MMR_DEV_CNT2);
 localparam MMR_DATA_W      = GP0_DATA_W;
