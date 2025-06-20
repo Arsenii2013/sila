@@ -45,7 +45,9 @@ module evr
     
 // Beacon
     logic beacon_pulse;
-    pf_m pf_beacon(
+    pf_m #(
+        .POR("OFF")
+    ) pf_beacon(
         .clk(rx_clk),
         .in(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
         .out(beacon_pulse)

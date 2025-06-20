@@ -210,16 +210,6 @@ module top(
         .out_packet(evg1_out_packet[0])
     );
 
-
-    ila_0 ila_tx(
-        .clk(app_clk),
-        .probe0(evg1.measure_i.state),
-        .probe1(evg1.measure_i.sampler_i.state),
-        .probe2(evg1.measure_i.sampler_i.cnt),
-        .probe3(evg1.measure_i.sampler_i.beacon_tx),
-        .probe4(evg1.measure_i.sampler_i.beacon_rx)
-    );
-
     axi_stream_if #(.DW(32)) evr1_in_packet[4]();
     axi_stream_if #(.DW(32)) evr1_out_packet[4]();
 
