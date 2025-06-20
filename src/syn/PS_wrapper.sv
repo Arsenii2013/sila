@@ -29,8 +29,16 @@ module PS_wrapper_sv(
     output logic       peripheral_aresetn,
     output logic       peripheral_clock,
     output logic       peripheral_reset,
+    input  logic       app_aresetn,
+    input  logic       app_clk,
     axi4_lite_if.m     GP_0
    );
+
+    localparam GP_0_BASE_ADDR = 'h4000_0000;
+    logic [GP0_ADDR_W-1: 0] GP_0_araddr;
+    logic [GP0_ADDR_W-1: 0] GP_0_awaddr;
+    assign GP_0.araddr = GP_0_araddr - GP_0_BASE_ADDR;
+    assign GP_0.awaddr = GP_0_awaddr - GP_0_BASE_ADDR;
    
     `ifdef SYNTHESIS
     PS PS_i   (
@@ -55,11 +63,11 @@ module PS_wrapper_sv(
         .FIXED_IO_ps_clk(FIXED_IO_ps_clk),
         .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
         .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
-        .GP_0_araddr(GP_0.araddr),
+        .GP_0_araddr(GP_0_araddr),
         .GP_0_arprot(GP_0.arprot),
         .GP_0_arready(GP_0.arready),
         .GP_0_arvalid(GP_0.arvalid),
-        .GP_0_awaddr(GP_0.awaddr),
+        .GP_0_awaddr(GP_0_awaddr),
         .GP_0_awprot(GP_0.awprot),
         .GP_0_awready(GP_0.awready),
         .GP_0_awvalid(GP_0.awvalid),
@@ -77,7 +85,9 @@ module PS_wrapper_sv(
 
         .peripheral_aresetn(peripheral_aresetn),
         .peripheral_clock(peripheral_clock),
-        .peripheral_reset(peripheral_reset)
+        .peripheral_reset(peripheral_reset),
+        .app_aresetn(app_aresetn),
+        .app_clk(app_clk)
     );
     `endif //SYNTHESIS 
 
@@ -98,6 +108,89 @@ module PS_wrapper_sv(
         end
         peripheral_aresetn <= 1;
         peripheral_reset   <= 0;
+    end
+
+    typedef logic [63: 0] uint64_t;
+    localparam uint64_t RSRV2_BASE_ADDR= GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * RESERVED2;
+    localparam uint64_t EVG1_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG1;
+
+    axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
+    assign GP_0_awaddr = GP_0_iternal.awaddr;
+    assign GP_0.awprot = GP_0_iternal.awprot;
+    assign GP_0.awvalid = GP_0_iternal.awvalid;
+    assign GP_0_iternal.awready = GP_0.awready;
+    assign GP_0.wdata = GP_0_iternal.wdata;
+    assign GP_0.wstrb = GP_0_iternal.wstrb;
+    assign GP_0.wvalid = GP_0_iternal.wvalid;
+    assign GP_0_iternal.wready = GP_0.wready;
+    assign GP_0_iternal.bresp = GP_0.bresp;
+    assign GP_0_iternal.bvalid = GP_0.bvalid;
+    assign GP_0.bready = GP_0_iternal.bready;
+    assign GP_0_araddr = GP_0_iternal.araddr;
+    assign GP_0.arprot = GP_0_iternal.arprot;
+    assign GP_0.arvalid = GP_0_iternal.arvalid;
+    assign GP_0_iternal.arready = GP_0.arready;
+    assign GP_0_iternal.rdata = GP_0.rdata;
+    assign GP_0_iternal.rresp = GP_0.rresp;
+    assign GP_0_iternal.rvalid = GP_0.rvalid;
+    assign GP_0.rready = GP_0_iternal.rready;
+
+    axi_master axi_master(
+        .aclk(app_clk),
+        .aresetn(~app_aresetn),
+        .axi(GP_0_iternal)
+    );
+
+    logic [31:0] status;
+    logic [31:0] topo_id;
+    logic [31:0] measured_delay;
+    initial begin
+        $timeformat(-3, 5, " ms");
+
+        @(posedge app_aresetn);
+        @(posedge app_aresetn);
+        #50us;
+        axi_master.write(RSRV2_BASE_ADDR + 'h10, 'h0);
+
+        wait(DUT1.evg1.delay_st == 5'h1);
+        $display("Get INITIAL state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
+        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        #5us;
+        axi_master.write(RSRV2_BASE_ADDR + 'h10, 'hF);
+
+        wait(DUT1.evg1.delay_st == 5'h3);
+        $display("Get ONE_CYCLE state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
+        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        wait(DUT1.evg1.delay_st == 5'h7);
+        $display("Get FINE state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
+        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $stop();
+    end
+
+    initial begin
+        #500ms;
+        $display("Timeout! Cant get FINE state in %t\n", $realtime);
+        $stop();
     end
     `endif //SYNTHESIS 
         

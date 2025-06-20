@@ -57,7 +57,7 @@
 // Version    : 2.1
 //--
 //--------------------------------------------------------------------------------
-`timescale 1ps/1ps
+`timescale 1ps/10fs
 
 module sys_clk_gen (sys_clk);
 

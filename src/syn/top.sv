@@ -1,6 +1,7 @@
 `timescale 1ns/1ns
 
 `include "axi4_lite_if.svh"
+`include "axi_stream.svh"
 `include "top.svh"
 `include "cfg_params.svh"
 
@@ -45,15 +46,30 @@ module top(
     output logic [3:0] led
 );
     logic app_clk;
-    logic app_aresetn;
-    logic app_reset;
+    logic app_aresetn = 1;
+    logic app_reset = 0;
 
     logic sysclk;
     IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
 
+    BUFG clkf_buf
+    (.O (clkfbout_buf),
+        .I (clkfbout));
 
     logic PS_clk, PS_aresetn, PS_reset;
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0();
+    axi4_lite_if #(.DW(MMR_DATA_W), .AW(MMR_ADDR_W)) mmr[MMR_DEV_CNT2]();
+
+    axi_crossbar #(
+        .N(MMR_DEV_CNT2),
+        .AW(GP0_ADDR_W),
+        .DW(GP0_DATA_W)
+    ) axi_crossbar_i (
+        .aclk(app_clk),
+        .aresetn(app_aresetn),
+        .m(GP_0),
+        .s(mmr)
+    );
 
     PS_wrapper_sv
     PS_wrapper_i (
@@ -85,10 +101,10 @@ module top(
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
-        .peripheral_reset(PS_reset)
+        .peripheral_reset(PS_reset),
+        .app_aresetn(app_aresetn),
+        .app_clk(app_clk)
     );
-
-    assign app_clk     = PS_clk;
 
     logic POR_reset;
 
@@ -101,14 +117,13 @@ module top(
         .out(POR_reset)
     );
 
-    assign app_aresetn = PS_aresetn && ~POR_reset;
-    assign app_reset   = PS_reset || POR_reset;
-
+    always_ff @( posedge app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
+    always_ff @( posedge app_clk ) app_reset   <= PS_reset || POR_reset;
     mem_wrapper
     mem_wrapper_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
-        .axi(GP_0),
+        .axi(mmr[RESERVED1]),
         .offset('0)
     );
 
@@ -134,11 +149,15 @@ module top(
 
     assign sfp_tx_disable = '0;
 
+    logic sfp_loss [4];
+
+
     gtwizard_wrapper gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(app_clk), 
         .soft_reset(app_reset),
+        .sfp_loss(sfp_loss),
         .tx_reset_done(tx_reset_done),
         .rx_reset_done(rx_reset_done),
         .tx_clk(sfp_tx_clk),
@@ -154,21 +173,74 @@ module top(
         .tx_p(sfp_tx_p)
     );
 
+    sfp_control sfp_control_i(
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[RESERVED2]),
+        .sfp_loss(sfp_loss)
+    );
+
+    axi_stream_if #(.DW(32)) evg1_in_packet[4]();
+    axi_stream_if #(.DW(32)) evg1_out_packet[4]();
+
+    evg evg1(
+        .beacon_clk(app_clk),
+
+        //------GTP signals-------
+        .aligned(sfp_aligned[0]),
+
+        .tx_resetdone(tx_reset_done[0]),
+        .tx_clk(sfp_tx_clk[0]),
+        .tx_data(sfp_tx_data[0]),
+        .tx_charisk(sfp_tx_is_k[0]),
+
+        .rx_resetdone(rx_reset_done[0]),
+        .rx_clk(sfp_rx_clk[0]),
+        .rx_data(sfp_rx_data[0]),
+        .rx_charisk(sfp_rx_is_k[0]),
+
+        //------Application signals-------
+        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_rst(app_reset),
+        .mmr(mmr[EVG1]),
+        
+        .ev(), 
+        .trig(),
+        .in_packet(evg1_in_packet[0]),
+        .out_packet(evg1_out_packet[0])
+    );
+
+    axi_stream_if #(.DW(32)) evr1_in_packet[4]();
+    axi_stream_if #(.DW(32)) evr1_out_packet[4]();
+
+    evr evr1(
+        //.beacon_clk(app_clk_evr1), not used, becouse no delay compensation
+
+        //------GTP signals-------
+        .aligned(sfp_aligned[2]),
+
+        .tx_resetdone(tx_reset_done[2]),
+        .tx_clk(sfp_tx_clk[2]),
+        .tx_data(sfp_tx_data[2]),
+        .tx_charisk(sfp_tx_is_k[2]),
+
+        .rx_resetdone(rx_reset_done[2]),
+        .rx_clk(sfp_rx_clk[2]),
+        .rx_data(sfp_rx_data[2]),
+        .rx_charisk(sfp_rx_is_k[2]),
+
+        //------Application signals-------
+        .app_clk(), // app_clk generated only by first evg
+        .app_rst(app_reset),
+        .mmr(mmr[EVR1]),
+        
+        .ev(), 
+        .trig(),
+        .in_packet(evr1_in_packet[2]),
+        .out_packet(evr1_out_packet[2])
+    );
+
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];
     assign led[3] = sfp_aligned[0];
-
-    genvar i;
-    generate
-    for (i=0; i < 4; i++) begin
-        frame_gen frame_gen_i (
-            .clk(sfp_tx_clk[i]),
-            .rst(app_reset) ,
-            .tx_data(sfp_tx_data[i]),
-            .txcharisk(sfp_tx_is_k[i]),
-            .data('h01234567)
-        );
-    end
-    endgenerate
-
 endmodule

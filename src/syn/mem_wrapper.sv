@@ -10,7 +10,7 @@ module mem_wrapper
     axi4_lite_if.s      axi,
     input logic [31:0]  offset
 );
-    typedef logic [11:0] addr_t;
+    typedef logic [12:0] addr_t;
     axi_memory mem(
         .s_axi_aclk(aclk),
         .s_axi_aresetn(aresetn),
