@@ -105,7 +105,7 @@ module measureTB(
 endmodule
 
 module beacon_generator #(
-    localparam PROPAGATION_DELAY = 1234.56ns
+    localparam PROPAGATION_DELAY = 10us
 )
 (
     input  logic sfp_tx_clk,
@@ -130,7 +130,10 @@ module beacon_generator #(
     logic beacon_tx_propagated;
     always @(beacon_tx) beacon_tx_propagated <= #(PROPAGATION_DELAY) beacon_tx;
     logic beacon_tx_prop_pulse;
-    pf_m pf_i(
+    pf_m #(
+        .POR("OFF")
+    )
+    pf_i(
         .in(beacon_tx_propagated),
         .clk(sfp_tx_clk),
         .out(beacon_tx_prop_pulse)

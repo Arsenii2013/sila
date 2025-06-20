@@ -36,23 +36,32 @@ module evg
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
 
+    logic [4:0] delay_st;
 // Event
     logic ev_valid;
     assign ev_valid = ev != '0;
     
 
 // Beacon
+    // Во избежание неопределенности измерения задержки из-за включения приемника
+    // при частично заполенном FIFO sampler-а при запуске запускаем beacon-ы, таким образом,
+    // чтоб за время таймаута отправлялся только один. Таким образом,
+    // если поймали beacon_rx это точно ответ на этот beacon_tx, если нет - таймаут.
+    // sampler запускается от следующего beacon-а, и точно знает что первый beacon_rx 
+    // это ответ на первый beacon_tx
+
+    localparam MAX_DELAY = 2 ** DELAY_INT_W - 1;
     logic beacon_valid = 0;
     logic beacon_ready = 0;
-    beacon_cnt_t beacon_cnt = BEACON_PERIOD;
+    beacon_cnt_t beacon_cnt = MAX_DELAY;
 
     always_ff @(posedge tx_clk) begin
         if(app_rst) begin
-            beacon_cnt   <= BEACON_PERIOD;
+            beacon_cnt   <= delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
             beacon_valid <= 0;
         end else begin
             if(beacon_cnt == 0) begin
-                beacon_cnt   <= BEACON_PERIOD;
+                beacon_cnt   <= delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
                 beacon_valid <= 1;
             end else begin
                 beacon_cnt <= beacon_cnt - 1;
@@ -116,7 +125,6 @@ module evg
 
 // Delay measurement
     delay_t delay;
-    logic [4:0] delay_st;
     logic delay_upd;
 
     delay_measure #(

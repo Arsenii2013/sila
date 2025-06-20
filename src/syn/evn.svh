@@ -8,7 +8,7 @@ localparam ALIGNMENT_COMMA = 8'hBC;
 
 localparam BEACON_WORD     = {EVENT_COMMA,      EVENT_COMMA, 8'h00, 8'h00};
 localparam BEACON_IS_K     = 'hC;
-localparam BEACON_PERIOD   = 2 ** 10;
+localparam BEACON_PERIOD   = 2 ** 10 - 1;
 typedef logic [$clog2(BEACON_PERIOD): 0] beacon_cnt_t;
 
 localparam ALIGNMENT_WORD   = {ALIGNMENT_COMMA,  8'h00,      8'h00, 8'h00};

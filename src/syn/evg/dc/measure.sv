@@ -26,11 +26,7 @@ module delay_measure #(
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
     localparam          FILTER_N        = 12;
     localparam          LOCK_TIME       = 2**FILTER_N;
-    `ifdef SYNTHESIS
-    localparam sample_t BEACON_TIMEOUT  = '1;
-    `else
-    localparam sample_t BEACON_TIMEOUT  = 1000; // 1000 тактов, примерно 5700 нс
-    `endif
+    localparam          BEACON_PERIOD_W = $clog2(BEACON_PERIOD);
 
     typedef logic [$clog2(LOCK_TIME) : 0] lock_time_t;
 
@@ -122,7 +118,7 @@ module delay_measure #(
 
     sampler #(
         .INT_W(INT_W),
-        .TIMEOUT(BEACON_TIMEOUT)
+        .BEACON_PERIOD_W(BEACON_PERIOD_W)
     ) sampler_i (
         .beacon_tx(beacon_tx),
         .tx_clk(tx_clk),
@@ -155,8 +151,8 @@ module delay_measure #(
 endmodule 
 
 module sampler #(
-    parameter INT_W                        = 16,
-    parameter logic [INT_W  -1: 0] TIMEOUT = '1
+    parameter INT_W           = 16,
+    parameter BEACON_PERIOD_W = 10
 )
 (
     input  logic                     beacon_tx,
@@ -172,14 +168,18 @@ module sampler #(
     output logic [INT_W       -1: 0] sample,
     output logic                     error
 );
+    localparam BEACON_CNT_W   = INT_W - BEACON_PERIOD_W;
+    localparam BEACON_CNT_MAX = 2**BEACON_CNT_W - 1;
+
     typedef enum
     {
+        mfsmINITIAL,
         mfsmWAIT,
-        mfsmCOUNT,
+        mfsmWAITFIFO,
         mfsmCHECK
     } state_t;
 
-    typedef logic [INT_W  -1: 0] sample_t;
+    typedef logic [INT_W       -1: 0] sample_t;
 
     logic beacon_rx_sync;
     logic beacon_tx_sync;
@@ -195,11 +195,20 @@ module sampler #(
     );
 
     logic beacon_rst;
+    logic beacon_rst_sync;
 
     xpm_cdc_sync_rst beacon_rst_sunchronizer_i(
         .dest_clk(beacon_clk),
-        .dest_rst(beacon_rst),
+        .dest_rst(beacon_rst_sync),
         .src_rst(app_rst)
+    );
+
+    pf_m #(
+        .WIDTH(10)
+    ) pf_beacon_rst (
+        .clk(beacon_clk),
+        .in(beacon_rst_sync),
+        .out(beacon_rst)
     );
 
     logic fine_sync;
@@ -236,17 +245,55 @@ module sampler #(
         .src_rst(1'b0)
     );
 
-    state_t     state = mfsmWAIT;
+    logic       no_beacons;
+    logic       beacons_over;
+    sample_t    current_cnt = '0;
+    sample_t    sample_cnt;
 
-    sample_t    cnt         = '0;
+    always_ff @(posedge beacon_clk) begin
+        if (beacon_rst) begin
+            current_cnt     <= '0;
+        end else begin
+            current_cnt <= current_cnt + 1;
+        end
+    end
+
+    FIFO18E1 #(
+        .DATA_WIDTH(18),
+        .DO_REG(1), 
+        .EN_SYN("TRUE"),
+        .FIFO_MODE("FIFO18"),
+        .FIRST_WORD_FALL_THROUGH("FALSE"),
+        .INIT(36'h000000000),
+        .SIM_DEVICE("7SERIES"),
+        .SRVAL(36'h000000000),
+        .ALMOST_FULL_OFFSET(BEACON_CNT_MAX)
+    ) beacon_cnt_FIFO_i (
+        .DO(sample_cnt),
+        .DOP(),
+        .EMPTY(no_beacons),
+        .ALMOSTFULL(beacons_over),
+        .RDCLK(beacon_clk),
+        .RDEN(beacon_rx_sync && ~no_beacons),
+        .REGCE(1),
+        .RST(beacon_rst),
+        .RSTREG(beacon_rst),
+        .WRCLK(beacon_clk),
+        .WREN(beacon_tx_sync),
+        .DI(current_cnt),
+        .DIP()
+    );
+
+
+    state_t     state = mfsmINITIAL;
+
     sample_t    prev_sample = '0;
 
     logic sample_valid;
 
     always_ff @(posedge beacon_clk) begin
         if (beacon_rst) begin
-            state           <= mfsmWAIT;
-            cnt             <= '0;
+            state           <= mfsmINITIAL;
             sample          <= '0;
             prev_sample     <= '0;
             sample_upd_sync <= '0;
@@ -254,24 +301,22 @@ module sampler #(
         end
         else begin
             case (state)
+                mfsmINITIAL: begin 
+                    if (beacon_rx_sync)
+                        state <= mfsmWAIT;
+                end
                 mfsmWAIT: begin 
-                    cnt             <= '0;
                     sample_upd_sync <= 0;
-                    if (beacon_tx_sync)
-                        state <= mfsmCOUNT;
-                end
-                mfsmCOUNT: begin
-                    cnt <= sample_t'(cnt + 1);
-                    if (beacon_tx_sync) 
-                        cnt   <= 0;
-                    else if (beacon_rx_sync || cnt == TIMEOUT - 1) begin
+                    if (beacon_rx_sync)
+                        state <= mfsmWAITFIFO;
+                    if (beacons_over)
                         state <= mfsmCHECK;
-                    end
                 end
+                mfsmWAITFIFO : state <= mfsmCHECK;
                 mfsmCHECK: begin
-                    if(sample_valid) begin
+                    if (sample_valid & !beacons_over) begin
                         sample_upd_sync <= 1;
-                        sample          <= cnt;
+                        sample          <= current_cnt > sample_cnt ? current_cnt - sample_cnt : (sample_t'('1) - sample_cnt) + current_cnt;
                         prev_sample     <= sample;
                     end else begin
                         error_sync      <= 1;
@@ -284,9 +329,9 @@ module sampler #(
 
     always_comb begin
         if(fine_sync)
-            sample_valid = (cnt != TIMEOUT) && (sample > prev_sample ? sample - prev_sample < sample_t'(4) : prev_sample - sample < sample_t'(4));
+            sample_valid = sample > prev_sample ? sample - prev_sample < sample_t'(4) : prev_sample - sample < sample_t'(4);
         else 
-            sample_valid =  cnt != TIMEOUT;
+            sample_valid = 1;
     end
 endmodule
 
