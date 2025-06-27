@@ -1,0 +1,7 @@
+import : main
+
+sources:
+    - src/syn/evg/system_packet_generator.sv
+    - src/lib/axi/axi4_lite_if.svh
+    - src/lib/axi/axi_stream.svh
+    - src/syn/evn.svh
