@@ -4,9 +4,10 @@ sources:
     - src/syn/top.sv
     - src/syn/mmcm_wrapper.sv
     - src/syn/sfp_control.sv
-    - src/syn/evg/evg.sv
-    - src/syn/evg/dc/measure.sv
-    - src/syn/evr/evr.sv
+    - src/syn/event_network/evg/evg.sv
+    - src/syn/event_network/common/dc/measure.sv
+    - src/syn/event_network/evr/evr.sv
+    - src/syn/event_network/common/evn.svh
     - src/syn/PS_wrapper.sv
     - src/syn/mem_wrapper.sv
     - src/syn/gtwizard_wrapper.sv

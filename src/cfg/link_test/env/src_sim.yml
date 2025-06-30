@@ -1,5 +1,5 @@
 
 sources:
-    - src/sim/linkTB.sv
+    - src/sim/event_network/linkTB.sv
     - src/lib/common/sys_clk_gen.sv
     - src/lib/axi/axi_master.sv

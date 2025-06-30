@@ -2,7 +2,7 @@
 `include "evn.svh"
 `include "axi4_lite_if.svh"
 
-module evg
+module evr
 (
     input  logic            beacon_clk,
 
@@ -24,47 +24,55 @@ module evg
     input  logic            app_rst,
     axi4_lite_if.s          mmr,
     
-    input  logic [23:0]     ev, // ev_valid = ev != 0
-    output logic [23:0]     trig, // trig_valid = trig != 0
+    output logic [23:0]     ev, // ev_valid = ev != 0
+    input  logic [23:0]     trig, // trig_valid = trig != 0
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet
 );
-    assign app_clk = tx_clk;
+    assign app_clk = rx_clk;
 
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
+    typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
 
-    logic [4:0] delay_st;
 // Event
-    logic ev_valid;
-    assign ev_valid = ev != '0;
+    assign ev = (rx_data[31:24] == EVENT_COMMA && rx_charisk[3] == 1) ? rx_data : 0;
+
+// Trigger
+    logic trig_valid;
+    assign trig_valid = trig != '0;
     
-
 // Beacon
-    // Во избежание неопределенности измерения задержки из-за включения приемника
-    // при частично заполенном FIFO sampler-а при запуске запускаем beacon-ы, таким образом,
-    // чтоб за время таймаута отправлялся только один. Таким образом,
-    // если поймали beacon_rx это точно ответ на этот beacon_tx, если нет - таймаут.
-    // sampler запускается от следующего beacon-а, и точно знает что первый beacon_rx 
-    // это ответ на первый beacon_tx
+    logic beacon_pulse;
+    pf_m #(
+        .POR("OFF")
+    ) pf_beacon(
+        .clk(rx_clk),
+        .in(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .out(beacon_pulse)
+    );
+    logic beacon_pulse_sync;
+    xpm_cdc_pulse beacon_sunchronizer_i(
+        .dest_clk(tx_clk),
+        .dest_pulse(beacon_pulse_sync),
+        .dest_rst(app_rst),
+        .src_clk(rx_clk),
+        .src_pulse(beacon_pulse),
+        .src_rst(app_rst)
+    );
 
-    localparam MAX_DELAY = 2 ** DELAY_INT_W - 1;
     logic beacon_valid = 0;
     logic beacon_ready = 0;
-    beacon_cnt_t beacon_cnt = MAX_DELAY;
 
     always_ff @(posedge tx_clk) begin
         if(app_rst) begin
-            beacon_cnt   <= delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
             beacon_valid <= 0;
         end else begin
-            if(beacon_cnt == 0) begin
-                beacon_cnt   <= delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
+            if(beacon_pulse_sync) begin
                 beacon_valid <= 1;
             end else begin
-                beacon_cnt <= beacon_cnt - 1;
                 if(beacon_ready) begin
                     beacon_valid <= 0;
                 end else begin
@@ -101,13 +109,13 @@ module evg
 
 // Mux
     always_ff @(posedge tx_clk) begin
-        beacon_ready    <= 0;
         alignment_ready <= 0;
+        beacon_ready    <= 0;
         tx_data         <= '0;
         tx_charisk      <= '0;
 
-        if(ev_valid) begin
-            tx_data         <= {EVENT_COMMA, ev};
+        if(trig_valid) begin
+            tx_data         <= {TRIGGER_COMMA, trig};
             tx_charisk      <= 'h8;
         end else if(beacon_valid && ~beacon_ready) begin
             tx_data         <= BEACON_WORD;
@@ -123,48 +131,50 @@ module evg
         end
     end
 
-// Delay measurement
-    delay_t delay;
-    logic delay_upd;
 
-    delay_measure #(
-        .INT_W(DELAY_INT_W),
-        .FRAC_W(DELAY_FRAC_W)
-    )
-    measure_i(
+// System packets
+    topo_id_t topo_id;
+    delay_t link_delay, tgt_delay;
+    logic [4:0] link_delay_st;
+    logic link_delay_recv;
+
+    system_stream_if #(.DW(32)) system_stream();
+    assign system_stream.tdata  = rx_data;
+    assign system_stream.tisk   = rx_charisk;
+    assign system_stream.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
+
+    evr_system_packet_reciever evr_system_packet_reciever_i(
+        .rx_clk(rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
-        
-        .beacon_tx((tx_data == BEACON_WORD) && (tx_charisk == BEACON_IS_K)),
-        .tx_clk(tx_clk),
-        .beacon_rx((rx_data == BEACON_WORD) && (rx_charisk == BEACON_IS_K)),
-        .rx_clk(rx_clk),
-        .beacon_clk(beacon_clk),
-
-        .delay_upd(delay_upd),
-        .delay(delay),
-        .delay_status(delay_st)
+        .topo_id(topo_id),
+        .topo_id_recv(),
+        .meas_delay(link_delay),
+        .meas_delay_st(link_delay_st),
+        .meas_delay_recv(link_delay_recv),
+        .tgt_delay(tgt_delay),
+        .tgt_delay_recv(),
+        .in(system_stream)
     );
 
-// MMR
-    evg_axi_core #(
+
+    evr_axi_core #(
         .ADDR_W(GP0_ADDR_W),
         .DATA_W(GP0_DATA_W)
-    ) evg_axi_core_i (
+    ) evr_axi_core_i (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .mmr(mmr),
         .aligned(aligned),
-        .topoid(0),
-        .delay(delay),
-        .delay_status(delay_st),
-        .tgt_delay()
+        .topoid(topo_id),
+        .delay(link_delay),
+        .delay_status(link_delay_st),
+        .tgt_delay(tgt_delay)
     );
 
 endmodule
 
-
-module evg_axi_core#(
+module evr_axi_core#(
     parameter ADDR_W = 32,
     parameter DATA_W = 32
 )(
@@ -176,7 +186,7 @@ module evg_axi_core#(
     input  logic [TOPO_ID_W               -1: 0] topoid,
     input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay,
     input  logic [4                         : 0] delay_status,
-    output logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay
+    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay
 );
 //MMR logic 
     typedef logic [ADDR_W-1:0] addr_t;
@@ -226,7 +236,6 @@ module evg_axi_core#(
             write_addr  <= 0;
             write_data  <= 0;
 
-            tgt_delay   <= '0;
         end
         else begin
             mmr.arready <= 0;
@@ -272,7 +281,6 @@ module evg_axi_core#(
                     CR        : cr <= cr_t'(data);
                     CR_S      : cr <= cr | cr_t'(data);
                     CR_C      : cr <= cr & ~(cr_t'(data));
-                    TGT_DELAY : tgt_delay <= data;
                     default;
                 endcase
             end 

@@ -95,7 +95,6 @@ module linkTB(
 
     evg evgDUT(
         .beacon_clk(beacon_clk),
-        .ref_clk(evr_tx_clk),
 
         //------GTP signals-------
         .aligned(~app_rst),
@@ -157,6 +156,11 @@ module linkTB(
         .aresetn(app_rst),
         .axi(evg_mmr)
     );
+    axi_master axi_master_evr(
+        .aclk(evr_app_clk),
+        .aresetn(app_rst),
+        .axi(evr_mmr)
+    );
 
     logic [31:0] status;
     logic [31:0] topo_id;
@@ -172,33 +176,54 @@ module linkTB(
 
         wait(evgDUT.delay_st == 5'h1);
         $display("Get INITIAL state at %t\n", $realtime);
-        #10us;
+        #100us;
         axi_master_evg.read('h00, status);
         axi_master_evg.read('h10, topo_id);
         axi_master_evg.read('h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVG status:\t %x", status);
+        $display("EVG topology ID:\t %x", topo_id);
+        $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        axi_master_evr.read('h00, status);
+        axi_master_evr.read('h10, topo_id);
+        axi_master_evr.read('h14, measured_delay);
+        $display("EVR status:\t %x", status);
+        $display("EVR topology ID:\t %x", topo_id);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
 
         wait(evgDUT.delay_st == 5'h3);
         $display("Get ONE_CYCLE state at %t\n", $realtime);
-        #10us;
+        #100us;
         axi_master_evg.read('h00, status);
         axi_master_evg.read('h10, topo_id);
         axi_master_evg.read('h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVG status:\t %x", status);
+        $display("EVG topology ID:\t %x", topo_id);
+        $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        axi_master_evr.read('h00, status);
+        axi_master_evr.read('h10, topo_id);
+        axi_master_evr.read('h14, measured_delay);
+        $display("EVR status:\t %x", status);
+        $display("EVR topology ID:\t %x", topo_id);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
 
         wait(evgDUT.delay_st == 5'h7);
         $display("Get FINE state at %t\n", $realtime);
-        #10us;
+        #100us;
         axi_master_evg.read('h00, status);
         axi_master_evg.read('h10, topo_id);
         axi_master_evg.read('h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVG status:\t %x", status);
+        $display("EVG topology ID:\t %x", topo_id);
+        $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        axi_master_evr.read('h00, status);
+        axi_master_evr.read('h10, topo_id);
+        axi_master_evr.read('h14, measured_delay);
+        $display("EVR status:\t %x", status);
+        $display("EVR topology ID:\t %x", topo_id);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
         $stop();
     end
 
