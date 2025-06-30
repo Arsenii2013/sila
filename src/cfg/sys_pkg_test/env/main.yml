@@ -1,8 +1,8 @@
 parameters:
     VARIANT_NAME        : = ARGUMENTS['bv']
     PROJECT_NAME        : = VARIANT_NAME
-    TOP_NAME            : simple_packet_tx_fsm
-    TESTBENCH_NAME      : simple_packet_fsmTB
+    TOP_NAME            : evg_system_packet_generator
+    TESTBENCH_NAME      : evg_system_packet_generatorTB
     DEVICE              : xc7z100ffg900-2
     
     TARGET_AX7Z100B     : = ''
