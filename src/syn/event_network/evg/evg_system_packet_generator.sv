@@ -129,11 +129,16 @@ module evg_system_packet_generatorTB();
         @(posedge app_clk);
         @(posedge app_clk);
 
+        for(int i = 0; i < 7; i++)
+            @(posedge app_clk);
+        
+        @(posedge app_clk) connect = 0;
+        for(int i = 0; i < 100; i++)
+            @(posedge app_clk);
+        @(posedge app_clk) connect = 1;
         for(int i = 0; i < 100; i++)
             @(posedge app_clk);
 
-        for(int i = 0; i < 100; i++)
-            @(posedge app_clk);
 
         $stop();
     end
