@@ -1,6 +1,7 @@
 `include "top.svh"
 `include "evn.svh"
 `include "axi4_lite_if.svh"
+`include "system_stream_if.svh"
 
 module evg
 (
@@ -35,6 +36,7 @@ module evg
     assign out_packet.tvalid = 0;
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
+    typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
 
     logic [4:0] delay_st;
 // Event
@@ -98,6 +100,72 @@ module evg
         end
     end
 
+// System packets
+
+    delay_t delay;
+    logic   delay_upd;
+
+    // Отправка нового значения задержки если разность между
+    // текущим значением и прошлым отправленным больше SEND_TRESH
+    localparam SEND_TRESH = delay_t'((1<<DELAY_FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6/2**9 = 11,16 ps
+    delay_t last_sended_delay = '0;
+    logic   send_delay        = 0;
+    logic   send_in_tresh;
+
+    assign send_in_tresh      = last_sended_delay > delay ? 
+                                last_sended_delay - delay < SEND_TRESH : 
+                                delay - last_sended_delay < SEND_TRESH;
+
+    always_ff @(posedge app_clk) begin
+        if(app_rst) begin
+            send_delay        <= 0;
+            last_sended_delay <= '0;
+        end else begin
+            if(delay_upd && !send_in_tresh) begin
+                send_delay        <= 1;
+                last_sended_delay <= delay;
+            end else begin
+                send_delay        <= 0;
+                last_sended_delay <= last_sended_delay;
+            end
+        end
+    end 
+
+    // Отправка topology id по началу измерения задержки
+    logic [4:0] prev_delay_st = '0;
+    logic send_topo_id        = 0;
+
+    always_ff @(posedge app_clk) begin
+        if(app_rst) begin
+            send_topo_id      <= 0;
+            prev_delay_st     <= '0;
+        end else begin
+            if(delay_upd && prev_delay_st[0] == 0 && delay_st[0] == 1) begin
+                send_topo_id      <= 1;
+            end else begin
+                send_topo_id      <= 0;
+            end
+            if(delay_upd)
+                prev_delay_st <= delay_st;
+        end
+    end 
+    topo_id_t topo_id;
+    assign topo_id = 'h12345678;
+    system_stream_if #(.DW(32)) system_stream();
+    evg_system_packet_generator evg_system_packet_generator_i(
+        .app_clk(app_clk),
+        .tx_clk(tx_clk),
+        .app_rst(app_rst),
+        .topo_id(topo_id),
+        .send_topo_id(send_topo_id),
+        .meas_delay(delay),
+        .meas_delay_st(delay_st),
+        .send_meas_delay(send_delay),
+        .tgt_delay('h0),
+        .send_tgt_delay(0),
+        .out(system_stream)
+    );
+
 
 // Mux
     always_ff @(posedge tx_clk) begin
@@ -113,6 +181,9 @@ module evg
             tx_data         <= BEACON_WORD;
             tx_charisk      <= BEACON_IS_K;
             beacon_ready    <= 1;
+        end else if(system_stream.tvalid) begin
+            tx_data         <= system_stream.tdata;
+            tx_charisk      <= system_stream.tisk;
         end else if(alignment_valid && ~alignment_ready) begin
             tx_data         <= ALIGNMENT_WORD;
             tx_charisk      <= ALIGNMENT_IS_K;
@@ -123,10 +194,9 @@ module evg
         end
     end
 
-// Delay measurement
-    delay_t delay;
-    logic delay_upd;
+    assign system_stream.tready = !ev_valid && !beacon_valid;
 
+// Delay measurement
     delay_measure #(
         .INT_W(DELAY_INT_W),
         .FRAC_W(DELAY_FRAC_W)
@@ -155,7 +225,7 @@ module evg
         .app_rst(app_rst),
         .mmr(mmr),
         .aligned(aligned),
-        .topoid(0),
+        .topoid(topo_id),
         .delay(delay),
         .delay_status(delay_st),
         .tgt_delay()
