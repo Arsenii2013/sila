@@ -29,16 +29,11 @@ module evr
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet
 );
-    assign app_clk = rx_clk;
-
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
     typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
-
-// Event
-    assign ev = (rx_data[31:24] == EVENT_COMMA && rx_charisk[3] == 1) ? rx_data : 0;
 
 // Trigger
     logic trig_valid;
@@ -135,7 +130,8 @@ module evr
 // System packets
     topo_id_t topo_id;
     delay_t link_delay, tgt_delay;
-    logic [4:0] link_delay_st;
+    logic tgt_delay_upd;
+    logic [3:0] link_delay_st;
     logic link_delay_recv;
 
     system_stream_if #(.DW(32)) system_stream();
@@ -153,10 +149,86 @@ module evr
         .meas_delay_st(link_delay_st),
         .meas_delay_recv(link_delay_recv),
         .tgt_delay(tgt_delay),
-        .tgt_delay_recv(),
+        .tgt_delay_recv(tgt_delay_upd),
         .in(system_stream)
     );
 
+// Delay compensation
+    logic dc_ena;
+    logic [3:0] dc_status;
+    delay_t delay_comp;
+
+    logic [31:0] fifo_in_data;
+    logic [31:0] fifo_out_data;
+    logic [ 3:0] fifo_in_isk;
+    logic [ 3:0] fifo_out_isk;
+    logic fifo_inc, fifo_dec, pll_ph_inc, pll_ph_dec;
+
+    assign fifo_in_data = (rx_data[31:24] == EVENT_COMMA && rx_charisk == 'h8        ) ||
+                          (rx_data == BEACON_WORD        && rx_charisk == BEACON_IS_K) 
+                          ? rx_data : '0;
+    assign fifo_in_isk  = (rx_data[31:24] == EVENT_COMMA && rx_charisk == 'h8        ) ||
+                          (rx_data == BEACON_WORD        && rx_charisk == BEACON_IS_K) 
+                          ? rx_charisk : '0;
+    assign ev = (fifo_out_data[31:24] == EVENT_COMMA && fifo_out_isk == 'h8        )
+                ? fifo_out_data[23:0] : '0;
+
+    fifo_wrapper #(
+        .DEPTH(MAX_COMPENSATION)
+    ) fifo_i (
+        .app_rst(app_rst),
+        .app_clk(app_clk),
+        .rx_clk(rx_clk),
+
+        .data_in(fifo_in_data),
+        .isk_in(fifo_in_isk),
+        .data_out(fifo_out_data),
+        .isk_out(fifo_out_isk),
+
+        .fifo_inc(fifo_inc),
+        .fifo_dec(fifo_dec),
+
+        .full(full),
+        .empty(empty)
+    );
+
+    mmcm_wrapper mmcm_i(
+        .clk_in1(rx_clk),
+        .clk_in2(beacon_clk),
+        .clk_in_sel(aligned),
+        
+        .clk_out1(app_clk),
+
+        .ph_inc(pll_ph_inc),
+        .ph_dec(pll_ph_dec),
+
+        .reset(0),
+        .locked()
+    );
+
+    dc_control #(
+        .INT_W(DELAY_INT_W),
+        .FRAC_W(DELAY_FRAC_W)
+    ) dc_control_i (
+        .app_clk(app_clk),
+        .app_rst(app_rst || !dc_ena),
+
+        .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
+        .rx_clk(rx_clk),
+        .beacon_out((fifo_out_data == BEACON_WORD) && (fifo_out_isk == BEACON_IS_K)),
+        .beacon_clk(beacon_clk),
+
+        .fifo_inc(fifo_inc),
+        .fifo_dec(fifo_dec),
+        .pll_ph_inc(pll_ph_inc),
+        .pll_ph_dec(pll_ph_dec),
+    
+        .dc_status(dc_status),
+        .delay_req(tgt_delay - link_delay),
+        .delay_req_upd(tgt_delay_upd),
+        
+        .delay_comp(delay_comp)
+    );
 
     evr_axi_core #(
         .ADDR_W(GP0_ADDR_W),
@@ -166,10 +238,13 @@ module evr
         .app_rst(app_rst),
         .mmr(mmr),
         .aligned(aligned),
+        .dc_ena(dc_ena),
         .topoid(topo_id),
         .delay(link_delay),
         .delay_status(link_delay_st),
-        .tgt_delay(tgt_delay)
+        .dc_status(dc_status),
+        .tgt_delay(tgt_delay),
+        .delay_comp(delay_comp)
     );
 
 endmodule
@@ -183,10 +258,13 @@ module evr_axi_core#(
     axi4_lite_if.s                               mmr,
 
     input  logic                                 aligned,
+    output logic                                 dc_ena,
     input  logic [TOPO_ID_W               -1: 0] topoid,
     input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay,
-    input  logic [4                         : 0] delay_status,
-    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay
+    input  logic [3                         : 0] delay_status,
+    input  logic [3                         : 0] dc_status,
+    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay,
+    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_comp
 );
 //MMR logic 
     typedef logic [ADDR_W-1:0] addr_t;
@@ -199,20 +277,23 @@ module evr_axi_core#(
         CR_C          = addr_t'(8'h0C),
         LINK_TOPO_ID  = addr_t'(8'h10),
         LINK_DELAY    = addr_t'(8'h14),
-        TGT_DELAY     = addr_t'(8'h18)
+        TGT_DELAY     = addr_t'(8'h18),
+        DELAY_COMP    = addr_t'(8'h1C)
     } evr_regs;
 
     typedef struct packed {
+        logic [3:0] delay_comp_st;
+        logic [3:0] link_delay_st;
+        logic [2:0] none;
         logic       link_up;
-        logic [4:0] link_delay_st;
     } sr_t;
 
     typedef struct packed {
-        logic none;
+        logic dc_ena;
     } cr_t;
 
     sr_t sr;
-    cr_t cr;
+    cr_t cr = 0;
     addr_t addr;
     data_t data;
     logic read;
@@ -220,7 +301,11 @@ module evr_axi_core#(
     logic write_data;
 
     assign sr.link_up       = aligned;
+    assign sr.none          = '0;
     assign sr.link_delay_st = delay_status;
+    assign sr.delay_comp_st = dc_status;
+
+    assign dc_ena           = cr.dc_ena;
 
     always_ff @(posedge app_clk) begin
         if (app_rst) begin
@@ -235,7 +320,7 @@ module evr_axi_core#(
             read        <= 0;
             write_addr  <= 0;
             write_data  <= 0;
-
+            cr          <= '0;
         end
         else begin
             mmr.arready <= 0;
@@ -254,6 +339,7 @@ module evr_axi_core#(
                     LINK_TOPO_ID  : mmr.rdata <= data_t'(topoid);
                     LINK_DELAY    : mmr.rdata <= data_t'(delay);
                     TGT_DELAY     : mmr.rdata <= data_t'(tgt_delay);
+                    DELAY_COMP    : mmr.rdata <= data_t'(delay_comp);
                     default       : mmr.rdata <= '0;
                 endcase 
             end 

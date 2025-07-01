@@ -50,28 +50,47 @@ module evrTB(
     logic [31: 0] tx_data;
     logic [ 3: 0] tx_charisk;
     logic         rx_resetdone = 0;
-    logic [31: 0] rx_data = 0;
-    logic [ 3: 0] rx_charisk = 0;
+    logic [31: 0] rx_data;
+    logic [ 3: 0] rx_charisk;
+    logic [31: 0] rx_usr_data = 0;
+    logic [ 3: 0] rx_usr_charisk = 0;
 
+    logic user_transaction = 0;
 
-    int rx_data_cnt = 0;
+    beacon_cnt_t beacon_cnt = BEACON_PERIOD;
+    logic        beacon_req;
+    logic        event_req;
+
+    assign  beacon_req = beacon_cnt == 0;
+    assign  event_req  = beacon_cnt[2:0] == 0;
+
     always_ff @(posedge sfp_rx_clk) begin
-        if(rx_data_cnt == 0) begin
-            rx_data     <= ALIGNMENT_WORD;
-            rx_charisk  <= ALIGNMENT_IS_K;
-            rx_data_cnt <= 4;
-        end else if(rx_data_cnt == 1) begin
-            rx_data     <= BEACON_WORD;
-            rx_charisk  <= BEACON_IS_K;
-            rx_data_cnt <= rx_data_cnt - 1;
-        end else if(rx_data_cnt == 2) begin
-            rx_data     <= {EVENT_COMMA, 24'h123456};
-            rx_charisk  <= 'h8;
-            rx_data_cnt <= rx_data_cnt - 1;
+        if(app_rst) begin
+            beacon_cnt   <= BEACON_PERIOD;
         end else begin
-            rx_data     <= '0;
-            rx_charisk  <= '0;
-            rx_data_cnt <= rx_data_cnt - 1;
+            if(beacon_cnt == 0) begin
+                beacon_cnt   <= BEACON_PERIOD;
+            end else begin
+                beacon_cnt   <= beacon_cnt - 1;
+            end
+        end
+    end
+
+    always_comb begin
+        if(user_transaction) begin
+            rx_data     = rx_usr_data;
+            rx_charisk  = rx_usr_charisk;
+        end else begin
+            if(beacon_req) begin
+                rx_data     = BEACON_WORD;
+                rx_charisk  = BEACON_IS_K;
+            end else if(event_req) begin
+                rx_data     = {EVENT_COMMA, 24'h123456};
+                rx_charisk  = 'h8;
+            end else begin
+                rx_data     = '0;
+                rx_charisk  = '0;
+            end
         end
     end
 
@@ -102,13 +121,101 @@ module evrTB(
         .out_packet(out_packet)
     );
 
+    axi_master axi_master_i(
+        .aclk(app_clk),
+        .aresetn(app_rst),
+        .axi(mmr)
+    );
+
+    logic [31:0] status;
+    logic [31:0] topo_id;
+    logic [31:0] measured_delay;
+    logic [31:0] delay_comp;
+
     initial begin
         app_rst <= 1;
         for(int i = 0; i < 10; i++)
-            @(posedge app_clk)
+            @(posedge app_clk);
         app_rst <= 0;
 
         #100us;
+        user_transaction <= 1;
+        @(posedge app_clk);
+        rx_usr_data    <= TOPO_ID_PACKET_START;
+        rx_usr_charisk <= PACKET_START_IS_K;
+        @(posedge app_clk);
+        rx_usr_data    <= 'h123456789;
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= TOPO_ID_PACKET_START + 'h123456789;
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= '0;
+        rx_usr_charisk <= '0;
+
+        @(posedge app_clk);
+        rx_usr_data    <= MEAS_DELAY_PACKET_START;
+        rx_usr_charisk <= PACKET_START_IS_K;
+        @(posedge app_clk);
+        rx_usr_data    <= 'h1001000; // 64,5 такта
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= 'h7; // fine
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= MEAS_DELAY_PACKET_START + 'h1001000 + 'h7;
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= '0;
+        rx_usr_charisk <= '0;
+
+        @(posedge app_clk);
+        rx_usr_data    <= TGT_DELAY_PACKET_START;
+        rx_usr_charisk <= PACKET_START_IS_K;
+        @(posedge app_clk);
+        rx_usr_data    <= 'h1060000; // 70 тактов
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= TGT_DELAY_PACKET_START + 'h1040000;
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= '0;
+        rx_usr_charisk <= '0;
+        user_transaction <= 0;
+
+        #10us;
+        axi_master_i.write('h04, 'h1);
+
+        $timeformat(-3, 5, " ms");
+
+        wait(DUT.dc_status == 4'h1);
+        $display("Get compensation INITIAL state at %t\n", $realtime);
+        #100us;
+        axi_master_i.read('h00, status);
+        axi_master_i.read('h1C, delay_comp);
+        $display("EVR status:\t %x", status);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
+
+        wait(DUT.dc_status == 4'h3);
+        $display("Get compensation ONE_CYCLE state at %t\n", $realtime);
+        #100us;
+        axi_master_i.read('h00, status);
+        axi_master_i.read('h1C, delay_comp);
+        $display("EVR status:\t %x", status);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
+
+        wait(DUT.dc_status == 4'h7);
+        $display("Get compensation FINE state at %t\n", $realtime);
+        #100us;
+        axi_master_i.read('h00, status);
+        axi_master_i.read('h1C, delay_comp);
+        $display("EVR status:\t %x", status);
+        $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
+        $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
+
+
         $stop();
     end
 
