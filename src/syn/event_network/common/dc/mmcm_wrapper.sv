@@ -1,20 +1,16 @@
 module mmcm_wrapper(
-        input         clk_in1,
-        input         clk_in2,
-        input         clk_in_sel,
-        
-        output        clk_out1,
+    input  logic  clk_in1,
+    input  logic  clk_in2,
+    input  logic  clk_in_sel,
+    
+    output logic  clk_out1,
 
-        // Dynamic phase shift ports
-        input         psclk,
-        input         psen,
-        input         psincdec,
-        output        psdone,
+    input  logic  ph_inc,
+    input  logic  ph_dec,
 
-        // Status and control signals
-        input         resetn,
-        output        locked
-    );
+    input  logic  reset,
+    output logic  locked
+);
     logic clk_in1_clk_wiz;
     logic clk_in2_clk_wiz;
     IBUF clkin1_ibufg
@@ -30,7 +26,13 @@ module mmcm_wrapper(
     logic        clkfbout_buf;
 
     logic        locked_int;
-    logic        reset_high;
+
+
+    logic        psclk;
+    logic        psen;
+    logic        psincdec;
+    logic        psdone;
+    logic        psreset;
 
     `ifdef SYNTHESIS // костыль, потому что у mmcm2 в симуляции не работает fine phase shift
     MMCME2_ADV
@@ -42,15 +44,15 @@ module mmcm_wrapper(
         .COMPENSATION         ("ZHOLD"),
         .STARTUP_WAIT         ("FALSE"),
         .DIVCLK_DIVIDE        (1),
-        .CLKFBOUT_MULT_F      (5.000),
+        .CLKFBOUT_MULT_F      (8.000),
         .CLKFBOUT_PHASE       (0.000),
         .CLKFBOUT_USE_FINE_PS ("FALSE"),
-        .CLKOUT0_DIVIDE_F     (5.000),
+        .CLKOUT0_DIVIDE_F     (8.000),
         .CLKOUT0_PHASE        (0.000),
         .CLKOUT0_DUTY_CYCLE   (0.500),
         .CLKOUT0_USE_FINE_PS  ("TRUE"),
-        .CLKIN1_PERIOD        (8.000),
-        .CLKIN2_PERIOD        (8.000)
+        .CLKIN1_PERIOD        (5.714),
+        .CLKIN2_PERIOD        (5.714)
     )
     mmcm_adv_inst
     (
@@ -86,9 +88,8 @@ module mmcm_wrapper(
         .CLKINSTOPPED        (),
         .CLKFBSTOPPED        (),
         .PWRDWN              (1'b0),
-        .RST                 (reset_high)
+        .RST                 (reset || psreset)
     );
-    assign reset_high = ~resetn; 
 
     assign locked = locked_int;
 
@@ -100,66 +101,25 @@ module mmcm_wrapper(
     (.O   (clk_out1),
         .I   (clk_out1_clk_wiz));
 
-endmodule
 
+    assign psclk = clk_out1;
 
-module mmcm_controller
-    #(
-        parameter PERIOD_NS = 10
-    )
-    (
-        input  logic aresetn,
-        input  logic clk,
-
-        input  logic incdec,
-
-        output logic psen,
-        output logic psincdec,
-        input  logic psdone
-    );
-    localparam CYCLES = 1000000000 / PERIOD_NS; // clk in one second
-    localparam CNT_W  = $clog2(CYCLES);
-
-    typedef enum {
-        IDLE,
-        WRITE,
-        WAIT
-    } state_t;
-
-    state_t state, next_state;
-
-    logic [CNT_W-1:0] cnt;
-
-
-    assign psincdec = incdec;
-    assign psen     = state == WRITE;
-
-    always_ff @(posedge clk) begin
-    if (!aresetn) begin
-        state <= IDLE;
-        cnt <= '0;
+    logic clk_in_sel_prev;
+    always_ff @(posedge clk_in1) begin
+        clk_in_sel_prev <= clk_in_sel;
     end
-    else begin
-        state <= next_state;
-        if(state == IDLE)
-            cnt <= cnt + 1;
-        else 
-            cnt <= '0;
-    end
-    end 
+    assign psreset = clk_in_sel ^ clk_in_sel_prev;
 
-    always_comb begin
-    if (!aresetn) begin
-        next_state = IDLE;
-    end
-    else begin
-        case (state)
-            IDLE:   next_state = cnt == CYCLES ? WRITE : IDLE;
-            WRITE:  next_state = WAIT;
-            WAIT:   next_state = psdone ? IDLE : WAIT;
-        endcase        
-    end
-    end
 
+    always_ff @(posedge psclk) begin
+        if (ph_inc) begin
+            psen        <= 1;
+            psincdec    <= 1;
+        end else if (ph_dec) begin
+            psen        <= 1;
+            psincdec    <= 0;
+        end else 
+            psen <= 0;
+    end
 
 endmodule
