@@ -36,6 +36,7 @@ module evg
     assign out_packet.tvalid = 0;
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
+    typedef logic [DELAY_INT_W             -1: 0] beacon_cnt_t;
     typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
 
     logic [3:0] delay_st;

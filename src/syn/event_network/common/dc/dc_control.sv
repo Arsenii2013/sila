@@ -151,7 +151,7 @@ module dc_control
         .clk(app_clk),
         .rst(app_rst || state == mfsmERROR),
 
-        .in(delay_t'(sample) << (FRAC_W-1)),
+        .in(delay_t'(sample) << (FRAC_W)),
         .in_upd(sample_upd),
         .out(delay_comp),
         .out_upd(delay_comp_upd)

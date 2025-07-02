@@ -130,7 +130,7 @@ module evr
 // System packets
     topo_id_t topo_id;
     delay_t link_delay, tgt_delay;
-    logic tgt_delay_upd;
+    logic tgt_delay_recv;
     logic [3:0] link_delay_st;
     logic link_delay_recv;
 
@@ -149,11 +149,12 @@ module evr
         .meas_delay_st(link_delay_st),
         .meas_delay_recv(link_delay_recv),
         .tgt_delay(tgt_delay),
-        .tgt_delay_recv(tgt_delay_upd),
+        .tgt_delay_recv(tgt_delay_recv),
         .in(system_stream)
     );
 
 // Delay compensation
+    logic mmcm_locked;
     logic dc_ena;
     logic [3:0] dc_status;
     delay_t delay_comp;
@@ -176,7 +177,7 @@ module evr
     fifo_wrapper #(
         .DEPTH(MAX_COMPENSATION)
     ) fifo_i (
-        .app_rst(app_rst),
+        .app_rst(app_rst || !mmcm_locked),
         .app_clk(app_clk),
         .rx_clk(rx_clk),
 
@@ -185,8 +186,8 @@ module evr
         .data_out(fifo_out_data),
         .isk_out(fifo_out_isk),
 
-        .fifo_inc(fifo_inc),
-        .fifo_dec(fifo_dec),
+        .fifo_inc(fifo_inc && !full),
+        .fifo_dec(fifo_dec && !empty),
 
         .full(full),
         .empty(empty)
@@ -203,7 +204,7 @@ module evr
         .ph_dec(pll_ph_dec),
 
         .reset(0),
-        .locked()
+        .locked(mmcm_locked)
     );
 
     dc_control #(
@@ -211,7 +212,7 @@ module evr
         .FRAC_W(DELAY_FRAC_W)
     ) dc_control_i (
         .app_clk(app_clk),
-        .app_rst(app_rst || !dc_ena),
+        .app_rst(app_rst || !dc_ena || !mmcm_locked),
 
         .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
         .rx_clk(rx_clk),
@@ -225,7 +226,7 @@ module evr
     
         .dc_status(dc_status),
         .delay_req(tgt_delay - link_delay),
-        .delay_req_upd(tgt_delay_upd),
+        .delay_req_upd(tgt_delay_recv),
         
         .delay_comp(delay_comp)
     );
