@@ -44,7 +44,8 @@ module topEVG(
 
     input  logic       sysclk_n,
     input  logic       sysclk_p,
-    output logic [3:0] led
+    output logic [3:0] led,
+    output logic       event_pulse
 );
     logic app_clk;
     logic app_aresetn = 1;
@@ -184,6 +185,8 @@ module topEVG(
     axi_stream_if #(.DW(32)) evg1_in_packet[4]();
     axi_stream_if #(.DW(32)) evg1_out_packet[4]();
 
+    logic [23:0] ev;
+
     evg evg1(
         .beacon_clk(sfp_tx_clk[0]),
 
@@ -205,13 +208,26 @@ module topEVG(
         .app_rst(app_reset),
         .mmr(mmr[EVG1]),
         
-        .ev(), 
+        .ev(ev), 
         .trig(),
         .in_packet(evg1_in_packet[0]),
         .out_packet(evg1_out_packet[0])
     );
 
+    event_generator event_generator_i(
+        .clk(app_clk),
+        .rst(app_reset),
+        .ev(ev)
+    );
+
+    event_comparator event_comparator_i(
+        .clk(app_clk),
+        .rst(app_reset),
+        .ev(ev),
+        .pulse(event_pulse)
+    );
+
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];
-    assign led[3] = sfp_aligned[0];
+    assign led[3] = event_pulse;
 endmodule
