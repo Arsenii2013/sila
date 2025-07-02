@@ -176,7 +176,7 @@ module evrTB(
         rx_usr_data    <= 'h1060000; // 70 тактов
         rx_usr_charisk <= 'h0;
         @(posedge app_clk);
-        rx_usr_data    <= TGT_DELAY_PACKET_START + 'h1040000;
+        rx_usr_data    <= TGT_DELAY_PACKET_START + 'h1060000;
         rx_usr_charisk <= 'h0;
         @(posedge app_clk);
         rx_usr_data    <= '0;

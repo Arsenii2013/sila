@@ -1,3 +1,5 @@
+`include "evn.svh"
+
 module dc_control
 #(
     INT_W  = 16,

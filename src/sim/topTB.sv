@@ -47,12 +47,12 @@ module topTB(
     logic sfp_tx_n [2][4];
     logic sfp_tx_p [2][4];
 
-    always @(sfp_tx_p[0][0])    sfp_rx_p[1][2]    <= #(PROPAGATION_DELAY) sfp_tx_p[0][0];
-    always @(sfp_tx_n[0][0])    sfp_rx_n[1][2]    <= #(PROPAGATION_DELAY) sfp_tx_n[0][0];
-    always @(sfp_tx_p[1][2])    sfp_rx_p[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_p[1][2];
-    always @(sfp_tx_n[1][2])    sfp_rx_n[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_n[1][2];
+    always @(sfp_tx_p[0][0])    sfp_rx_p[1][0]    <= #(PROPAGATION_DELAY) sfp_tx_p[0][0];
+    always @(sfp_tx_n[0][0])    sfp_rx_n[1][0]    <= #(PROPAGATION_DELAY) sfp_tx_n[0][0];
+    always @(sfp_tx_p[1][0])    sfp_rx_p[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_p[1][0];
+    always @(sfp_tx_n[1][0])    sfp_rx_n[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_n[1][0];
 
-    top DUT1(
+    topEVG DUT_EVG(
         .sysclk_n(~sysclk[0]),
         .sysclk_p(sysclk[0]),
         .REFCLK_SFP_n(~REFCLK_SFP[0]),
@@ -65,7 +65,7 @@ module topTB(
         .led(led)
     );
 
-    top DUT2(
+    topEVR DUT_EVR(
         .sysclk_n(~sysclk[1]),
         .sysclk_p(sysclk[1]),
         .REFCLK_SFP_n(~REFCLK_SFP[1]),
