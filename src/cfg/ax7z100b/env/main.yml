@@ -1,7 +1,7 @@
 parameters:
     VARIANT_NAME        : = ARGUMENTS['bv']
     PROJECT_NAME        : = VARIANT_NAME
-    TOP_NAME            : top
+    TOP_NAME            : topEVG
     TESTBENCH_NAME      : topTB
     DEVICE              : xc7z100ffg900-2
     

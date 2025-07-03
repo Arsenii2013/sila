@@ -8,7 +8,7 @@ module evr_system_packet_reciever(
     output logic [TOPO_ID_W-1: 0] topo_id,
     output logic                  topo_id_recv,
     output logic [DELAY_W  -1: 0] meas_delay,
-    output logic [          4: 0] meas_delay_st,
+    output logic [          3: 0] meas_delay_st,
     output logic                  meas_delay_recv,
     output logic [DELAY_W  -1: 0] tgt_delay,
     output logic                  tgt_delay_recv,

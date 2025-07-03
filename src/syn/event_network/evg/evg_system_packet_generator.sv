@@ -8,7 +8,7 @@ module evg_system_packet_generator(
     input  logic [TOPO_ID_W-1: 0] topo_id,
     input  logic                  send_topo_id,
     input  logic [DELAY_W  -1: 0] meas_delay,
-    input  logic [          4: 0] meas_delay_st,
+    input  logic [          3: 0] meas_delay_st,
     input  logic                  send_meas_delay,
     input  logic [DELAY_W  -1: 0] tgt_delay,
     input  logic                  send_tgt_delay,

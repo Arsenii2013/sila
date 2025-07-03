@@ -1,3 +1,5 @@
 
 sources:
     - src/sim/topTB.sv
+    - src/sim/xpm_fifo.sv
+    - src/syn/topEVR.sv

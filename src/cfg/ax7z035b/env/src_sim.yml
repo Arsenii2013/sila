@@ -1,3 +1,6 @@
 
 sources:
     - src/sim/topTB.sv
+    - src/sim/xpm_fifo.sv
+    - src/syn/topEVG.sv
+    - src/syn/event_generator.sv

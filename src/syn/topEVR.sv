@@ -3,9 +3,10 @@
 `include "axi4_lite_if.svh"
 `include "axi_stream.svh"
 `include "top.svh"
+`include "topEVR.svh"
 `include "cfg_params.svh"
 
-module top(
+module topEVR(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
     inout wire [14:0]   DDR_addr,
@@ -43,7 +44,8 @@ module top(
 
     input  logic       sysclk_n,
     input  logic       sysclk_p,
-    output logic [3:0] led
+    output logic [3:0] led,
+    output logic       event_pulse
 );
     logic app_clk;
     logic app_aresetn = 1;
@@ -123,7 +125,7 @@ module top(
     mem_wrapper_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
-        .axi(mmr[RESERVED1]),
+        .axi(mmr[RESERVED1_EVR]),
         .offset('0)
     );
 
@@ -176,15 +178,17 @@ module top(
     sfp_control sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[RESERVED2]),
+        .mmr(mmr[RESERVED2_EVR]),
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) evg1_in_packet[4]();
-    axi_stream_if #(.DW(32)) evg1_out_packet[4]();
+    axi_stream_if #(.DW(32)) evr1_in_packet[4]();
+    axi_stream_if #(.DW(32)) evr1_out_packet[4]();
 
-    evg evg1(
-        .beacon_clk(app_clk),
+    logic [23:0] ev;
+
+    evr evr1(
+        .beacon_clk(sfp_tx_clk[0]),
 
         //------GTP signals-------
         .aligned(sfp_aligned[0]),
@@ -202,45 +206,22 @@ module top(
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg
         .app_rst(app_reset),
-        .mmr(mmr[EVG1]),
-        
-        .ev(), 
-        .trig(),
-        .in_packet(evg1_in_packet[0]),
-        .out_packet(evg1_out_packet[0])
-    );
-
-    axi_stream_if #(.DW(32)) evr1_in_packet[4]();
-    axi_stream_if #(.DW(32)) evr1_out_packet[4]();
-
-    evr evr1(
-        //.beacon_clk(app_clk_evr1), not used, becouse no delay compensation
-
-        //------GTP signals-------
-        .aligned(sfp_aligned[2]),
-
-        .tx_resetdone(tx_reset_done[2]),
-        .tx_clk(sfp_tx_clk[2]),
-        .tx_data(sfp_tx_data[2]),
-        .tx_charisk(sfp_tx_is_k[2]),
-
-        .rx_resetdone(rx_reset_done[2]),
-        .rx_clk(sfp_rx_clk[2]),
-        .rx_data(sfp_rx_data[2]),
-        .rx_charisk(sfp_rx_is_k[2]),
-
-        //------Application signals-------
-        .app_clk(), // app_clk generated only by first evg
-        .app_rst(app_reset),
         .mmr(mmr[EVR1]),
         
-        .ev(), 
+        .ev(ev), 
         .trig(),
         .in_packet(evr1_in_packet[2]),
         .out_packet(evr1_out_packet[2])
     );
 
+    event_comparator event_comparator_i(
+        .clk(app_clk),
+        .rst(app_reset),
+        .ev(ev),
+        .pulse(event_pulse)
+    );
+
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];
-    assign led[3] = sfp_aligned[0];
+    assign led[3] = event_pulse;
 endmodule

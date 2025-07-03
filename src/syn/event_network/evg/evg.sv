@@ -36,9 +36,10 @@ module evg
     assign out_packet.tvalid = 0;
 
     typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
+    typedef logic [DELAY_INT_W             -1: 0] beacon_cnt_t;
     typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
 
-    logic [4:0] delay_st;
+    logic [3:0] delay_st;
 // Event
     logic ev_valid;
     assign ev_valid = ev != '0;
@@ -131,25 +132,28 @@ module evg
         end
     end 
 
-    // Отправка topology id по началу измерения задержки
-    logic [4:0] prev_delay_st = '0;
-    logic send_topo_id        = 0;
+    // Определения подключения приемника
+    logic [3:0] prev_delay_st = '0;
+    logic device_connected    = 0;
 
     always_ff @(posedge app_clk) begin
         if(app_rst) begin
-            send_topo_id      <= 0;
-            prev_delay_st     <= '0;
+            device_connected     <= 0;
+            prev_delay_st        <= '0;
         end else begin
             if(delay_upd && prev_delay_st[0] == 0 && delay_st[0] == 1) begin
-                send_topo_id      <= 1;
+                device_connected <= 1;
             end else begin
-                send_topo_id      <= 0;
+                device_connected <= 0;
             end
             if(delay_upd)
-                prev_delay_st <= delay_st;
+                prev_delay_st    <= delay_st;
         end
     end 
+
     topo_id_t topo_id;
+    delay_t tgt_delay;
+    logic   tgt_delay_upd;
     assign topo_id = 'h12345678;
     system_stream_if #(.DW(32)) system_stream();
     evg_system_packet_generator evg_system_packet_generator_i(
@@ -157,12 +161,12 @@ module evg
         .tx_clk(tx_clk),
         .app_rst(app_rst),
         .topo_id(topo_id),
-        .send_topo_id(send_topo_id),
+        .send_topo_id(device_connected),
         .meas_delay(delay),
         .meas_delay_st(delay_st),
         .send_meas_delay(send_delay),
-        .tgt_delay('h0),
-        .send_tgt_delay(0),
+        .tgt_delay(tgt_delay),
+        .send_tgt_delay(tgt_delay_upd || device_connected),
         .out(system_stream)
     );
 
@@ -228,7 +232,8 @@ module evg
         .topoid(topo_id),
         .delay(delay),
         .delay_status(delay_st),
-        .tgt_delay()
+        .tgt_delay(tgt_delay),
+        .tgt_delay_upd(tgt_delay_upd)
     );
 
 endmodule
@@ -245,8 +250,9 @@ module evg_axi_core#(
     input  logic                                 aligned,
     input  logic [TOPO_ID_W               -1: 0] topoid,
     input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay,
-    input  logic [4                         : 0] delay_status,
-    output logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay
+    input  logic [3                         : 0] delay_status,
+    output logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay,
+    output logic                                 tgt_delay_upd
 );
 //MMR logic 
     typedef logic [ADDR_W-1:0] addr_t;
@@ -263,8 +269,9 @@ module evg_axi_core#(
     } evr_regs;
 
     typedef struct packed {
+        logic [3:0] link_delay_st;
+        logic [2:0] none;
         logic       link_up;
-        logic [4:0] link_delay_st;
     } sr_t;
 
     typedef struct packed {
@@ -280,6 +287,7 @@ module evg_axi_core#(
     logic write_data;
 
     assign sr.link_up       = aligned;
+    assign sr.none          = '0;
     assign sr.link_delay_st = delay_status;
 
     always_ff @(posedge app_clk) begin
@@ -296,7 +304,8 @@ module evg_axi_core#(
             write_addr  <= 0;
             write_data  <= 0;
 
-            tgt_delay   <= '0;
+            tgt_delay     <= '0;
+            tgt_delay_upd <= 0;
         end
         else begin
             mmr.arready <= 0;
@@ -334,6 +343,7 @@ module evg_axi_core#(
                 mmr.wready <= 1;
             end 
 
+            tgt_delay_upd <= 0;
             mmr.bvalid <= write_addr && write_data;
             if(mmr.bready && write_addr && write_data) begin
                 write_addr <= 0;
@@ -342,7 +352,10 @@ module evg_axi_core#(
                     CR        : cr <= cr_t'(data);
                     CR_S      : cr <= cr | cr_t'(data);
                     CR_C      : cr <= cr & ~(cr_t'(data));
-                    TGT_DELAY : tgt_delay <= data;
+                    TGT_DELAY : begin
+                        tgt_delay_upd <= 1;
+                        tgt_delay     <= data;
+                    end
                     default;
                 endcase
             end 
