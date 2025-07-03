@@ -185,7 +185,6 @@ module evrTB(
 
         #10us;
         axi_master_i.write('h04, 'h1);
-
         $timeformat(-3, 5, " ms");
 
         wait(DUT.dc_status == 4'h1);
@@ -205,6 +204,22 @@ module evrTB(
         $display("EVR status:\t %x", status);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
         $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
+
+        #1ms;
+        user_transaction <= 1;
+        @(posedge app_clk);
+        rx_usr_data    <= TGT_DELAY_PACKET_START;
+        rx_usr_charisk <= PACKET_START_IS_K;
+        @(posedge app_clk);
+        rx_usr_data    <= 'h3000000; // 768 тактов
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= TGT_DELAY_PACKET_START + 'h3000000;
+        rx_usr_charisk <= 'h0;
+        @(posedge app_clk);
+        rx_usr_data    <= '0;
+        rx_usr_charisk <= '0;
+        user_transaction <= 0;
 
         wait(DUT.dc_status == 4'h7);
         $display("Get compensation FINE state at %t\n", $realtime);

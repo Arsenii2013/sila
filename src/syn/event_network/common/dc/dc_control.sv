@@ -84,6 +84,10 @@ module dc_control
             fine_time         <= LOCK_TIME;
         end else begin
             state <= next;
+            if(state == mfsmZERO) begin
+                one_cycle_time <= LOCK_TIME;
+                fine_time      <= LOCK_TIME;
+            end
             if(state == mfsmINITIAL) begin
                 if(delay_comp_upd) begin
                     if(error_in_one_cycle) begin
@@ -109,7 +113,7 @@ module dc_control
         if(sample_error) begin
             next = mfsmERROR;
         end else if(delay_req_upd) begin
-            next = mfsmINITIAL;
+            next = mfsmZERO;
         end else begin
             case (state)
                 mfsmZERO     : next = delay_comp_upd      ? mfsmINITIAL  : mfsmZERO;
