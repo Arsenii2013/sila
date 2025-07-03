@@ -20,6 +20,7 @@ module dc_control
     output logic                    pll_ph_dec,
 
     input  logic                    dc_ena,
+    input  logic                    fifo_rst_busy,
  
     output logic [             3:0] dc_status,
     input  logic [INT_W+FRAC_W-1:0] delay_req,
@@ -141,7 +142,7 @@ module dc_control
         .beacon_clk(beacon_clk),
 
         .app_clk(app_clk),
-        .app_rst(app_rst || state == mfsmERROR),
+        .app_rst(app_rst || fifo_rst_busy  || state == mfsmERROR),
 
         .fine(state == mfsmFINE),
         .sample_upd(sample_upd),
@@ -155,7 +156,7 @@ module dc_control
         .N(FILTER_N)
     ) filter_i (
         .clk(app_clk),
-        .rst(app_rst || state == mfsmERROR),
+        .rst(app_rst || fifo_rst_busy || state == mfsmERROR),
 
         .in(delay_t'(sample) << (FRAC_W)),
         .in_upd(sample_upd),

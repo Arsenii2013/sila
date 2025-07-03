@@ -18,9 +18,14 @@ module fifo_wrapper
     input  logic         fifo_inc,
     input  logic         fifo_dec,
 
-    output logic         full,
-    output logic         empty
+    output logic         almost_full,
+    output logic         almost_empty,
+    output logic         rst_busy
 );
+    logic rd_rst_busy, wr_rst_busy;
+
+    assign rst_busy = rd_rst_busy || wr_rst_busy;
+
     xpm_fifo_async #(
         .CASCADE_HEIGHT(0),
         .CDC_SYNC_STAGES(2),
@@ -32,7 +37,7 @@ module fifo_wrapper
         .READ_MODE("std"),
         .RELATED_CLOCKS(0),
         .SIM_ASSERT_CHK(1),
-        .USE_ADV_FEATURES("0000"),
+        .USE_ADV_FEATURES("0F0F"),
         .WRITE_DATA_WIDTH(36)
     ) xpm_fifo_async_inst (
         .rd_clk(app_clk),
@@ -45,6 +50,10 @@ module fifo_wrapper
 
         .empty(empty),
         .full(full),
-        .rst(app_rst)
+        .almost_empty(almost_empty),
+        .almost_full(almost_full),
+        .rst(app_rst),
+        .rd_rst_busy(rd_rst_busy),
+        .wr_rst_busy(wr_rst_busy)
     );
 endmodule

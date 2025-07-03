@@ -156,6 +156,7 @@ module evr
 // Delay compensation
     logic mmcm_locked;
     logic dc_ena;
+    logic fifo_rst_busy;
     logic [3:0] dc_status;
     delay_t delay_comp;
 
@@ -174,6 +175,7 @@ module evr
     assign ev = (fifo_out_data[31:24] == EVENT_COMMA && fifo_out_isk == 'h8        )
                 ? fifo_out_data[23:0] : '0;
 
+    logic fifo_almost_full, fifo_almost_empty;
     fifo_wrapper #(
         .DEPTH(MAX_COMPENSATION)
     ) fifo_i (
@@ -186,11 +188,12 @@ module evr
         .data_out(fifo_out_data),
         .isk_out(fifo_out_isk),
 
-        .fifo_inc(fifo_inc && !full),
-        .fifo_dec(fifo_dec && !empty),
+        .fifo_inc(fifo_inc && !fifo_almost_full),
+        .fifo_dec(fifo_dec && !fifo_almost_empty),
 
-        .full(full),
-        .empty(empty)
+        .almost_full(fifo_almost_full),
+        .almost_empty(fifo_almost_empty),
+        .rst_busy(fifo_rst_busy)
     );
 
     mmcm_wrapper mmcm_i(
@@ -214,6 +217,7 @@ module evr
         .app_clk(app_clk),
         .app_rst(app_rst || !mmcm_locked),
         .dc_ena(dc_ena),
+        .fifo_rst_busy(fifo_rst_busy),
 
         .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
         .rx_clk(rx_clk),
