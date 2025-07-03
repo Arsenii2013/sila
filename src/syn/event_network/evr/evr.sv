@@ -212,7 +212,8 @@ module evr
         .FRAC_W(DELAY_FRAC_W)
     ) dc_control_i (
         .app_clk(app_clk),
-        .app_rst(app_rst || !dc_ena || !mmcm_locked),
+        .app_rst(app_rst || !mmcm_locked),
+        .dc_ena(dc_ena),
 
         .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
         .rx_clk(rx_clk),

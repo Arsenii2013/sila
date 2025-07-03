@@ -18,6 +18,8 @@ module dc_control
     output logic                    fifo_dec,
     output logic                    pll_ph_inc,
     output logic                    pll_ph_dec,
+
+    input  logic                    dc_ena,
  
     output logic [             3:0] dc_status,
     input  logic [INT_W+FRAC_W-1:0] delay_req,
@@ -76,7 +78,7 @@ module dc_control
     assign dc_status = state;
 
     always_ff @(posedge app_clk) begin
-        if(app_rst) begin
+        if(app_rst || !dc_ena) begin
             state <= mfsmZERO;
             one_cycle_time    <= LOCK_TIME;
             fine_time         <= LOCK_TIME;
