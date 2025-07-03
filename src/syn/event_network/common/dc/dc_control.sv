@@ -164,41 +164,132 @@ module dc_control
     );
 
     // Inc/Dec forming
-    localparam CNT_WIDTH = FILTER_N-3;
-    localparam CNT_MAX   = 2 ** CNT_WIDTH;
+    // при увеличении задержки на 2**16 ошибка меньше 1 такта будет через 
+    // ln(2××16/1) = 11 постоянных времени. Возьмем степень 2**3 = 8 постоянных времени
+    // а для подстройки фазы используем гораздо меньший период например 1/8 постоянной времени
+    localparam CNT_WIDTH = FILTER_N+3;
+    localparam CNT_FIFO  = 2**CNT_WIDTH - 1;
+    localparam CNT_PLL   = 2**(CNT_WIDTH - 6) - 1;
 
     logic [CNT_WIDTH-1: 0] pulse_form_cnt = 1;
     logic                  pulse_form;
 
     assign pulse_form = pulse_form_cnt == 0;
 
-    always_ff @(posedge app_clk) begin
+    always_ff @(posedge app_clk || !dc_ena) begin
         if(app_rst) begin
             pulse_form_cnt <= 1;
         end else begin
-            if(delay_comp_upd || pulse_form_cnt == 0) begin
+            if(delay_comp_upd) begin
                 pulse_form_cnt <= pulse_form_cnt - 1;
+            end else if (pulse_form_cnt == 0) begin
+                if(state <= mfsmINITIAL) begin
+                    pulse_form_cnt <= CNT_FIFO;
+                end else begin
+                    pulse_form_cnt <= CNT_PLL;
+                end
+            end else begin
+                pulse_form_cnt <= pulse_form_cnt;
             end
         end
     end
 
+    inc_dec_former #(
+        .PULSE_CNT_W(INT_W),
+        .TIMEOUT(31)
+    ) fifo_inc_dec (
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .sign(sign),
+        .count(delay_err_int),
+        .start(pulse_form && state <= mfsmINITIAL),
+        .inc(fifo_inc),
+        .dec(fifo_dec)
+    );
+
+    inc_dec_former #(
+        .PULSE_CNT_W(FRAC_W),
+        .TIMEOUT(31)
+    ) pll_inc_dec (
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .sign(sign),
+        .count(delay_err_frac > FINE_TRESH + PLL_HIST ? 1 : 0),
+        .start(pulse_form && state > mfsmINITIAL),
+        .inc(pll_ph_inc),
+        .dec(pll_ph_dec)
+    );
+endmodule
+
+module inc_dec_former #(
+    parameter PULSE_CNT_W       = 16,
+    parameter TIMEOUT           = 31
+)
+(
+    input  logic                     app_clk,
+    input  logic                     app_rst,
+    input  logic                     sign,
+    input  logic [PULSE_CNT_W -1: 0] count,
+    input  logic                     start,
+    output logic                     inc,
+    output logic                     dec
+);    
+    typedef logic [PULSE_CNT_W     -1: 0] count_t;
+    typedef logic [$clog2(TIMEOUT)   : 0] timeout_cnt_t;
+
+    typedef enum
+    {
+        WAIT_START,
+        PULSE,
+        PULSE_TIMEOUT
+    } state_t;
+
+    count_t count_reg = '0;
+    logic   sign_reg  = 0;
+    state_t state = WAIT_START, next;
+
+    timeout_cnt_t timeout_cnt = TIMEOUT;
+
+    assign inc =  sign_reg ? state == PULSE : 0;
+    assign dec = !sign_reg ? state == PULSE : 0;
+
     always_ff @(posedge app_clk) begin
-        fifo_inc   <= 0;
-        fifo_dec   <= 0;
-        pll_ph_inc <= 0;
-        pll_ph_dec <= 0;
-        if (pulse_form) begin
-            if (state <= mfsmINITIAL) begin
-                if (delay_err_int != 0) begin
-                    if (sign) fifo_inc <= 1;
-                    else      fifo_dec <= 1;
-                end
-            end else begin
-                if (delay_err_frac > FINE_TRESH + PLL_HIST) begin
-                    if (sign) pll_ph_inc <= 1;
-                    else      pll_ph_dec <= 1;
-                end
+        if(app_rst) begin
+            count_reg   <= '0;
+            sign_reg    <= 0;
+            state       <= WAIT_START;
+            timeout_cnt <= TIMEOUT;
+        end else begin
+            state <= next;
+            if(state == WAIT_START && start) begin
+                count_reg   <= count;
+                sign_reg    <= sign;
+            end
+            if(state == PULSE) begin
+                count_reg   <= count_reg   - 1;
+                timeout_cnt <= TIMEOUT;
+            end
+            if(state == PULSE_TIMEOUT) begin
+                timeout_cnt <= timeout_cnt - 1;
             end
         end
     end
+
+    always_comb begin
+        case (state)
+            WAIT_START    : next = start             ? PULSE_TIMEOUT  : WAIT_START;
+            PULSE         : next = PULSE_TIMEOUT;
+            PULSE_TIMEOUT : begin
+                if(timeout_cnt == '0) begin
+                    if(count_reg == '0)
+                        next = WAIT_START;
+                    else 
+                        next = PULSE;
+                end else 
+                    next = PULSE_TIMEOUT;
+            end
+            default       : next = WAIT_START;
+        endcase
+    end
+
 endmodule
