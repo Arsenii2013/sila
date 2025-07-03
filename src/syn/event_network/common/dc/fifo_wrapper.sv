@@ -18,11 +18,22 @@ module fifo_wrapper
     input  logic         fifo_inc,
     input  logic         fifo_dec,
 
-    output logic         almost_full,
-    output logic         almost_empty,
     output logic         rst_busy
 );
     logic rd_rst_busy, wr_rst_busy;
+    logic almost_empty, almost_full;
+    logic fifo_inc_sync, fifo_dec_sync;
+
+    xpm_cdc_pulse fifo_dec_sunchronizer_i(
+        .dest_clk(rx_clk),
+        .dest_pulse(fifo_dec_sync),
+        .dest_rst(app_rst),
+        .src_clk(app_clk),
+        .src_pulse(fifo_dec),
+        .src_rst(app_rst)
+    );
+
+    assign fifo_inc_sync = fifo_inc;
 
     assign rst_busy = rd_rst_busy || wr_rst_busy;
 
@@ -41,11 +52,11 @@ module fifo_wrapper
         .WRITE_DATA_WIDTH(36)
     ) xpm_fifo_async_inst (
         .rd_clk(app_clk),
-        .rd_en(!fifo_inc),
+        .rd_en(!(fifo_inc_sync && !almost_full && !((data_out == BEACON_WORD) && (isk_out == BEACON_IS_K)))),
         .dout({data_out, isk_out}),
 
         .wr_clk(rx_clk),
-        .wr_en(!fifo_dec),
+        .wr_en(!(fifo_dec_sync && !almost_empty && !((data_in == BEACON_WORD) && (isk_in == BEACON_IS_K)))),
         .din({data_in, isk_in}),
 
         .empty(empty),

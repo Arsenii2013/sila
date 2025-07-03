@@ -177,8 +177,8 @@ module dc_control
 
     assign pulse_form = pulse_form_cnt == 0;
 
-    always_ff @(posedge app_clk || !dc_ena) begin
-        if(app_rst) begin
+    always_ff @(posedge app_clk) begin
+        if(app_rst || !dc_ena) begin
             pulse_form_cnt <= 1;
         end else begin
             if(delay_comp_upd) begin

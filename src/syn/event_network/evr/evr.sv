@@ -175,7 +175,6 @@ module evr
     assign ev = (fifo_out_data[31:24] == EVENT_COMMA && fifo_out_isk == 'h8        )
                 ? fifo_out_data[23:0] : '0;
 
-    logic fifo_almost_full, fifo_almost_empty;
     fifo_wrapper #(
         .DEPTH(MAX_COMPENSATION)
     ) fifo_i (
@@ -188,11 +187,9 @@ module evr
         .data_out(fifo_out_data),
         .isk_out(fifo_out_isk),
 
-        .fifo_inc(fifo_inc && !fifo_almost_full),
-        .fifo_dec(fifo_dec && !fifo_almost_empty),
+        .fifo_inc(fifo_inc),
+        .fifo_dec(fifo_dec),
 
-        .almost_full(fifo_almost_full),
-        .almost_empty(fifo_almost_empty),
         .rst_busy(fifo_rst_busy)
     );
 
