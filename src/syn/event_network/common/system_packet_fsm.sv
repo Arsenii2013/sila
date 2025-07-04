@@ -160,6 +160,11 @@ module system_stream_mux4 #(
             out.tisk     = in[3].tisk;
             out.tvalid   = in[3].tvalid;
             in[3].tready = out.tready;
+        end else begin
+            out.tdata    = '0;
+            out.tisk     = '0;
+            out.tvalid   = 0;
+            in[0].tready = 0;
         end
 
         if(out.tvalid) 
@@ -173,6 +178,8 @@ module system_stream_mux4 #(
                 current_id = 2;
             else if(in[3].tvalid)
                 current_id = 3;
+            else 
+                current_id = 0;
         end
     end
 endmodule
