@@ -214,6 +214,33 @@ module topEVG(
         .out_packet(evg1_out_packet[0])
     );
 
+    evg evg2(
+        .beacon_clk(sfp_tx_clk[1]),
+
+        //------GTP signals-------
+        .aligned(sfp_aligned[1]),
+
+        .tx_resetdone(tx_reset_done[1]),
+        .tx_clk(sfp_tx_clk[1]),
+        .tx_data(sfp_tx_data[1]),
+        .tx_charisk(sfp_tx_is_k[1]),
+
+        .rx_resetdone(rx_reset_done[1]),
+        .rx_clk(sfp_rx_clk[1]),
+        .rx_data(sfp_rx_data[1]),
+        .rx_charisk(sfp_rx_is_k[1]),
+
+        //------Application signals-------
+        .app_clk(), // app_clk generated only by first evg
+        .app_rst(app_reset),
+        .mmr(mmr[EVG2]),
+        
+        .ev(ev), 
+        .trig(),
+        .in_packet(evg1_in_packet[1]),
+        .out_packet(evg1_out_packet[1])
+    );
+
     event_generator event_generator_i(
         .clk(app_clk),
         .rst(app_reset),
