@@ -24,7 +24,7 @@ module delay_measure #(
 
     localparam delay_t  FINE_TRESH      = delay_t'((1<<FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6/2**9 = 11,16 ps
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
-    localparam          FILTER_N        = 12;
+    localparam          FILTER_N        = 16;
     localparam          LOCK_TIME       = 2**FILTER_N;
     localparam          BEACON_PERIOD_W = $clog2(BEACON_PERIOD);
 

@@ -37,7 +37,7 @@ module dc_control
                                         // шаг фазы равен 1/(56*1400) = 13 пс
                                         // 1/175e6 * (2**-9 + 2**-11) = 13,95 пс
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
-    localparam          FILTER_N        = 12;
+    localparam          FILTER_N        = 16;
     localparam          LOCK_TIME       = 2**FILTER_N;
     localparam          BEACON_PERIOD_W = $clog2(BEACON_PERIOD);
 
