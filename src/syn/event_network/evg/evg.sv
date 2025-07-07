@@ -110,6 +110,7 @@ module evg
     // текущим значением и прошлым отправленным больше SEND_TRESH
     localparam SEND_TRESH = delay_t'((1<<DELAY_FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6/2**9 = 11,16 ps
     delay_t last_sended_delay = '0;
+    logic [3:0] last_sended_st;
     logic   send_delay        = 0;
     logic   send_in_tresh;
 
@@ -121,13 +122,16 @@ module evg
         if(app_rst) begin
             send_delay        <= 0;
             last_sended_delay <= '0;
+            last_sended_st    <= '0;
         end else begin
-            if(delay_upd && !send_in_tresh) begin
+            if(delay_upd && (!send_in_tresh || last_sended_st != delay_st)) begin
                 send_delay        <= 1;
                 last_sended_delay <= delay;
+                last_sended_st    <= delay_st;
             end else begin
                 send_delay        <= 0;
                 last_sended_delay <= last_sended_delay;
+                last_sended_st    <= last_sended_st;
             end
         end
     end 

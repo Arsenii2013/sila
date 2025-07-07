@@ -20,10 +20,10 @@ set_property PACKAGE_PIN AD6 [get_ports {sfp_rx_p[0]}]
 set_property -dict { PACKAGE_PIN AE18   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[0] }];
 set_property -dict { PACKAGE_PIN AE17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[1] }];
 
-set_property LOC GTXE2_CHANNEL_X0Y4 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt3_gtwizard_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y5 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt2_gtwizard_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y6 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt1_gtwizard_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_i/inst/gtwizard_init_i/gtwizard_i/gt0_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y4 [get_cells gtwizard_i/gtwizard_4/inst/gtwizard_init_i/gtwizard_i/gt3_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y5 [get_cells gtwizard_i/gtwizard_5/inst/gtwizard_init_i/gtwizard_i/gt2_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y6 [get_cells gtwizard_i/gtwizard_6/inst/gtwizard_init_i/gtwizard_i/gt1_gtwizard_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_7/inst/gtwizard_init_i/gtwizard_i/gt0_gtwizard_i/gtxe2_i]
 set_property RXSLIDE_MODE PMA [get_cells -hierarchical -filter {NAME =~ *gtxe2_i}]
 
 set_property PACKAGE_PIN AC8 [get_ports {REFCLK_SFP_p}]
