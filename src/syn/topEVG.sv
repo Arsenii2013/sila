@@ -157,7 +157,7 @@ module topEVG(
     gtwizard_wrapper gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
-        .sysclk(app_clk), 
+        .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
         .tx_reset_done(tx_reset_done),
