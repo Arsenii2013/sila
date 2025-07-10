@@ -170,7 +170,7 @@ module dc_control
     // а для подстройки фазы используем гораздо меньший период например 1/8 постоянной времени
     localparam CNT_WIDTH = FILTER_N+3;
     localparam CNT_FIFO  = 2**CNT_WIDTH - 1;
-    localparam CNT_PLL   = 2**(CNT_WIDTH - 6) - 1;
+    localparam CNT_PLL   = 2**(CNT_WIDTH - 3) - 1;
 
     logic [CNT_WIDTH-1: 0] pulse_form_cnt = 1;
     logic                  pulse_form;
@@ -197,7 +197,7 @@ module dc_control
 
     inc_dec_former #(
         .PULSE_CNT_W(INT_W),
-        .TIMEOUT(31)
+        .TIMEOUT(32)
     ) fifo_inc_dec (
         .app_clk(app_clk),
         .app_rst(app_rst),
@@ -210,12 +210,12 @@ module dc_control
 
     inc_dec_former #(
         .PULSE_CNT_W(FRAC_W),
-        .TIMEOUT(31)
+        .TIMEOUT(32)
     ) pll_inc_dec (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .sign(sign),
-        .count(delay_err_frac > FINE_TRESH + PLL_HIST ? 1 : 0),
+        .count((delay_err_int != 0 || (delay_err_frac > FINE_TRESH + PLL_HIST)) ? 1 : 0),
         .start(pulse_form && state > mfsmINITIAL),
         .inc(pll_ph_inc),
         .dec(pll_ph_dec)
@@ -224,7 +224,7 @@ endmodule
 
 module inc_dec_former #(
     parameter PULSE_CNT_W       = 16,
-    parameter TIMEOUT           = 31
+    parameter TIMEOUT           = 32
 )
 (
     input  logic                     app_clk,
@@ -236,7 +236,7 @@ module inc_dec_former #(
     output logic                     dec
 );    
     typedef logic [PULSE_CNT_W     -1: 0] count_t;
-    typedef logic [$clog2(TIMEOUT)   : 0] timeout_cnt_t;
+    typedef logic [$clog2(TIMEOUT) -1: 0] timeout_cnt_t;
 
     typedef enum
     {
@@ -249,7 +249,7 @@ module inc_dec_former #(
     logic   sign_reg  = 0;
     state_t state = WAIT_START, next;
 
-    timeout_cnt_t timeout_cnt = TIMEOUT;
+    timeout_cnt_t timeout_cnt = TIMEOUT-1;
 
     assign inc =  sign_reg ? state == PULSE : 0;
     assign dec = !sign_reg ? state == PULSE : 0;
@@ -259,7 +259,7 @@ module inc_dec_former #(
             count_reg   <= '0;
             sign_reg    <= 0;
             state       <= WAIT_START;
-            timeout_cnt <= TIMEOUT;
+            timeout_cnt <= TIMEOUT-1;
         end else begin
             state <= next;
             if(state == WAIT_START && start) begin
@@ -268,7 +268,7 @@ module inc_dec_former #(
             end
             if(state == PULSE) begin
                 count_reg   <= count_reg   - 1;
-                timeout_cnt <= TIMEOUT;
+                timeout_cnt <= TIMEOUT-1;
             end
             if(state == PULSE_TIMEOUT) begin
                 timeout_cnt <= timeout_cnt - 1;
@@ -291,6 +291,49 @@ module inc_dec_former #(
             end
             default       : next = WAIT_START;
         endcase
+    end
+
+endmodule
+
+
+module inc_dec_formerTB ();
+    logic app_clk, app_rst;
+    sys_clk_gen
+    #(
+        .halfcycle (4000), // 4000 ps = 125 MHz
+        .offset    (0)
+    ) CLK_GEN (
+        .sys_clk (app_clk)
+    );
+
+    logic sign, start;
+    logic [15:0] cnt;
+
+    inc_dec_former DUT(
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .sign(sign),
+        .count(cnt),
+        .start(start),
+        .inc(),
+        .dec()
+    );
+
+
+    initial begin
+        sign    <= 0;
+        cnt     <= 1;
+        app_rst <= 1;
+        for(int i = 0; i < 10; i++)
+            @(posedge app_clk);
+        app_rst <= 0;
+        @(posedge app_clk);
+        @(posedge app_clk);
+        start   <= 1;
+        @(posedge app_clk);
+        start   <= 0;
+        #10us;
+        $stop();
     end
 
 endmodule
