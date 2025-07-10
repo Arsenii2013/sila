@@ -22,9 +22,10 @@ module delay_measure #(
     typedef logic [INT_W+FRAC_W     -1: 0] delay_t;
     typedef logic [INT_W            -1: 0] sample_t;
 
-    localparam delay_t  FINE_TRESH      = delay_t'((1<<FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6/2**9 = 11,16 ps
+    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 12)); 
+                                        // Для 125 МГц интервал 1/125e6 * 2**-10 = 7,8 пс
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
-    localparam          FILTER_N        = 16;
+    localparam          FILTER_N        = 20;
     localparam          LOCK_TIME       = 2**FILTER_N;
     localparam          BEACON_PERIOD_W = $clog2(BEACON_PERIOD);
 
@@ -143,7 +144,7 @@ module delay_measure #(
         .clk(app_clk),
         .rst(app_rst || lock_lost),
 
-        .in(delay_t'(sample) << (FRAC_W-1)),
+        .in(delay_t'(sample) << (FRAC_W-1)), // сдвиг для приведения к delay_t и -1 для деления на два
         .in_upd(sample_upd),
         .out(average),
         .out_upd(average_upd)

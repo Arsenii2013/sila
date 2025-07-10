@@ -31,13 +31,14 @@ module dc_control
     typedef logic [INT_W+FRAC_W     -1: 0] delay_t;
     typedef logic [INT_W            -1: 0] sample_t;
 
-    localparam delay_t  FINE_TRESH      = delay_t'((1<<FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6 * 2**-9 = 11,16 пс
-    localparam delay_t  PLL_HIST        = delay_t'((1<<FRAC_W) >> 9 + (1<<FRAC_W) >> 11); 
-                                        // Для 175 МГц с множителем 8, F_vco = 1,4 ГГц 
-                                        // шаг фазы равен 1/(56*1400) = 13 пс
-                                        // 1/175e6 * (2**-9 + 2**-11) = 13,95 пс
+    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 12)); 
+                                        // Для 125 МГц интервал 1/125e6 * 2**-10 = 7,8 пс
+    localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 11) + ((1<<FRAC_W) >> 12)); 
+                                        // Для 125 МГц с множителем 11, F_vco = 1,375 ГГц 
+                                        // шаг фазы равен 1/(56*1375) = 12,9 пс
+                                        // 1/175e6 * (2**-10 + 2**-100) = 13,67 пс
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
-    localparam          FILTER_N        = 16;
+    localparam          FILTER_N        = 20;
     localparam          LOCK_TIME       = 2**FILTER_N;
     localparam          BEACON_PERIOD_W = $clog2(BEACON_PERIOD);
 
