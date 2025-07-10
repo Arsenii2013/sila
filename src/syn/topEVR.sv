@@ -217,6 +217,7 @@ module topEVR(
     event_comparator event_comparator_i(
         .clk(app_clk),
         .rst(app_reset),
+        .mmr(mmr[RESERVED3_EVR]),
         .ev(ev),
         .pulse(event_pulse)
     );

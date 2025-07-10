@@ -5,7 +5,8 @@ module event_generator(
     input  logic        rst,
     output logic [23:0] ev
 );
-    logic [15:0] cnt = '0;
+    localparam CNT_W = 12;
+    logic [CNT_W-1:0] cnt = '0;
 
     always_ff @(posedge clk) begin
         if(rst) begin
@@ -14,6 +15,5 @@ module event_generator(
             cnt <= cnt + 1;
         end
     end
-
-    assign ev = cnt == 0 ? 'hBEEF : 0;
+    assign ev = cnt[CNT_W-3:0] == '0 ? cnt[CNT_W-1 -: 2] + 1 : 0;
 endmodule
