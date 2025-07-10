@@ -207,8 +207,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[0]),
         .gt0_rxusrclk2_in               (rx_clk[0]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -292,8 +292,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[1]),
         .gt0_rxusrclk2_in               (rx_clk[1]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -377,8 +377,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[2]),
         .gt0_rxusrclk2_in               (rx_clk[2]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -462,8 +462,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[3]),
         .gt0_rxusrclk2_in               (rx_clk[3]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -547,8 +547,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[0]),
         .gt0_rxusrclk2_in               (rx_clk[0]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -632,8 +632,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[1]),
         .gt0_rxusrclk2_in               (rx_clk[1]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -717,8 +717,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[2]),
         .gt0_rxusrclk2_in               (rx_clk[2]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
@@ -802,8 +802,8 @@ module gtwizard_wrapper(
         .gt0_rxusrclk_in                (rx_clk[3]),
         .gt0_rxusrclk2_in               (rx_clk[3]),
         //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
-        .gt0_rxphmonitor_out            (),
-        .gt0_rxphslipmonitor_out        (),
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
         //------------------- Receive Ports - RX Equalizer Ports -------------------
         .gt0_rxdfelpmreset_in           ('0),
         .gt0_rxmonitorout_out           (),
