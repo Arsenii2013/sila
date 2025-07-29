@@ -169,9 +169,9 @@ module dc_control
     // при увеличении задержки на 2**16 ошибка меньше 1 такта будет через 
     // ln(2××16/1) = 11 постоянных времени. Возьмем степень 2**3 = 8 постоянных времени
     // а для подстройки фазы используем гораздо меньший период например 1/8 постоянной времени
-    localparam CNT_WIDTH = FILTER_N+3;
-    localparam CNT_FIFO  = 2**CNT_WIDTH - 1;
-    localparam CNT_PLL   = 2**(CNT_WIDTH - 3) - 1;
+    localparam CNT_FIFO  = 2**(FILTER_N+3) - 1;
+    localparam CNT_PLL   = 2**(FILTER_N-2) - 1;
+    localparam CNT_WIDTH = $clog2(CNT_FIFO);
 
     logic [CNT_WIDTH-1: 0] pulse_form_cnt = 1;
     logic                  pulse_form;
