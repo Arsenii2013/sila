@@ -8,14 +8,14 @@ set_property -dict { PACKAGE_PIN E8   IOSTANDARD DIFF_SSTL15 } [get_ports { sysc
 set_property -dict { PACKAGE_PIN F9   IOSTANDARD DIFF_SSTL15 } [get_ports { sysclk_p }];
 create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports sysclk_p]
 
-set_property PACKAGE_PIN AH2 [get_ports {sfp_tx_p[3]}]
-set_property PACKAGE_PIN AH6 [get_ports {sfp_rx_p[3]}]
-set_property PACKAGE_PIN AF2 [get_ports {sfp_tx_p[2]}]
-set_property PACKAGE_PIN AG4 [get_ports {sfp_rx_p[2]}]
-set_property PACKAGE_PIN AE4 [get_ports {sfp_tx_p[1]}]
-set_property PACKAGE_PIN AF6 [get_ports {sfp_rx_p[1]}]
-set_property PACKAGE_PIN AD2 [get_ports {sfp_tx_p[0]}]
-set_property PACKAGE_PIN AD6 [get_ports {sfp_rx_p[0]}]
+set_property PACKAGE_PIN AH2 [get_ports {sfp_tx_p[0]}]
+set_property PACKAGE_PIN AH6 [get_ports {sfp_rx_p[0]}]
+set_property PACKAGE_PIN AF2 [get_ports {sfp_tx_p[1]}]
+set_property PACKAGE_PIN AG4 [get_ports {sfp_rx_p[1]}]
+set_property PACKAGE_PIN AE4 [get_ports {sfp_tx_p[2]}]
+set_property PACKAGE_PIN AF6 [get_ports {sfp_rx_p[2]}]
+set_property PACKAGE_PIN AD2 [get_ports {sfp_tx_p[3]}]
+set_property PACKAGE_PIN AD6 [get_ports {sfp_rx_p[3]}]
 
 set_property -dict { PACKAGE_PIN AE18   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[0] }];
 set_property -dict { PACKAGE_PIN AE17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[1] }];
@@ -24,7 +24,7 @@ set_property LOC GTXE2_CHANNEL_X0Y4 [get_cells gtwizard_i/gtwizard_4_i/inst/gtwi
 set_property LOC GTXE2_CHANNEL_X0Y5 [get_cells gtwizard_i/gtwizard_5_i/inst/gtwizard_5_i/gt0_gtwizard_5_i/gtxe2_i]
 set_property LOC GTXE2_CHANNEL_X0Y6 [get_cells gtwizard_i/gtwizard_6_i/inst/gtwizard_6_i/gt0_gtwizard_6_i/gtxe2_i]
 set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_7_i/inst/gtwizard_7_i/gt0_gtwizard_7_i/gtxe2_i]
-set_property RXSLIDE_MODE PMA [get_cells *gtxe2_i]
+set_property RXSLIDE_MODE PMA [get_cells -regexp -hierarchical .*gtxe2_i ]
 
 set_property PACKAGE_PIN AC8 [get_ports {REFCLK_SFP_p}]
 set_property PACKAGE_PIN AC7 [get_ports {REFCLK_SFP_n}]

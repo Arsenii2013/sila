@@ -24,7 +24,7 @@ set_property LOC GTXE2_CHANNEL_X0Y8 [get_cells gtwizard_i/gtwizard_8_i/inst/gtwi
 set_property LOC GTXE2_CHANNEL_X0Y9 [get_cells gtwizard_i/gtwizard_9_i/inst/gtwizard_9_i/gt0_gtwizard_9_i/gtxe2_i]
 set_property LOC GTXE2_CHANNEL_X0Y10 [get_cells gtwizard_i/gtwizard_10_i/inst/gtwizard_10_i/gt0_gtwizard_10_i/gtxe2_i]
 set_property LOC GTXE2_CHANNEL_X0Y11 [get_cells gtwizard_i/gtwizard_11_i/inst/gtwizard_11_i/gt0_gtwizard_11_i/gtxe2_i]
-set_property RXSLIDE_MODE PMA [get_cells *gtxe2_i]
+set_property RXSLIDE_MODE PMA [get_cells -regexp -hierarchical .*gtxe2_i ]
 
 set_property PACKAGE_PIN AA6 [get_ports {REFCLK_SFP_p}]
 set_property PACKAGE_PIN AA5 [get_ports {REFCLK_SFP_n}]
