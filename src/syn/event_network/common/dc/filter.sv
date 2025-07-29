@@ -23,21 +23,23 @@ module filter #(
 );
 
 //------------------------------------------------
-localparam ACC_W = INT_W + FRAC_W;
+localparam ACC_W = INT_W + FRAC_W + N;
+localparam DELAY_W = INT_W + FRAC_W;
 
 //------------------------------------------------
-typedef logic [ACC_W -1: 0] acc_t;
+typedef logic [ACC_W   -1: 0] acc_t;
+typedef logic [DELAY_W -1: 0] delay_t;
 
 //------------------------------------------------
 acc_t acc = '0;
 acc_t fdb;
 acc_t sample;
 
-assign out    = acc;
+assign out    = delay_t'(acc[ACC_W-1 -: DELAY_W]);
 
 //------------------------------------------------
-assign fdb    = acc >> N;
-assign sample = in  >> N;
+assign fdb    = acc         >> N;
+assign sample = acc_t'(in);
 
 always_ff @(posedge clk) begin
     if (rst) begin
