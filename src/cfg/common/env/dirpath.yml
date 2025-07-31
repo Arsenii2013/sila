@@ -17,3 +17,4 @@ parameters:
     CFG_COMMON     : = os.path.join(COMMON, 'env')
     SCRIPT_COMMON  : = os.path.join(COMMON, 'script')
     BUILD          : = os.path.join(ROOT,   'build', main.VARIANT_NAME)
+    AXI_CORES      : = os.path.join(BUILD,  'axi_cores')
