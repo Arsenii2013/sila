@@ -1,9 +1,12 @@
 `include "axi4_lite_if.svh"
-`include "top.svh"
 `include "topEVG.svh"
-`include "topEVR.svh"
 
-module PS_wrapper_sv(
+module PS_wrapper_sv #(
+    parameter GP0_ADDR_W   = 32,
+    parameter GP0_DATA_W   = 32,
+    parameter MMR_DEV_CNT2 = 1
+)
+(
     `ifdef SYNTHESIS
     inout wire [14:0]  DDR_addr,
     inout wire [2:0]   DDR_ba,
@@ -113,8 +116,8 @@ module PS_wrapper_sv(
     end
 
     typedef logic [63: 0] uint64_t;
-    localparam uint64_t RSRV2_BASE_ADDR= GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * RESERVED2_EVG;
-    localparam uint64_t EVG1_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG1;
+    localparam uint64_t RSRV2_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::RESERVED1;
+    localparam uint64_t EVG1_BASE_ADDR  = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EVG1;
 
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
     assign GP_0_awaddr = GP_0_iternal.awaddr;
