@@ -89,7 +89,7 @@ module linkTB(
     always_ff @(posedge evg_rx_clk) evg_rx_data    <= evr_tx_data_propagated;
     always_ff @(posedge evg_rx_clk) evg_rx_charisk <= evr_tx_charisk_propagated;
 
-    axi4_lite_if #(.AW(GP0_ADDR_W), .DW(GP0_DATA_W)) evg_mmr();
+    axi4_lite_if #(.AW(32), .DW(32)) evg_mmr();
 
     axi_stream_if #(.DW(32)) evg_in_packet();
     axi_stream_if #(.DW(32)) evg_out_packet();
@@ -121,7 +121,7 @@ module linkTB(
         .out_packet(evg_out_packet)
     );
 
-    axi4_lite_if #(.AW(GP0_ADDR_W), .DW(GP0_DATA_W)) evr_mmr();
+    axi4_lite_if #(.AW(32), .DW(32)) evr_mmr();
 
     axi_stream_if #(.DW(32)) evr_in_packet();
     axi_stream_if #(.DW(32)) evr_out_packet();
