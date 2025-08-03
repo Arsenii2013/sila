@@ -252,7 +252,7 @@ class BuildBase:
 
     #---------------------------------------------------------------------------
     def add_main_targes(self):
-        self.WLib               = self.envx.CompileWorkLib(self.src_syn + self.src_sim + self.envx['BD_WRAPPERS'] + self.axi_cores_sv)
+        self.WLib               = self.envx.CompileWorkLib(self.axi_cores_sv + self.src_syn + self.src_sim + self.envx['BD_WRAPPERS'])
         self.VivadoProject      = self.envx.CreateVivadoProject(self.xpr_deps + self.axi_cores_yml, self.All_IP, self.bd_ooc)
         self.SynthVivadoProject = self.envx.LaunchSynthVivadoProject(self.VivadoProject, self.syn_deps)
         self.ImplVivadoProject  = self.envx.LaunchImplVivadoProject(self.SynthVivadoProject)
@@ -267,7 +267,6 @@ class BuildBase:
 
 
     def setup_explicit_dependensies(self):
-        Depends(self.AxiCoresYML,        self.AxiCores)
         Depends(self.WLib,               [self.AxiCores, self.IP_SimLib, self.bd_ooc, self.cfg_header_trgs])
         Depends(self.LaunchQuestaRun,    self.WLib)
         Depends(self.VivadoProject,      [self.AxiCores, self.AxiCoresYML, self.cfg_header_trgs, self.cfg_tcl_trgs])
@@ -336,6 +335,10 @@ class BuildBase:
                 bd_ooc     : Create block designs in out-of-context manner
 
                 simlib     : IP SimLib
+
+                axi_cores  : generate SystemVerilog AXI cores from RDL
+                map_html   : generate HTML register map from RDL
+                map_docx   : generate docx register map from RDL
 
                 hlss       : create Tcl scripts for compiling HDL modules from HLS sources
                 hls        : create HDL modules from HLS sources
