@@ -86,27 +86,32 @@ class BuildBase:
         return list( itertools.chain.from_iterable( [read_sources(i) for i in src_cfg.split()] ) )
     
     def make_axi_cores_sv(self, src_rdl):
-        src_file_names = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
         return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_pkg.sv",
                                             f"{self.dirs.AXI_CORES}/{x}.sv"], 
-                                            src_file_names, [])
+                                            src_stems, [])
     
     def make_axi_cores_html(self, src_rdl):
-        src_file_names = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
-        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}/"], src_file_names, [])
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_html/"], src_stems, [])
     
     def make_axi_cores_docx(self, src_rdl):
-        src_file_names = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
-        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}.docx"], src_file_names, [])
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}.docx"], src_stems, [])
+    
+    def make_axi_cores_py_pkg(self, src_rdl):
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_py/"], src_stems, [])
     
     def add_axi_cores(self):
         axi_cores = '' + (self.src_dict['axi_cores'] if 'axi_cores' in self.src_dict else '')
 
-        self.axi_cores_rdl  = self.merge_source_list(axi_cores)
-        self.axi_cores_sv   = self.make_axi_cores_sv(self.axi_cores_rdl)
-        self.axi_cores_yml  = [f"{self.dirs.AXI_CORES}/axi_cores.yml"]
-        self.axi_cores_html = self.make_axi_cores_html(self.axi_cores_rdl)
-        self.axi_cores_docx = self.make_axi_cores_docx(self.axi_cores_rdl)
+        self.axi_cores_rdl    = self.merge_source_list(axi_cores)
+        self.axi_cores_sv     = self.make_axi_cores_sv(self.axi_cores_rdl)
+        self.axi_cores_yml    = [f"{self.dirs.AXI_CORES}/axi_cores.yml"]
+        self.axi_cores_html   = self.make_axi_cores_html(self.axi_cores_rdl)
+        self.axi_cores_docx   = self.make_axi_cores_docx(self.axi_cores_rdl)
+        self.axi_cores_py_pkg = self.make_axi_cores_py_pkg(self.axi_cores_rdl)
 
     def add_sources(self):
         
@@ -195,6 +200,7 @@ class BuildBase:
         self.AxiCoresYML        = self.envx.GenerateAxiCoresYML(self.axi_cores_sv, self.axi_cores_yml)
         self.AxiCoresHTML       = self.envx.GenerateRegisterMapHTML(self.axi_cores_rdl, self.axi_cores_html)
         self.AxiCoresDocx       = self.envx.GenerateRegisterMapDocx(self.axi_cores_rdl, self.axi_cores_docx)
+        self.AxiCoresPyPkg      = self.envx.GenerateAxiCoresPythonPackage(self.axi_cores_rdl, self.axi_cores_py_pkg)
 
     def add_hls_script_targets(self):
         self.HlsCSynScripts = self.envx.CreateHlsCSynthScript(self.hls)
@@ -304,6 +310,7 @@ class BuildBase:
         self.envx.Alias("axi_cores",  self.AxiCores)
         self.envx.Alias("map_html",   self.AxiCoresHTML)
         self.envx.Alias("map_docx",   self.AxiCoresDocx)
+        self.envx.Alias("py_pkg",     self.AxiCoresPyPkg)
 
         self.envx.Alias('simlib',     self.IP_SimLib)
         self.envx.Alias('hdl-params', self.cfg_header_trgs)
@@ -339,6 +346,7 @@ class BuildBase:
                 axi_cores  : generate SystemVerilog AXI cores from RDL
                 map_html   : generate HTML register map from RDL
                 map_docx   : generate docx register map from RDL
+                py_pkg     : generate python package from RDL
 
                 hlss       : create Tcl scripts for compiling HDL modules from HLS sources
                 hls        : create HDL modules from HLS sources

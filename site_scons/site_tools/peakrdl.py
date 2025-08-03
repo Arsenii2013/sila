@@ -102,6 +102,30 @@ def registerMapDocx(target, source, env):
     print_success('*'*35 + '\n')
     return None
 
+def pythonPackage(target, source, env):
+    
+    trg      = target[0]
+    trg_path = str(trg)
+    trg_dir  = str(trg.dir)
+
+    src_path = list(map(str, source))
+
+    print_action('generate python package for axi cores from' + reduce(lambda acc, x: acc + f' {x}', src_path, ''))
+
+    for s in src_path:
+        cmd = f"{env['PEAKRDL']} python {s} -o {trg_dir}/{os.path.splitext(os.path.basename(s))[0]}_py/  "
+        rcode = pexec(cmd, env['USER_DEFINED_PARAMS']['ROOT_DIR'], exec_env=env['ENV'])
+        if rcode:
+            print_error('\n' + '*'*60)
+            print_error('E: axi_core generation error')
+            print_error('*'*60 + '\n')
+            Execute( Delete(trg_path) )
+            return -2
+    
+    print_success('\n' + '*'*35)
+    print_success('axi_cores successfully generated')
+    print_success('*'*35 + '\n')
+    return None
 
 def generate_axi_cores_system_verilog(env, src = [], trg = []):
     return env.AxiCoresSystemVerilog(trg, src, env)
@@ -114,6 +138,9 @@ def generate_register_map_html(env, src = [], trg = []):
 
 def generate_register_map_docx(env, src = [], trg = []):
     return env.RegisterMapDocx(trg, src, env)
+
+def generate_python_package(env, src = [], trg = []):
+    return env.AxiCoresPythonPackage(trg, src, env)
 
 
 def generate(env):
@@ -146,14 +173,16 @@ def generate(env):
     #
     AxiCoresSystemVerilog = Builder(action = systemVerilog)
     AxiCoresYML           = Builder(action = ymlList)
-    RegisterMapHTML       = Builder(action = registerMapHTML)
+    RegisterMapHTML       = Builder(action = registerMapHTML, target_factory=env.fs.Dir)
     RegisterMapDocx       = Builder(action = registerMapDocx)
+    AxiCoresPythonPackage = Builder(action = pythonPackage, target_factory=env.fs.Dir)
     
     Builders = {
         'AxiCoresSystemVerilog'    : AxiCoresSystemVerilog,
         'AxiCoresYML'              : AxiCoresYML,
         'RegisterMapHTML'          : RegisterMapHTML,
-        'RegisterMapDocx'          : RegisterMapDocx
+        'RegisterMapDocx'          : RegisterMapDocx,
+        'AxiCoresPythonPackage'    : AxiCoresPythonPackage
     }
     
     env.Append(BUILDERS = Builders)
@@ -166,6 +195,7 @@ def generate(env):
     env.AddMethod(generate_axi_cores_yml,             'GenerateAxiCoresYML')
     env.AddMethod(generate_register_map_html,         'GenerateRegisterMapHTML')
     env.AddMethod(generate_register_map_docx,         'GenerateRegisterMapDocx')
+    env.AddMethod(generate_python_package,            'GenerateAxiCoresPythonPackage')
         
 #-------------------------------------------------------------------------------
 def exists(env):
