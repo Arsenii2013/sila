@@ -1,0 +1,71 @@
+
+`include "device_info_axi_core.rdl"
+`include "evr_axi_core.rdl"
+
+`define GP0_ADDR_W       21
+`define GP0_DATA_W       32
+
+`define MMR_BLOCK_ADDR_W 16 // 0x10000 per device
+`define MMR_BLOCK_DATA_W `GP0_DATA_W
+`define MMR_BLOCK_SIZE   2**`MMR_BLOCK_ADDR_W
+
+`define MMR_DEV_ADDR_W   (`GP0_ADDR_W - `MMR_BLOCK_ADDR_W)
+`define MMR_DEV_CNT      2**`MMR_DEV_ADDR_W
+`define MAX_DEVICE       (`MMR_DEV_CNT - 1)
+
+`define DEBUG_DEVICE     (`MMR_DEV_CNT / 2)
+
+addrmap EVR_reg_map {
+    name = "Блок приемника событий";
+    desc = "
+        Блок приемника событий, слейв сети.
+    ";
+    default accesswidth = `MMR_BLOCK_DATA_W;
+    default alignment   = 0x4;
+    alignment   = `MMR_BLOCK_SIZE;
+    
+    enum gp0_params{
+        GP0_ADDR_W       = `GP0_ADDR_W;
+        GP0_DATA_W       = `GP0_DATA_W;
+    };
+    enum mmr_params{
+        MMR_BLOCK_ADDR_W = `MMR_BLOCK_ADDR_W;
+        MMR_BLOCK_DATA_W = `MMR_BLOCK_DATA_W;
+    };
+    enum mmr_dev_params{
+        MMR_DEV_CNT      = `MMR_DEV_CNT;
+    };
+
+    enum device_numbers{
+        DEVICE_INFO = 0;
+        RESERVED1;
+        RESERVED2;
+        EVR         = `DEBUG_DEVICE;
+        MAX_DEVICE  = `MAX_DEVICE;
+    };
+
+    device_info_axi_core device_info_axi_core  @ device_numbers::DEVICE_INFO  * `MMR_BLOCK_SIZE;
+    evr_axi_core evr_axi_core                  @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
+
+
+    regfile {
+        name = "Фейковый блок регистров";
+        desc = "
+            !!! Эти регистры не существуют, и добавлены для того,                 !!!
+            !!! чтобы генерировались enum-ы с параметрами для передачи в verilog. !!!
+            !!! При подготовке карты регистров убрать.                            !!!
+        ";
+        reg {
+            field {encode = device_numbers;} mmr_device_numbers[`MMR_DEV_ADDR_W];
+        } mmr_device_numbers;
+        reg {
+            field {encode = gp0_params;} gp0_axi_params[`GP0_DATA_W];
+        } gp0_axi_params;
+        reg {
+            field {encode = mmr_params;} mmr_params[`MMR_BLOCK_DATA_W];
+        } mmr_params;
+        reg {
+            field {encode = mmr_dev_params;} mmr_dev_params[`MMR_DEV_CNT];
+        } mmr_dev_params;
+    } fake_regfile @ device_numbers::MAX_DEVICE * `MMR_BLOCK_SIZE;
+};

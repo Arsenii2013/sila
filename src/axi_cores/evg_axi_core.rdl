@@ -1,0 +1,47 @@
+addrmap evg_axi_core{
+    name = "Блок отладочных регистров оптической сети";
+
+    enum link_delay_st {
+        ZERO      = 4'h0;
+        INITIAL   = 4'h1;
+        ONE_CYCLE = 4'h3;
+        FINE      = 4'h7;
+        ERROR     = 4'h8;
+    };
+
+    reg {
+        name = "SR";
+        field {sw=r; hw=w;} link_up = 0;
+        field {sw=r; hw=w; encode=link_delay_st;} link_delay_st [7:4] = link_delay_st::ZERO;
+    } sr;
+
+    reg {
+        name = "CR";
+        field {sw=rw; hw=rw;} reserved[32] = 0;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        field {sw=w; hw=rw;} reserved[32] = 0;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        field {sw=w; hw=rw;} reserved[32] = 0;
+    } cr_c;
+
+    reg {
+        name = "LINK_TOPO_ID";
+        field {sw=r; hw=w;} topoid[32] = 0;
+    } topoid;
+
+    reg {
+        name = "LINK_DELAY";
+        field {sw=r; hw=w;} link_delay[32] = 0;
+    } link_delay;
+
+    reg {
+        name = "TGT_DELAY";
+        field {sw=rw; hw=r; swmod;} tgt_delay [32] = 0;
+    } tgt_delay;
+};

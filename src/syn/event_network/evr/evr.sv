@@ -233,147 +233,31 @@ module evr
         .delay_comp(delay_comp)
     );
 
-    evr_axi_core #(
-        .ADDR_W(GP0_ADDR_W),
-        .DATA_W(GP0_DATA_W)
-    ) evr_axi_core_i (
-        .app_clk(app_clk),
-        .app_rst(app_rst),
-        .mmr(mmr),
-        .aligned(aligned),
-        .dc_ena(dc_ena),
-        .topoid(topo_id),
-        .delay(link_delay),
-        .delay_status(link_delay_st),
-        .dc_status(dc_status),
-        .tgt_delay(tgt_delay),
-        .delay_comp(delay_comp)
+    evr_axi_core_pkg::evr_axi_core__in_t  hwif_in;
+    evr_axi_core_pkg::evr_axi_core__out_t hwif_out;
+
+    assign hwif_in.sr.link_up.next       = aligned;
+    assign hwif_in.sr.link_delay_st.next = link_delay_st;
+    assign hwif_in.sr.delay_comp_st.next = dc_status;
+
+    assign hwif_in.cr.dc_ena.next        = hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value & ~hwif_out.cr_c.dc_ena.value;
+    assign hwif_in.cr_s.dc_ena.next      = 0;
+    assign hwif_in.cr_c.dc_ena.next      = 0;
+    assign dc_ena                        = hwif_out.cr.dc_ena.value;
+
+    assign hwif_in.topoid.topoid.next         = topo_id;
+    assign hwif_in.link_delay.link_delay.next = link_delay;
+
+    assign hwif_in.tgt_delay.tgt_delay.next   = tgt_delay;
+    assign hwif_in.delay_comp.delay_comp.next = delay_comp;
+
+    evr_axi_core evr_axi_core_i(
+        .clk(app_clk),
+        .rst(app_rst),
+
+        .s_axil(mmr),
+
+        .hwif_in(hwif_in),
+        .hwif_out(hwif_out)
     );
-
-endmodule
-
-module evr_axi_core#(
-    parameter ADDR_W = 32,
-    parameter DATA_W = 32
-)(
-    input  logic                                 app_clk,
-    input  logic                                 app_rst,
-    axi4_lite_if.s                               mmr,
-
-    input  logic                                 aligned,
-    output logic                                 dc_ena,
-    input  logic [TOPO_ID_W               -1: 0] topoid,
-    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay,
-    input  logic [3                         : 0] delay_status,
-    input  logic [3                         : 0] dc_status,
-    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] tgt_delay,
-    input  logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_comp
-);
-//MMR logic 
-    typedef logic [ADDR_W-1:0] addr_t;
-    typedef logic [DATA_W-1:0] data_t;
-
-    typedef enum addr_t {
-        SR            = addr_t'(8'h00),
-        CR            = addr_t'(8'h04),
-        CR_S          = addr_t'(8'h08),
-        CR_C          = addr_t'(8'h0C),
-        LINK_TOPO_ID  = addr_t'(8'h10),
-        LINK_DELAY    = addr_t'(8'h14),
-        TGT_DELAY     = addr_t'(8'h18),
-        DELAY_COMP    = addr_t'(8'h1C)
-    } evr_regs;
-
-    typedef struct packed {
-        logic [3:0] delay_comp_st;
-        logic [3:0] link_delay_st;
-        logic [2:0] none;
-        logic       link_up;
-    } sr_t;
-
-    typedef struct packed {
-        logic dc_ena;
-    } cr_t;
-
-    sr_t sr;
-    cr_t cr = 0;
-    addr_t addr;
-    data_t data;
-    logic read;
-    logic write_addr;
-    logic write_data;
-
-    assign sr.link_up       = aligned;
-    assign sr.none          = '0;
-    assign sr.link_delay_st = delay_status;
-    assign sr.delay_comp_st = dc_status;
-
-    assign dc_ena           = cr.dc_ena;
-
-    always_ff @(posedge app_clk) begin
-        if (app_rst) begin
-            mmr.arready <= 0;
-            mmr.rvalid  <= 0;
-            mmr.awready <= 0;
-            mmr.wready  <= 0;
-            mmr.bvalid  <= 0;
-            mmr.rresp   <= '0;
-            mmr.bresp   <= '0;
-            mmr.rdata   <= '0;
-            read        <= 0;
-            write_addr  <= 0;
-            write_data  <= 0;
-            cr          <= '0;
-        end
-        else begin
-            mmr.arready <= 0;
-            if(mmr.arvalid && !read) begin
-                addr <= mmr.araddr;
-                read <= 1;
-                mmr.arready <= 1;
-            end 
-
-            mmr.rvalid <= read;
-            if(mmr.rready && read) begin
-                read <= 0;
-                case (addr)
-                    SR            : mmr.rdata <= data_t'(sr);
-                    CR            : mmr.rdata <= data_t'(cr);
-                    LINK_TOPO_ID  : mmr.rdata <= data_t'(topoid);
-                    LINK_DELAY    : mmr.rdata <= data_t'(delay);
-                    TGT_DELAY     : mmr.rdata <= data_t'(tgt_delay);
-                    DELAY_COMP    : mmr.rdata <= data_t'(delay_comp);
-                    default       : mmr.rdata <= '0;
-                endcase 
-            end 
-
-
-            mmr.awready <= 0;
-            if(mmr.awvalid && !write_addr) begin
-                addr <= mmr.awaddr;
-                write_addr  <= 1;
-                mmr.awready <= 1;
-            end 
-
-            mmr.wready <= 0;
-            if(mmr.wvalid && !write_data) begin
-                data <= mmr.wdata;
-                write_data <= 1;
-                mmr.wready <= 1;
-            end 
-
-            mmr.bvalid <= write_addr && write_data;
-            if(mmr.bready && write_addr && write_data) begin
-                write_addr <= 0;
-                write_data <= 0;
-                case (addr)
-                    CR        : cr <= cr_t'(data);
-                    CR_S      : cr <= cr | cr_t'(data);
-                    CR_C      : cr <= cr & ~(cr_t'(data));
-                    default;
-                endcase
-            end 
-            
-        end
-    end
 endmodule

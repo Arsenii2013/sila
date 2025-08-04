@@ -9,6 +9,7 @@
 import os
 import sys
 
+from functools import reduce
 from utils import *
 
 class BuildBase:
@@ -17,7 +18,7 @@ class BuildBase:
 
         self.envx = env
         
-        src_keys = ['src_syn', 'src_sim', 'ip', 'bd', 'hls']
+        src_keys = ['src_syn', 'src_sim', 'ip', 'bd', 'hls', 'axi_cores']
         for k in src_dict:
             if not k in src_keys:
                 print_error('E: invalid source key \'' + k + '\' specified for build class constructor')
@@ -31,12 +32,15 @@ class BuildBase:
         self.add_sources()
         self.setup_constr_env()
 
+        self.add_axi_cores()
+        self.add_axi_cores_targets()
         self.add_hls_script_targets()
         self.add_hls_targets()
         self.add_ip_targets()
         self.add_bd_targets()
         self.add_hdl_params_targets()
         self.add_tcl_params_targets()
+        self.add_axi_cores_targets()
         self.add_main_targes()
         self.add_phony_targes()
 
@@ -81,6 +85,34 @@ class BuildBase:
         
         return list( itertools.chain.from_iterable( [read_sources(i) for i in src_cfg.split()] ) )
     
+    def make_axi_cores_sv(self, src_rdl):
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_pkg.sv",
+                                            f"{self.dirs.AXI_CORES}/{x}.sv"], 
+                                            src_stems, [])
+    
+    def make_axi_cores_html(self, src_rdl):
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_html/"], src_stems, [])
+    
+    def make_axi_cores_docx(self, src_rdl):
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}.docx"], src_stems, [])
+    
+    def make_axi_cores_py_pkg(self, src_rdl):
+        src_stems = map(lambda x: f"{(x.split('/')[-1]).split('.')[0]}", src_rdl)
+        return reduce(lambda acc, x: acc + [f"{self.dirs.AXI_CORES}/{x}_py/"], src_stems, [])
+    
+    def add_axi_cores(self):
+        axi_cores = '' + (self.src_dict['axi_cores'] if 'axi_cores' in self.src_dict else '')
+
+        self.axi_cores_rdl    = self.merge_source_list(axi_cores)
+        self.axi_cores_sv     = self.make_axi_cores_sv(self.axi_cores_rdl)
+        self.axi_cores_yml    = [f"{self.dirs.AXI_CORES}/axi_cores.yml"]
+        self.axi_cores_html   = self.make_axi_cores_html(self.axi_cores_rdl)
+        self.axi_cores_docx   = self.make_axi_cores_docx(self.axi_cores_rdl)
+        self.axi_cores_py_pkg = self.make_axi_cores_py_pkg(self.axi_cores_rdl)
+
     def add_sources(self):
         
         src_syn = '' + (self.src_dict['src_syn'] if 'src_syn' in self.src_dict else '')
@@ -118,6 +150,7 @@ class BuildBase:
         self.envx['ENV']['HOME']               = os.environ['HOME']
         self.envx['ENV']['XILINX']             = env.XILINX
         self.envx['ENV']['MENTOR']             = env.MENTOR
+        self.envx['PEAKRDL']                   = env.PEAKRDL
         self.envx['ENV']['MGLS_LICENSE_FILE']  = env.MGLS_LICENSE_FILE
         self.envx['ENV']['XILINX_VIVADO']      = env.XILINX_VIVADO
         self.envx['XILINX_VIVADO']             = env.XILINX_VIVADO
@@ -126,6 +159,7 @@ class BuildBase:
         self.envx['QUESTASIM']                 = env.QUESTASIM
         self.envx['VENDOR_LIB_PATH']           = env.VENDOR_LIB_PATH
 
+        self.envx.Tool('peakrdl')
         self.envx.Tool('vivado')
         self.envx.Tool('questa')
 
@@ -145,6 +179,8 @@ class BuildBase:
         self.envx.Append(VLOG_FLAGS = vlog_flags)
         self.envx.Append(VOPT_FLAGS = ' -O5 +acc=npr -L wlib -L unifast_ver -L unisims_ver -L unimacro_ver -L secureip -L xpm')
         self.envx.Append(VSIM_FLAGS = vsim_flags)
+        self.envx.Append(REGBOCK_FLAGS = '--cpuif axi4_lite_if --peakrdl-cfg site_scons/site_tools/peakrdl.toml --hwif-report')
+        self.envx.Append(AXI_CORES = self.dirs.AXI_CORES)
 
         # user-defined parameters
         self.envx.Append(USER_DEFINED_PARAMS = {'ROOT_DIR'      : self.envx['ROOT_PATH']})
@@ -159,6 +195,13 @@ class BuildBase:
     #
     #    Targets
     #
+    def add_axi_cores_targets(self):
+        self.AxiCores           = self.envx.GenerateAxiCoresSystemVerilog(self.axi_cores_rdl, self.axi_cores_sv)
+        self.AxiCoresYML        = self.envx.GenerateAxiCoresYML(self.axi_cores_sv, self.axi_cores_yml)
+        self.AxiCoresHTML       = self.envx.GenerateRegisterMapHTML(self.axi_cores_rdl, self.axi_cores_html)
+        self.AxiCoresDocx       = self.envx.GenerateRegisterMapDocx(self.axi_cores_rdl, self.axi_cores_docx)
+        self.AxiCoresPyPkg      = self.envx.GenerateAxiCoresPythonPackage(self.axi_cores_rdl, self.axi_cores_py_pkg)
+
     def add_hls_script_targets(self):
         self.HlsCSynScripts = self.envx.CreateHlsCSynthScript(self.hls)
 
@@ -215,8 +258,8 @@ class BuildBase:
 
     #---------------------------------------------------------------------------
     def add_main_targes(self):
-        self.WLib               = self.envx.CompileWorkLib(self.src_syn + self.src_sim + self.envx['BD_WRAPPERS'])
-        self.VivadoProject      = self.envx.CreateVivadoProject(self.xpr_deps, self.All_IP, self.bd_ooc)
+        self.WLib               = self.envx.CompileWorkLib(self.axi_cores_sv + self.src_syn + self.src_sim + self.envx['BD_WRAPPERS'])
+        self.VivadoProject      = self.envx.CreateVivadoProject(self.xpr_deps + self.axi_cores_yml, self.All_IP, self.bd_ooc)
         self.SynthVivadoProject = self.envx.LaunchSynthVivadoProject(self.VivadoProject, self.syn_deps)
         self.ImplVivadoProject  = self.envx.LaunchImplVivadoProject(self.SynthVivadoProject)
 
@@ -230,9 +273,9 @@ class BuildBase:
 
 
     def setup_explicit_dependensies(self):
-        Depends(self.WLib,               [self.IP_SimLib, self.bd_ooc, self.cfg_header_trgs])
+        Depends(self.WLib,               [self.AxiCores, self.IP_SimLib, self.bd_ooc, self.cfg_header_trgs])
         Depends(self.LaunchQuestaRun,    self.WLib)
-        Depends(self.VivadoProject,      [self.cfg_header_trgs, self.cfg_tcl_trgs])
+        Depends(self.VivadoProject,      [self.AxiCores, self.AxiCoresYML, self.cfg_header_trgs, self.cfg_tcl_trgs])
         Depends(self.bd_ooc,             [self.cfg_tcl_trgs])
         Depends(self.SynthVivadoProject, [self.cfg_header_trgs])
         Depends(self.ImplVivadoProject,  self.prj_impl_deps)
@@ -264,6 +307,11 @@ class BuildBase:
         self.envx.Alias('hlss',       self.HlsCSynScripts)
         self.envx.Alias('hls',        self.HlsCsyn)
 
+        self.envx.Alias("axi_cores",  self.AxiCores)
+        self.envx.Alias("map_html",   self.AxiCoresHTML)
+        self.envx.Alias("map_docx",   self.AxiCoresDocx)
+        self.envx.Alias("py_pkg",     self.AxiCoresPyPkg)
+
         self.envx.Alias('simlib',     self.IP_SimLib)
         self.envx.Alias('hdl-params', self.cfg_header_trgs)
         self.envx.Alias('tcl-params', self.cfg_tcl_trgs)
@@ -294,6 +342,11 @@ class BuildBase:
                 bd_ooc     : Create block designs in out-of-context manner
 
                 simlib     : IP SimLib
+
+                axi_cores  : generate SystemVerilog AXI cores from RDL
+                map_html   : generate HTML register map from RDL
+                map_docx   : generate docx register map from RDL
+                py_pkg     : generate python package from RDL
 
                 hlss       : create Tcl scripts for compiling HDL modules from HLS sources
                 hls        : create HDL modules from HLS sources

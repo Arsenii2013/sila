@@ -1,5 +1,6 @@
-build/
-vivado*
+/build/
+/vivado*
 .Xil/
 .sconsign.dblite
 *.log
+src/axi_cores/*.sv

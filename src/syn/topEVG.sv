@@ -59,13 +59,21 @@ module topEVG(
         .I (clkfbout));
 
     logic PS_clk, PS_aresetn, PS_reset;
-    axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0();
-    axi4_lite_if #(.DW(MMR_DATA_W), .AW(MMR_ADDR_W)) mmr[MMR_DEV_CNT2]();
+
+    axi4_lite_if #(
+        .DW(EVG_axi_params::GP0_DATA_W),
+        .AW(EVG_axi_params::GP0_ADDR_W)
+    ) GP_0();
+    
+    axi4_lite_if #(
+        .DW(EVG_axi_params::MMR_DATA_W),
+        .AW(EVG_axi_params::MMR_ADDR_W)
+    ) mmr[EVG_axi_params::MMR_DEV_CNT2]();
 
     axi_crossbar #(
-        .N(MMR_DEV_CNT2),
-        .AW(GP0_ADDR_W),
-        .DW(GP0_DATA_W)
+        .N(EVG_axi_params::MMR_DEV_CNT2),
+        .AW(EVG_axi_params::GP0_ADDR_W),
+        .DW(EVG_axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
@@ -73,8 +81,11 @@ module topEVG(
         .s(mmr)
     );
 
-    PS_wrapper_sv
-    PS_wrapper_i (
+    PS_wrapper_sv #(
+        .GP0_ADDR_W(EVG_axi_params::GP0_ADDR_W),
+        .GP0_DATA_W(EVG_axi_params::GP0_DATA_W),
+        .MMR_DEV_CNT2(EVG_axi_params::MMR_DEV_CNT2)
+    ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
         .DDR_ba(DDR_ba),
@@ -125,7 +136,7 @@ module topEVG(
     mem_wrapper_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
-        .axi(mmr[RESERVED1_EVG]),
+        .axi(mmr[EVG_axi_params::DEVICE_INFO]),
         .offset('0)
     );
 
@@ -178,7 +189,7 @@ module topEVG(
     sfp_control sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[RESERVED2_EVG]),
+        .mmr(mmr[EVG_axi_params::RESERVED1]),
         .sfp_loss(sfp_loss)
     );
 
@@ -206,7 +217,7 @@ module topEVG(
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg
         .app_rst(app_reset),
-        .mmr(mmr[EVG1]),
+        .mmr(mmr[EVG_axi_params::EVG1]),
         
         .ev(ev), 
         .trig(),
@@ -233,7 +244,7 @@ module topEVG(
         //------Application signals-------
         .app_clk(), // app_clk generated only by first evg
         .app_rst(app_reset),
-        .mmr(mmr[EVG2]),
+        .mmr(mmr[EVG_axi_params::EVG2]),
         
         .ev(ev), 
         .trig(),
@@ -250,7 +261,7 @@ module topEVG(
     event_comparator event_comparator_i(
         .clk(app_clk),
         .rst(app_reset),
-        .mmr(mmr[RESERVED3_EVG]),
+        .mmr(mmr[EVG_axi_params::RESERVED2]),
         .ev(ev),
         .pulse(event_pulse)
     );

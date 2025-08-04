@@ -224,8 +224,33 @@ module evg
         .delay_status(delay_st)
     );
 
+    evg_axi_core_pkg::evg_axi_core__in_t  hwif_in;
+    evg_axi_core_pkg::evg_axi_core__out_t hwif_out;
+
+    assign hwif_in.sr.link_up.next       = aligned;
+    assign hwif_in.sr.link_delay_st.next = delay_st;
+
+    assign hwif_in.cr.reserved.next      = hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value & ~hwif_out.cr_c.reserved.value;
+    assign hwif_in.cr_s.reserved.next    = 0;
+    assign hwif_in.cr_c.reserved.next    = 0;
+
+    assign hwif_in.topoid.topoid.next    = topo_id;
+    assign hwif_in.link_delay.link_delay.next = delay;
+
+    assign tgt_delay                      = hwif_out.tgt_delay.tgt_delay.value;
+    assign tgt_delay_upd                  = hwif_out.tgt_delay.tgt_delay.swmod;
+
+    evg_axi_core evg_axi_core_i(
+        .clk(app_clk),
+        .rst(app_rst),
+
+        .s_axil(mmr),
+
+        .hwif_in(hwif_in),
+        .hwif_out(hwif_out)
+    );
 // MMR
-    evg_axi_core #(
+    /*evg_axi_core #(
         .ADDR_W(GP0_ADDR_W),
         .DATA_W(GP0_DATA_W)
     ) evg_axi_core_i (
@@ -238,10 +263,10 @@ module evg
         .delay_status(delay_st),
         .tgt_delay(tgt_delay),
         .tgt_delay_upd(tgt_delay_upd)
-    );
+    );*/
 
 endmodule
-
+/*
 
 module evg_axi_core#(
     parameter ADDR_W = 32,
@@ -366,4 +391,4 @@ module evg_axi_core#(
             
         end
     end
-endmodule
+endmodule*/
