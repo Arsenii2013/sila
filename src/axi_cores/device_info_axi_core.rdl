@@ -26,14 +26,14 @@ addrmap device_info_axi_core{
         name = "CR_S";
         desc = "
         ";
-        field {sw=w; hw=rw; onwrite=woset;} reserved[32] = 0;
+        field {sw=w; hw=rw;} reserved[32] = 0;
     } cr_s;
 
     reg {
         name = "CR_C";
         desc = "
         ";
-        field {sw=w; hw=rw;  onwrite=woclr;} reserved[32] = 0;
+        field {sw=w; hw=rw;} reserved[32] = 0;
     } cr_c;
 
     reg {

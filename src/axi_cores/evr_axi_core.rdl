@@ -23,12 +23,12 @@ addrmap evr_axi_core{
 
     reg {
         name = "CR_S";
-        field {sw=w; hw=rw; onwrite=woset;} dc_ena = 0;
+        field {sw=w; hw=rw;} dc_ena = 0;
     } cr_s;
 
     reg {
         name = "CR_C";
-        field {sw=w; hw=rw;  onwrite=woclr;} dc_ena = 0;
+        field {sw=w; hw=rw;} dc_ena = 0;
     } cr_c;
 
     reg {
