@@ -2,6 +2,7 @@ import : main
 
 sources:
     - src/syn/topEVR.sv
+    - src/syn/device_info.sv
     - src/syn/event_comparator.sv
     - src/syn/sfp_control.sv
     - src/syn/event_network/evg/evg.sv

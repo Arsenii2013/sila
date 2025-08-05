@@ -4,6 +4,7 @@ addrmap device_info_axi_core{
         Блок предоставляющий общую информацию об устройстве: тип, аппаратную версию, версию прошивки, серийный номер
     ";
     enum device_type_encoding {
+        SIM = 32'h0;
         EVG = 32'h1;
         EVR = 32'h2;
     };
@@ -49,7 +50,7 @@ addrmap device_info_axi_core{
         desc = "
             Аппаратная версия
         ";
-        field {sw=rw; hw=na; } hw_version[32] = 0x00010001;
+        field {sw=rw; hw=na; } hw_version[32] = 0;
     } hw_version;
 
     reg {
@@ -57,7 +58,8 @@ addrmap device_info_axi_core{
         desc = "
             Версия прошивки старшее слово
         ";
-        field {sw=r; hw=w; } hw_version[32] = 0x00010003;
+        field {sw=r; hw=w; } minor[16] = 0;
+        field {sw=r; hw=w; } major[16] = 0;
     } fw_version;
 
     reg {
@@ -65,7 +67,7 @@ addrmap device_info_axi_core{
         desc = "
             Версия прошивки младшее слово (hash коммита)
         ";
-        field {sw=r; hw=w; } fw_hash[32] = 32'h8d7045c8;
+        field {sw=r; hw=w; } fw_hash[32] = 0;
     } fw_hash;
 
     reg {
@@ -73,6 +75,6 @@ addrmap device_info_axi_core{
         desc = "
             Серийный номер
         ";
-        field {sw=rw; hw=na; } serial[32] = 10;
-    } serial;
+        field {sw=rw; hw=na; } serial_number[32] = 0;
+    } serial_number;
 };
