@@ -80,6 +80,22 @@ module topEVR(
         .m(GP_0),
         .s(mmr)
     );
+    
+    `ifndef SYNTHESIS
+    `define GIT_VERSION_MAJOR 'h1234
+    `define GIT_VERSION_MINOR 'h5678
+    `define GIT_HASH          'habcd
+    `endif
+    device_info #(
+        .DEVICE_TYPE(1),
+        .FW_MAJOR(`GIT_VERSION_MAJOR),
+        .FW_MINOR(`GIT_VERSION_MINOR),
+        .FW_HASH(`GIT_HASH)
+    ) device_info_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[EVG_axi_params::DEVICE_INFO])
+    );
 
     PS_wrapper_sv #(
         .GP0_ADDR_W(EVR_axi_params::GP0_ADDR_W),
@@ -132,13 +148,6 @@ module topEVR(
 
     always_ff @( posedge app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
     always_ff @( posedge app_clk ) app_reset   <= PS_reset || POR_reset;
-    mem_wrapper
-    mem_wrapper_i (
-        .aclk(app_clk),
-        .aresetn(app_aresetn),
-        .axi(mmr[EVR_axi_params::DEVICE_INFO]),
-        .offset('0)
-    );
 
     blink #(
         .FREQ_HZ(125000000),
