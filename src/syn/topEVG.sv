@@ -87,7 +87,7 @@ module topEVG(
     `define GIT_HASH          'habcd
     `endif
     device_info #(
-        .DEVICE_TYPE(1),
+        .DEVICE_TYPE(EVG_axi_params::DEVICE_TYPE),
         .FW_MAJOR(`GIT_VERSION_MAJOR),
         .FW_MINOR(`GIT_VERSION_MINOR),
         .FW_HASH(`GIT_HASH)
