@@ -1,0 +1,9 @@
+import : main
+
+sources:
+    - src/syn/top.svh
+    - src/syn/event_network/common/system_stream_if.svh
+    - src/lib/axi/axi4_lite_if.svh
+    - src/lib/axi/axi_stream.svh
+    - src/syn/event_network/common/evn.svh
+    - src/syn/timestamper.sv
