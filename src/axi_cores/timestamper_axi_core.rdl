@@ -1,0 +1,67 @@
+addrmap timestamper_axi_core{
+    name = "Блок таймстемпинга";
+    desc = "
+        Представляет собой 2 счетчика: счетчик импульсов запуска пушки PULSE_CNT и счетчик тактов CYCLE_CNT.
+        Отсчет начинается сразу после включения. Счетчик тактов инкрементируется на на каждый такт. Счетчик 
+        импульсов инкементируется по событию PULSE_INC_EV, также по этому событию обнуляется счетчик тактов. 
+        По событию PULSE_SET_EV счетчик тактов обнуляется, а счетчик импульсов устанавливается в значение TGT_PULSE.
+        Счетчики на разных устройствах консистентны после рассылки PULSE_SET_EV, если заданы одинаковые PULSE_SET_EV,
+        TGT_PULSE и PULSE_INC_EV. Для единообразия сетки времени в мастере счетчик тактов сбрасывается в 0,
+        а в приемниках - в значение TGT_DELAY блока системы синхронизации, что отражает задержку момента прихода
+        события от моменат генерации.
+    ";
+
+    reg {
+        name = "SR";
+        field {sw=r; hw=w;} cycle_overflow = 0;
+        field {sw=r; hw=w;} pulse_overflow = 0;
+    } sr;
+
+    reg {
+        name = "CR";
+        field {sw=rw; hw=rw;} clear_err = 0;
+        field {sw=rw; hw=rw;} stop = 0;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        field {sw=w; hw=rw;} clear_err = 0;
+        field {sw=w; hw=rw;} stop = 0;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        field {sw=w; hw=rw;} clear_err = 0;
+        field {sw=w; hw=rw;} stop = 0;
+    } cr_c;
+
+    reg {
+        name = "PULSE_CNT";
+        field {sw=r; hw=w;} pulse_cnt[32] = 0;
+    } pulse_cnt;
+
+    reg {
+        name = "CYCLE_CNT_LOW";
+        field {sw=r; hw=w;} cycle_cnt_low[32] = 0;
+    } cycle_cnt_low;
+
+    reg {
+        name = "CYCLE_CNT_HIGH";
+        field {sw=r; hw=w;} cycle_cnt_high[32] = 0;
+    } cycle_cnt_high;
+
+    reg {
+        name = "PULSE_INC_EV";
+        field {sw=rw; hw=r;} ev_pulse_inc[24] = 0;
+    } ev_pulse_inc;
+
+    reg {
+        name = "TGT_PULSE";
+        field {sw=rw; hw=r;} tgt_pulse[32] = 0;
+    } tgt_pulse;
+
+    reg {
+        name = "PULSE_SET_EV";
+        field {sw=rw; hw=r;} ev_tgt_set[24] = 0;
+    } ev_tgt_set;
+};

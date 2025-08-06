@@ -5,3 +5,4 @@ sources:
     - src/axi_cores/EVG_reg_map.rdl
     - src/axi_cores/EVR_reg_map.rdl
     - src/axi_cores/evr_axi_core.rdl
+    - src/axi_cores/timestamper_axi_core.rdl

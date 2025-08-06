@@ -27,7 +27,9 @@ module evr
     output logic [23:0]     ev, // ev_valid = ev != 0
     input  logic [23:0]     trig, // trig_valid = trig != 0
     axi_stream_if.s         in_packet,
-    axi_stream_if.m         out_packet
+    axi_stream_if.m         out_packet,
+
+    output logic            delay
 );
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
@@ -233,6 +235,8 @@ module evr
         .delay_comp(delay_comp)
     );
 
+    assign delay = link_delay + delay_comp;
+
     evr_axi_core_pkg::evr_axi_core__in_t  hwif_in;
     evr_axi_core_pkg::evr_axi_core__out_t hwif_out;
 
@@ -240,7 +244,7 @@ module evr
     assign hwif_in.sr.link_delay_st.next = link_delay_st;
     assign hwif_in.sr.delay_comp_st.next = dc_status;
 
-    assign hwif_in.cr.dc_ena.next        = hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value & ~hwif_out.cr_c.dc_ena.value;
+    assign hwif_in.cr.dc_ena.next        = (hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value) & ~hwif_out.cr_c.dc_ena.value;
     assign hwif_in.cr_s.dc_ena.next      = 0;
     assign hwif_in.cr_c.dc_ena.next      = 0;
     assign dc_ena                        = hwif_out.cr.dc_ena.value;

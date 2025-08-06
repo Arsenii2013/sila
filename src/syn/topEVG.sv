@@ -80,6 +80,8 @@ module topEVG(
         .m(GP_0),
         .s(mmr)
     );
+
+    logic [23:0] ev;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -95,6 +97,22 @@ module topEVG(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVG_axi_params::DEVICE_INFO])
+    );
+
+    logic [63:0] cycle_cnt;
+    logic [31:0] pulse_cnt;
+
+    timestamper #(
+        .CYCLE_CNT_WIDTH(64), 
+        .PULSE_CNT_WIDTH(32)
+    ) timestamper_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[EVG_axi_params::TIMESTAMPER]),
+        .cycle_start_val('0),
+        .cycle_cnt(cycle_cnt),
+        .pulse_cnt(pulse_cnt),
+        .ev(ev)
     );
 
     PS_wrapper_sv #(
@@ -198,14 +216,12 @@ module topEVG(
     sfp_control sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::RESERVED1]),
+        .mmr(mmr[EVG_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
 
     axi_stream_if #(.DW(32)) evg1_in_packet[4]();
     axi_stream_if #(.DW(32)) evg1_out_packet[4]();
-
-    logic [23:0] ev;
 
     evg evg1(
         .beacon_clk(sfp_tx_clk[0]),
@@ -270,7 +286,7 @@ module topEVG(
     event_comparator event_comparator_i(
         .clk(app_clk),
         .rst(app_reset),
-        .mmr(mmr[EVG_axi_params::RESERVED2]),
+        .mmr(mmr[EVG_axi_params::EV_COMPARATOR]),
         .ev(ev),
         .pulse(event_pulse)
     );

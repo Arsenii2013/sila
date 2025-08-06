@@ -29,3 +29,4 @@ sources:
     - src/lib/common/blink.sv
     - src/lib/common/pf.sv
     - src/lib/common/sys_clk_gen.sv
+    - src/syn/timestamper.sv

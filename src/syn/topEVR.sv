@@ -80,6 +80,9 @@ module topEVR(
         .m(GP_0),
         .s(mmr)
     );
+
+    logic [23:0] ev;
+    logic [31:0] delay;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -95,6 +98,25 @@ module topEVR(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVG_axi_params::DEVICE_INFO])
+    );
+
+
+    typedef logic [63:0] cycle_cnt_t;
+    typedef logic [31:0] pulse_cnt_t;
+    cycle_cnt_t cycle_cnt;
+    pulse_cnt_t pulse_cnt;
+
+    timestamper #(
+        .CYCLE_CNT_WIDTH(64), 
+        .PULSE_CNT_WIDTH(32)
+    ) timestamper_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[EVG_axi_params::TIMESTAMPER]),
+        .cycle_start_val(cycle_cnt_t'(delay) >> 16), // ожидаю, что задержка получилась целеая
+        .cycle_cnt(cycle_cnt),
+        .pulse_cnt(pulse_cnt),
+        .ev(ev)
     );
 
     PS_wrapper_sv #(
@@ -198,14 +220,12 @@ module topEVR(
     sfp_control sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::RESERVED1]),
+        .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) evr1_in_packet[4]();
-    axi_stream_if #(.DW(32)) evr1_out_packet[4]();
-
-    logic [23:0] ev;
+    axi_stream_if #(.DW(32)) evr1_in_packet();
+    axi_stream_if #(.DW(32)) evr1_out_packet();
 
     evr evr1(
         .beacon_clk(sfp_tx_clk[0]),
@@ -230,14 +250,16 @@ module topEVR(
         
         .ev(ev), 
         .trig(),
-        .in_packet(evr1_in_packet[2]),
-        .out_packet(evr1_out_packet[2])
+        .in_packet(evr1_in_packet),
+        .out_packet(evr1_out_packet),
+
+        .delay(delay)
     );
 
     event_comparator event_comparator_i(
         .clk(app_clk),
         .rst(app_reset),
-        .mmr(mmr[EVR_axi_params::RESERVED2]),
+        .mmr(mmr[EVR_axi_params::EV_COMPARATOR]),
         .ev(ev),
         .pulse(event_pulse)
     );
