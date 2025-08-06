@@ -240,7 +240,7 @@ module evr
     assign hwif_in.sr.link_delay_st.next = link_delay_st;
     assign hwif_in.sr.delay_comp_st.next = dc_status;
 
-    assign hwif_in.cr.dc_ena.next        = hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value & ~hwif_out.cr_c.dc_ena.value;
+    assign hwif_in.cr.dc_ena.next        = (hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value) & ~hwif_out.cr_c.dc_ena.value;)
     assign hwif_in.cr_s.dc_ena.next      = 0;
     assign hwif_in.cr_c.dc_ena.next      = 0;
     assign dc_ena                        = hwif_out.cr.dc_ena.value;

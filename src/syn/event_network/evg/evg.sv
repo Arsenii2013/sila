@@ -230,7 +230,7 @@ module evg
     assign hwif_in.sr.link_up.next       = aligned;
     assign hwif_in.sr.link_delay_st.next = delay_st;
 
-    assign hwif_in.cr.reserved.next      = hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value & ~hwif_out.cr_c.reserved.value;
+    assign hwif_in.cr.reserved.next      = (hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value) & ~hwif_out.cr_c.reserved.value;
     assign hwif_in.cr_s.reserved.next    = 0;
     assign hwif_in.cr_c.reserved.next    = 0;
 

@@ -12,7 +12,7 @@ module device_info #(
     device_info_axi_core_pkg::device_info_axi_core__out_t hwif_out;
 
     assign hwif_in.sr.reserved.next             = 0;
-    assign hwif_in.cr.reserved.next             = hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value & ~hwif_out.cr_c.reserved.value;
+    assign hwif_in.cr.reserved.next             = (hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value) & ~hwif_out.cr_c.reserved.value;
     assign hwif_in.cr_s.reserved.next           = 0;
     assign hwif_in.cr_c.reserved.next           = 0;
     assign hwif_in.device_type.device_type.next = DEVICE_TYPE;
