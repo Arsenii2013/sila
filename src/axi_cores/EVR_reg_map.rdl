@@ -38,9 +38,10 @@ addrmap EVR_reg_map {
 
     enum device_numbers{
         DEVICE_INFO = 0;
-        RESERVED1;
-        RESERVED2;
-        EVR         = `DEBUG_DEVICE;
+        TIMESTAMPER;
+        SFP_CONTROL = `DEBUG_DEVICE;
+        EVR;
+        EVENT_COMPARATOR;
         MAX_DEVICE  = `MAX_DEVICE;
     };
 

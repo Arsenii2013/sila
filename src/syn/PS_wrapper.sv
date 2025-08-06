@@ -4,7 +4,8 @@
 module PS_wrapper_sv #(
     parameter GP0_ADDR_W   = 32,
     parameter GP0_DATA_W   = 32,
-    parameter MMR_DEV_CNT2 = 1
+    parameter MMR_DEV_CNT2 = 1,
+    parameter SIM_DEVICE   = "EVG"
 )
 (
     `ifdef SYNTHESIS
@@ -115,10 +116,6 @@ module PS_wrapper_sv #(
         peripheral_reset   <= 0;
     end
 
-    typedef logic [63: 0] uint64_t;
-    localparam uint64_t RSRV2_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::RESERVED1;
-    localparam uint64_t EVG1_BASE_ADDR  = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EVG1;
-
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
     assign GP_0_awaddr = GP_0_iternal.awaddr;
     assign GP_0.awprot = GP_0_iternal.awprot;
@@ -150,15 +147,33 @@ module PS_wrapper_sv #(
     logic [31:0] topo_id;
     logic [31:0] measured_delay;
     initial begin
+        if(SIM_DEVICE == "EVG")
+            EVG_test();
+        else if(SIM_DEVICE == "EVR")
+            EVR_test();
+    end
+
+    initial begin
+        #500ms;
+        $display("Timeout! Cant get FINE state in %t\n", $realtime);
+        $stop();
+    end
+    `endif //SYNTHESIS 
+    
+    task automatic EVG_test();
+        typedef logic [63: 0] uint64_t;
+        localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::SFP_CONTROL;
+        localparam uint64_t EVG1_BASE_ADDR     = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EVG1;
+
         $timeformat(-3, 5, " ms");
 
         @(posedge app_aresetn);
         @(posedge app_aresetn);
         #50us;
-        axi_master.write(RSRV2_BASE_ADDR + 'h10, 'h0);
+        axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
 
         wait(DUT_EVG.evg1.delay_st == 5'h1);
-        $display("Get INITIAL state at %t\n", $realtime);
+        $display("EVG Get INITIAL state at %t\n", $realtime);
         #10us;
         axi_master.read(EVG1_BASE_ADDR + 'h00, status);
         axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
@@ -168,7 +183,7 @@ module PS_wrapper_sv #(
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
 
         wait(DUT_EVG.evg1.delay_st == 5'h3);
-        $display("Get ONE_CYCLE state at %t\n", $realtime);
+        $display("EVG Get ONE_CYCLE state at %t\n", $realtime);
         #10us;
         axi_master.read(EVG1_BASE_ADDR + 'h00, status);
         axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
@@ -178,7 +193,7 @@ module PS_wrapper_sv #(
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
 
         wait(DUT_EVG.evg1.delay_st == 5'h7);
-        $display("Get FINE state at %t\n", $realtime);
+        $display("EVG Get FINE state at %t\n", $realtime);
         #10us;
         axi_master.read(EVG1_BASE_ADDR + 'h00, status);
         axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
@@ -187,13 +202,49 @@ module PS_wrapper_sv #(
         $display("topology ID:\t %x", topo_id);
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
         $stop();
-    end
+    endtask
 
-    initial begin
-        #500ms;
-        $display("Timeout! Cant get FINE state in %t\n", $realtime);
+    task automatic EVR_test();
+        typedef logic [63: 0] uint64_t;
+        localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SFP_CONTROL;
+        localparam uint64_t EVR_BASE_ADDR      = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::EVR;
+
+        $timeformat(-3, 5, " ms");
+
+        @(posedge app_aresetn);
+        @(posedge app_aresetn);
+        #50us;
+        axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
+
+        wait(DUT_EVR.evr1.link_delay_st == 5'h1);
+        $display("EVR Get INITIAL state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVR_BASE_ADDR + 'h00, status);
+        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        wait(DUT_EVR.evr1.link_delay_st == 5'h3);
+        $display("EVR Get ONE_CYCLE state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVR_BASE_ADDR + 'h00, status);
+        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
+
+        wait(DUT_EVR.evr1.link_delay_st == 5'h7);
+        $display("EVR Get FINE state at %t\n", $realtime);
+        #10us;
+        axi_master.read(EVR_BASE_ADDR + 'h00, status);
+        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        $display("status:\t %x", status);
+        $display("topology ID:\t %x", topo_id);
+        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
         $stop();
-    end
-    `endif //SYNTHESIS 
-        
+    endtask
  endmodule
