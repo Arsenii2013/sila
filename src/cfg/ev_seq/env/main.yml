@@ -1,0 +1,8 @@
+parameters:
+    VARIANT_NAME        : = ARGUMENTS['bv']
+    PROJECT_NAME        : = VARIANT_NAME
+    TOP_NAME            : ev_seq
+    TESTBENCH_NAME      : ev_seqTB
+    DEVICE              : xc7z100ffg900-2
+    
+    TARGET_AX7Z100B     : = ''
