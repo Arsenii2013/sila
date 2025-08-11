@@ -284,6 +284,7 @@ module mem_n_by_addr #(
     assign output_is_wr = addr_is_wr;
 endmodule
 
+`ifndef SYNTHESIS
 module ev_seqTB();
     logic app_clk;
     logic app_rst = 0;
@@ -462,3 +463,4 @@ module ev_recv(
     end
 
 endmodule
+`endif //SYNTHESIS 

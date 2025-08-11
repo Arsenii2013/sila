@@ -65,7 +65,7 @@ module ev_seq_ctrl #(
 
     genvar sq_ctrl_n;
     generate
-    for (sq_ctrl_n = 0; sq_ctrl_n < EV_SEQ_N; sq_ctrl_n ++) begin
+    for (sq_ctrl_n = 0; sq_ctrl_n < EV_SEQ_N; sq_ctrl_n = sq_ctrl_n + 1) begin
     seq_control_fsm seq_control_fsm_i(
         .app_clk(app_clk),
         .app_rst(app_rst),
@@ -195,7 +195,7 @@ module seq_control_fsm(
 
     always_ff @(posedge app_clk) begin
         if(app_rst) begin
-            prev_running <= '{default: 0};
+            prev_running <= 0;
         end else begin
             prev_running <= running;
         end
@@ -271,6 +271,7 @@ module seq_control_fsm(
 endmodule
 
 
+`ifndef SYNTHESIS
 module ev_seq_ctrlTB();
     localparam SEQ_NUM = 2;
     logic app_clk;
@@ -637,3 +638,4 @@ module ev_recv(
     end
 
 endmodule
+`endif //SYNTHESIS 
