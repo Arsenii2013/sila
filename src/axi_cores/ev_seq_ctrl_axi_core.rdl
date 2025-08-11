@@ -1,0 +1,96 @@
+addrmap ev_seq_ctrl_axi_core{
+    name = "Модуль управления последовательностями";
+    desc = "
+        В модуль управления последовательностями вынесены все управляющие регистры 
+        генераторов последовательностей. для каждого генератора выделен свой блок 
+        регистров seq_reg. В регистре SQ_SR флаг running показывает, генерирует ли
+        генератор последовательность прямо сейчас. В регистре SQ_CR флаг enable включает
+        генератор, переводя его в состояние ожидания триггера ARMED. Запись нуля же
+        отключает генератор, но не сбрасывает running, то есть генератор выключится 
+        после завершения генерации текущей последовательности. Для моментальной 
+        остановки генератора предназначен флаг reset, по установке \"1\" сбрасываются
+        enable и running. Регистр TRIG определяет источник триггера, MODE - режим работы 
+        генератора. Флаг sw_trig - это программный триггер. В регистры SR и CR сведены 
+        флаги running, enable и reset от всех генераторов. PROG_EV позволяет сгенерировать 
+        еденичное программное событие. В поле ev задается само событие, а по установке 
+        send оно генерируется. При одновременной генерации событий из разных источников 
+        приоритет следующий: программное событие, генераторы в порядке увеличения номера.
+    ";
+
+    `define EV_SEQ_N 2
+    <% $EV_SEQ_N_PERL = 2; %> // должно быть равно дефайну!!!
+
+    enum trig_src_t {
+        PROG    = 32'h0;
+    };
+    enum sq_mode_t {
+        SINGLE  = 32'h0;
+        CYCLE   = 32'h1;
+        RECYCLE = 32'h2;
+    };
+
+
+    reg {
+        name = "SR";
+        field {sw=r; hw=w;}   seq_running[`EV_SEQ_N] = 0;
+    } sr;
+
+    reg {
+        name = "CR";
+        field {sw=rw; hw=rw; swmod;} seq_enable[`EV_SEQ_N] = 0;
+        field {sw=rw; hw=rw; swmod;}  seq_reset[`EV_SEQ_N] = 0;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        field {sw=w; hw=rw; swmod;}  seq_enable[`EV_SEQ_N] = 0;
+        field {sw=w; hw=rw; swmod;}   seq_reset[`EV_SEQ_N] = 0;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        field {sw=w; hw=rw; swmod;}  seq_enable[`EV_SEQ_N] = 0;
+        field {sw=w; hw=rw; swmod;}   seq_reset[`EV_SEQ_N] = 0;
+    } cr_c;
+
+    reg {
+        name = "PROG_EV";
+        field {sw=rw; hw=r;}  ev[24]            = 0;
+        field {sw=rw; hw=rw;} send              = 0;
+    } prog_ev;
+
+    regfile {
+        reg {
+            name = "SQ_SR";
+            field {sw=r; hw=w;}   running     = 0;
+        } sq_sr;
+        reg {
+            name = "SQ_CR";
+            field {sw=rw; hw=rw; swmod;} enable     = 0;
+            field {sw=rw; hw=rw; swmod;} reset      = 0;
+            field {sw=rw; hw=rw;} sw_trig           = 0;
+        } sq_cr;
+        reg {
+            name = "SQ_CR_S";
+            field {sw=w; hw=rw; swmod;}  enable     = 0;
+            field {sw=w; hw=rw; swmod;}  reset      = 0;
+            field {sw=w; hw=rw;}  sw_trig           = 0;
+        } sq_cr_s;
+        reg {
+            name = "SQ_CR_C";
+            field {sw=w; hw=rw; swmod;}  enable     = 0;
+            field {sw=w; hw=rw; swmod;}  reset      = 0;
+            field {sw=w; hw=rw;}  sw_trig           = 0;
+        } sq_cr_c;
+
+        reg {
+            name = "TRIG";
+            field {sw=rw; hw=r; encode=trig_src_t;} src[2] = trig_src_t::PROG;
+        } trig;
+
+        reg {
+            name = "MODE";
+            field {sw=rw; hw=r; encode=sq_mode_t;} mode[2] = sq_mode_t::SINGLE;
+        } mode;
+    } seq_regs [`EV_SEQ_N];
+};

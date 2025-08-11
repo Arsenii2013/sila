@@ -7,7 +7,7 @@ module axi_master(
     input  logic    aclk,
     input  logic    aresetn
 );
-    task automatic read(input [32:0] addr, output [32:0] data);
+    task automatic read(input [31:0] addr, output [31:0] data);
         begin
 
         logic [3:0] rresp;
@@ -40,7 +40,15 @@ module axi_master(
         end
     endtask
 
-    task automatic write(input [32:0] addr, input [32:0] data);
+    task automatic check(input [31:0] addr, input [31:0] data);
+        begin
+        logic [31:0] rdata;
+        read(addr, rdata);
+        assert(rdata == data) else $error("Read at addr %h expect %h, but got %h", addr, data, rdata);
+        end
+    endtask
+
+    task automatic write(input [31:0] addr, input [31:0] data);
         begin
 
         logic [3:0] wresp;

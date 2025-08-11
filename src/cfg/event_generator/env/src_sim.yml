@@ -1,0 +1,4 @@
+
+sources:
+    - src/lib/common/sys_clk_gen.sv
+    - src/lib/axi/axi_master.sv

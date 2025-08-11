@@ -97,7 +97,7 @@ module topEVR(
     ) device_info_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::DEVICE_INFO])
+        .mmr(mmr[EVR_axi_params::DEVICE_INFO])
     );
 
 
@@ -112,7 +112,7 @@ module topEVR(
     ) timestamper_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::TIMESTAMPER]),
+        .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
         .cycle_start_val(cycle_cnt_t'(delay) >> 16), // ожидаю, что задержка получилась целеая
         .cycle_cnt(cycle_cnt),
         .pulse_cnt(pulse_cnt),

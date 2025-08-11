@@ -3,4 +3,6 @@ sources:
     - src/sim/topTB.sv
     - src/sim/xpm_fifo.sv
     - src/syn/topEVG.sv
-    - src/syn/event_generator.sv
+    - src/syn/event_generator/event_generator.sv
+    - src/syn/event_generator/ev_seq.sv
+    - src/syn/event_generator/ev_seq_ctrl.sv

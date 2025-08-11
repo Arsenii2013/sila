@@ -158,7 +158,18 @@ module PS_wrapper_sv #(
         $display("Timeout! Cant get FINE state in %t\n", $realtime);
         $stop();
     end
-    `endif //SYNTHESIS 
+
+    localparam EV_N = 9;
+    task automatic setup_event_generation();
+        typedef logic [63: 0] uint64_t;
+        localparam uint64_t SEQ_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EV_SEQ_CTRL;
+        localparam uint64_t SEQ_0_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EV_SEQ_0;
+        write_seq(SEQ_0_BASE_ADDR, '{'h1, 'h2, 'h3, 'h4, 'h10, 'h20, 'h40, 'h80, 'h1234},
+                                   '{  0,   1,   2,   3,   10,   20,   40,   80,   8000});
+        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h08, 'h1); // cr enable 
+        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h34, 'h2); // mode = RECYCLE
+        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h28, 'h4); // sq_cr sw trig
+    endtask
     
     task automatic EVG_test();
         typedef logic [63: 0] uint64_t;
@@ -171,8 +182,10 @@ module PS_wrapper_sv #(
         @(posedge app_aresetn);
         #50us;
         axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
+        setup_event_generation();
 
         wait(DUT_EVG.evg1.delay_st == 5'h1);
+
         $display("EVG Get INITIAL state at %t\n", $realtime);
         #10us;
         axi_master.read(EVG1_BASE_ADDR + 'h00, status);
@@ -247,4 +260,61 @@ module PS_wrapper_sv #(
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
         $stop();
     endtask
+
+
+    int entrys_num = 0;
+    logic [31:0] rd_timestamp_lsb;
+    logic [31:0] rd_timestamp_msb;
+    logic [31:0] rd_ev;
+    logic [63:0] rd_timestamp_seq;
+    logic [31:0] rd_ev_seq;
+
+    task add_event(input logic [63: 0] base, input logic [63:0] timestamp, input logic [23:0] ev);
+        @(posedge app_clk);
+        axi_master.write(base + entrys_num * 'h10 + 'h00, timestamp[31:0]);
+        axi_master.write(base + entrys_num * 'h10 + 'h04, timestamp[63:32]);
+        axi_master.write(base + entrys_num * 'h10 + 'h08, {8'h0, ev});
+        entrys_num <= entrys_num + 1;
+    endtask
+    
+    task add_end_of_sequency(input logic [63: 0] base, input logic [63:0] timestamp);
+        @(posedge app_clk);
+        add_event(base, timestamp, 'h50DEAD);
+    endtask
+
+    task reset_events();
+        entrys_num <= 0;
+    endtask
+
+    task read_event(input logic [63: 0] base, int entry, output logic [63:0] timestamp, output logic [23:0] ev);
+        @(posedge app_clk);
+        axi_master.read(base + entry * 'h10 + 'h00, rd_timestamp_lsb);
+        axi_master.read(base + entry * 'h10 + 'h04, rd_timestamp_msb);
+        axi_master.read(base + entry * 'h10 + 'h08, rd_ev);
+        @(posedge app_clk);
+        timestamp <= {rd_timestamp_msb, rd_timestamp_lsb};
+        ev        <= rd_ev;
+        @(posedge app_clk);
+    endtask
+
+    task write_seq(input logic [63: 0] base, logic [23:0] events [EV_N], logic [63:0] timestamps [EV_N]);
+        begin
+        reset_events();
+        for (int i = 0; i < EV_N; i++) begin
+            add_event(base, timestamps[i], events[i]);
+        end
+        add_end_of_sequency(base, timestamps[EV_N-1] + 1);
+        #1us;
+        for (int i = 0; i < 11; i++) begin
+            read_event(base, i, rd_timestamp_seq, rd_ev_seq);
+            if(rd_timestamp_seq != timestamps[i] || rd_ev_seq != events[i]) begin
+                $display("error read timestamp : %016h, event : %08h, expect timestamp : %016h, event : %08h,", 
+                        rd_timestamp_seq, rd_ev_seq, timestamps[i], events[i]);
+                $stop();
+            end
+        end
+        end
+    endtask
+
+    `endif //SYNTHESIS 
  endmodule

@@ -277,9 +277,17 @@ module topEVG(
         .out_packet(evg1_out_packet[1])
     );
 
-    event_generator event_generator_i(
-        .clk(app_clk),
-        .rst(app_reset),
+    event_generator #(
+        .EV_SEQ_N(EVG_axi_params::EV_SEQ_N),
+        .EV_WIDTH(24),
+        .CNT_WIDTH(64),
+        .ENTRY_NUM(2048)
+    ) event_generator_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr_ctrl(mmr[EVG_axi_params::EV_SEQ_CTRL]),
+        .mmr_mem(mmr[EVG_axi_params::EV_SEQ_0 +: EVG_axi_params::EV_SEQ_N]),
+
         .ev(ev)
     );
 
