@@ -18,7 +18,6 @@ addrmap ev_seq_ctrl_axi_core{
     ";
 
     `define EV_SEQ_N 2
-    `define PRIO_W   3
 
     enum trig_src_t {
         PROG    = 32'h0;
