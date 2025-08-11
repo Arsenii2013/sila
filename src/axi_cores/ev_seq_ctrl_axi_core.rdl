@@ -18,6 +18,7 @@ addrmap ev_seq_ctrl_axi_core{
     ";
 
     `define EV_SEQ_N 2
+    <% $EV_SEQ_N_PERL = 2; %> // должно быть равно дефайну!!!
 
     enum trig_src_t {
         PROG    = 32'h0;

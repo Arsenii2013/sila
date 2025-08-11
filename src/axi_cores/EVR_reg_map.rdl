@@ -1,6 +1,7 @@
 
 `include "device_info_axi_core.rdl"
 `include "evr_axi_core.rdl"
+`include "timestamper_axi_core.rdl"
 
 `define GP0_ADDR_W       21
 `define GP0_DATA_W       32
@@ -46,6 +47,7 @@ addrmap EVR_reg_map {
     };
 
     device_info_axi_core device_info_axi_core  @ device_numbers::DEVICE_INFO  * `MMR_BLOCK_SIZE;
+    timestamper_axi_core timestamper_axi_core  @ device_numbers::TIMESTAMPER  * `MMR_BLOCK_SIZE;
     evr_axi_core evr_axi_core                  @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
 
 
@@ -57,16 +59,16 @@ addrmap EVR_reg_map {
             !!! При подготовке карты регистров убрать.                            !!!
         ";
         reg {
-            field {encode = device_numbers;} mmr_device_numbers[`MMR_DEV_ADDR_W];
+            field {encode = device_numbers;} mmr_device_numbers[32];
         } mmr_device_numbers;
         reg {
-            field {encode = gp0_params;} gp0_axi_params[`GP0_DATA_W];
+            field {encode = gp0_params;} gp0_axi_params[32];
         } gp0_axi_params;
         reg {
-            field {encode = mmr_params;} mmr_params[`MMR_BLOCK_DATA_W];
+            field {encode = mmr_params;} mmr_params[32];
         } mmr_params;
         reg {
-            field {encode = mmr_dev_params;} mmr_dev_params[`MMR_DEV_CNT];
+            field {encode = mmr_dev_params;} mmr_dev_params[32];
         } mmr_dev_params;
     } fake_regfile @ device_numbers::MAX_DEVICE * `MMR_BLOCK_SIZE;
 };

@@ -39,7 +39,7 @@ module event_generator #(
         .EV_WIDTH(EV_WIDTH),
         .CNT_WIDTH(CNT_WIDTH),
         .ENTRY_NUM(ENTRY_NUM)
-    ) (
+    ) ev_seq_i (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .mmr(mmr_mem[i]),
@@ -48,7 +48,7 @@ module event_generator #(
         .stop(seq_stop[i]),
         .running(seq_running[i]),
         .ev(seq_ev[i])
-    )
+    );
     end
     endgenerate
 endmodule
