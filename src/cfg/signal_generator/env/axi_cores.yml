@@ -1,0 +1,2 @@
+sources:
+    - src/axi_cores/signal_gen_ctrl_axi_core.rdl
