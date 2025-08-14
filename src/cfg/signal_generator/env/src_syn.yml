@@ -7,3 +7,5 @@ sources:
     - src/lib/axi/axi_stream.svh
     - src/syn/event_network/common/evn.svh
     - src/syn/signal_generator/single_pulse_gen.sv
+    - src/syn/signal_generator/signal_gen_channel.sv
+    - src/syn/signal_generator/signal_generator.sv
