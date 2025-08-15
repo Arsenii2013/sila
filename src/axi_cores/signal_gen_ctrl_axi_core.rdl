@@ -5,7 +5,7 @@ addrmap signal_gen_ctrl_axi_core{
         счетчик задержки и счетчик ширины импульса. 
     ";
 
-    `define SIGNAL_GEN_N 8
+    `define SIGNAL_GEN_N 16
 
     enum trig_src_t {
         EVENT = 0;

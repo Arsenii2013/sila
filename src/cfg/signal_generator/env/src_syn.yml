@@ -9,3 +9,5 @@ sources:
     - src/syn/signal_generator/single_pulse_gen.sv
     - src/syn/signal_generator/signal_gen_channel.sv
     - src/syn/signal_generator/signal_generator.sv
+    - src/lib/common/signal_interconnect.sv
+    - src/syn/signal_generator/ev_map.sv

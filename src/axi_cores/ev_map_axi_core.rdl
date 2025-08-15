@@ -1,0 +1,28 @@
+addrmap ev_map_axi_core{
+    name = "Таблица маппинга событий";
+    desc = "
+        Таблица соответствия событий set/clear/trigger/cnt_reset генераторов
+    ";
+    `define SIGNAL_GEN_N 16
+    <% $SIGNAL_GEN_N_PERL = 16; %> // должно быть равно дефайну!!!
+    `define TABLE_SIZE   64
+
+    /*reg {
+        name = "mem entry example";
+        regwidth = 128;
+        field {sw=rw; hw=r;}   event[24]             = 0;
+        field {sw=rw; hw=na;}  reserved[8]           = 0;
+        <% for( $i = 0; $i < $SIGNAL_GEN_N_PERL; $i += 1 ) { %>
+        field {sw=rw; hw=r;}   set_ena_<%=$i%>       = 0;
+        field {sw=rw; hw=r;}   clear_ena_<%=$i%>     = 0;
+        field {sw=rw; hw=r;}   trigger_ena_<%=$i%>   = 0;
+        field {sw=rw; hw=r;}   cnt_reset_ena_<%=$i%> = 0;
+        <% } %>
+        field {sw=rw; hw=na;}  reserved[32]          = 0;
+    } mem_entry_example;*/
+
+    external mem {
+        mementries = `TABLE_SIZE * `SIGNAL_GEN_N * 4 / 32;
+        memwidth = 32;
+    } map_mem;
+};

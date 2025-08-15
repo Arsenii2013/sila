@@ -1,2 +1,3 @@
 sources:
     - src/axi_cores/signal_gen_ctrl_axi_core.rdl
+    - src/axi_cores/ev_map_axi_core.rdl
