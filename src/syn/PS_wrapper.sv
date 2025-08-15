@@ -217,6 +217,20 @@ module PS_wrapper_sv #(
         $stop();
     endtask
 
+    task automatic setup_signal_generation();
+        localparam longint unsigned EV_MAP_BASE_ADDR   = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::EV_MAP;
+        localparam longint unsigned GEN_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SIG_GEN_CTRL;
+        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(0));
+        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(1), .periodic(0), .delay(100), .width(1000));
+        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(2), .periodic(1), .period(10), .delay(2), .width(2));
+
+        reset_mapping();
+        add_mapping(EV_MAP_BASE_ADDR, 'h1,    '{0: 4'b0001, 2: 4'b1000, default:4'b0});
+        add_mapping(EV_MAP_BASE_ADDR, 'h20,   '{1: 4'b0100, default:4'b0});
+        add_mapping(EV_MAP_BASE_ADDR, 'h80,   '{0: 4'b0010, default:4'b0});
+        add_mapping(EV_MAP_BASE_ADDR, 'h1234, '{1: 4'b0100, default:4'b0});
+    endtask
+
     task automatic EVR_test();
         typedef logic [63: 0] uint64_t;
         localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SFP_CONTROL;
@@ -228,6 +242,7 @@ module PS_wrapper_sv #(
         @(posedge app_aresetn);
         #50us;
         axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
+        setup_signal_generation();
 
         wait(DUT_EVR.evr1.link_delay_st == 5'h1);
         $display("EVR Get INITIAL state at %t\n", $realtime);
@@ -262,7 +277,7 @@ module PS_wrapper_sv #(
     endtask
 
 
-    int entrys_num = 0;
+    int entrys_num_SEQ = 0;
     logic [31:0] rd_timestamp_lsb;
     logic [31:0] rd_timestamp_msb;
     logic [31:0] rd_ev;
@@ -271,10 +286,10 @@ module PS_wrapper_sv #(
 
     task add_event(input logic [63: 0] base, input logic [63:0] timestamp, input logic [23:0] ev);
         @(posedge app_clk);
-        axi_master.write(base + entrys_num * 'h10 + 'h00, timestamp[31:0]);
-        axi_master.write(base + entrys_num * 'h10 + 'h04, timestamp[63:32]);
-        axi_master.write(base + entrys_num * 'h10 + 'h08, {8'h0, ev});
-        entrys_num <= entrys_num + 1;
+        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h00, timestamp[31:0]);
+        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h04, timestamp[63:32]);
+        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h08, {8'h0, ev});
+        entrys_num_SEQ <= entrys_num_SEQ + 1;
     endtask
     
     task add_end_of_sequency(input logic [63: 0] base, input logic [63:0] timestamp);
@@ -283,7 +298,7 @@ module PS_wrapper_sv #(
     endtask
 
     task reset_events();
-        entrys_num <= 0;
+        entrys_num_SEQ <= 0;
     endtask
 
     task read_event(input logic [63: 0] base, int entry, output logic [63:0] timestamp, output logic [23:0] ev);
@@ -314,6 +329,71 @@ module PS_wrapper_sv #(
             end
         end
         end
+    endtask
+
+    import EVR_axi_params::SIG_GEN_N;
+    task setup_signal_generator(input longint unsigned base,       input int unsigned gen_number,     input logic periodic = 0,
+                                input longint unsigned period = 0, input longint unsigned delay = 0,  input longint unsigned width = 0);
+
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'hc, 'hff); // cr_c
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h8, {periodic ? signal_gen_ctrl_pkg::PERIOD : signal_gen_ctrl_pkg::EVENT, 
+                                                                signal_gen_ctrl_pkg::GENERATOR,
+                                                                5'b01111}); // all enable, pol normal
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h10, delay[31:0]);
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h14, delay[63:32]);
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h18, width[31:0]);
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h1c, width[63:32]);
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h20, period[31:0]);
+        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h24, period[63:32]);
+    endtask
+
+    int entrys_num_MAP = 0;
+    logic [3:0] rd_func [SIG_GEN_N];
+    logic [4 * SIG_GEN_N - 1: 0] func_flat;
+    localparam SIG_GEN_N_MINUS_MAX_I = SIG_GEN_N <= 8  ? SIG_GEN_N * 4 :
+                                       SIG_GEN_N <= 16 ? SIG_GEN_N * 4 - 32:
+                                       SIG_GEN_N <= 24 ? SIG_GEN_N * 4 - 64:
+                                       SIG_GEN_N * 4 - 96;
+
+    task add_mapping(input longint unsigned base, input logic [23:0] ev, input logic [3:0] func [SIG_GEN_N]);
+        @(posedge app_clk);
+        axi_master.write(base + entrys_num_MAP * 'h10 + 'h00, ev);
+        func_flat = {<<4{func}};
+        for(int i = 0; i < 3; i ++) begin
+            if(i * 32 + 32 < SIG_GEN_N * 4) begin
+                axi_master.write(base + entrys_num_MAP * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: 32]);
+            end else if(i * 32 < SIG_GEN_N * 4) begin
+                axi_master.write(base + entrys_num_MAP * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: SIG_GEN_N_MINUS_MAX_I]);
+            end
+        end
+        check_mapping(base, entrys_num_MAP, ev, func);
+        entrys_num_MAP <= entrys_num_MAP + 1;
+    endtask
+
+    task reset_mapping();
+        entrys_num_MAP <= 0;
+    endtask
+
+    task read_mapping(input longint unsigned base, int entry, output logic [23:0] ev, output logic [3:0] func [SIG_GEN_N]);
+        @(posedge app_clk);
+        axi_master.read(entry * 'h10 + 'h00, ev);
+        for(int i = 0; i < 3; i ++) begin
+            if(i * 32 + 32 < SIG_GEN_N * 4) begin
+                axi_master.read(base + entry * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: 32]);
+            end else if(i * 32 < SIG_GEN_N * 4) begin
+                axi_master.read(base + entry * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: SIG_GEN_N_MINUS_MAX_I]);
+            end
+        end
+        for(int i = 0; i < SIG_GEN_N; i ++) begin
+            func[i] = func_flat[i * 4 +: 4];
+        end
+        @(posedge app_clk);
+    endtask
+
+    task check_mapping(input longint unsigned base, int entry, input logic [23:0] ev, input logic [3:0] func [SIG_GEN_N]);
+        read_mapping(base, entry, rd_ev, rd_func);
+        assert(rd_ev == ev);
+        assert(rd_func == func);
     endtask
 
     `endif //SYNTHESIS 
