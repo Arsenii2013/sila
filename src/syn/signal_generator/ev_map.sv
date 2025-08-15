@@ -37,7 +37,7 @@ module ev_map #(
     logic interconnect_out[SIG_GEN_N * 4];
 
     generate for(i = 0; i < COMP_N; i ++) begin
-        assign interconnect_in[i] = ev == ev_comp[i];
+        assign interconnect_in[i] = ev != 0 && ev == ev_comp[i];
     end
     endgenerate
 

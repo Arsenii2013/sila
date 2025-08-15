@@ -5,7 +5,7 @@ addrmap ev_map_axi_core{
     ";
     `define SIGNAL_GEN_N 16
     <% $SIGNAL_GEN_N_PERL = 16; %> // должно быть равно дефайну!!!
-    `define TABLE_SIZE   64
+    `define EV_COMP_N    64
 
     /*reg {
         name = "mem entry example";
@@ -22,7 +22,7 @@ addrmap ev_map_axi_core{
     } mem_entry_example;*/
 
     external mem {
-        mementries = `TABLE_SIZE * `SIGNAL_GEN_N * 4 / 32;
+        mementries = `EV_COMP_N * `SIGNAL_GEN_N * 4 / 32;
         memwidth = 32;
     } map_mem;
 };

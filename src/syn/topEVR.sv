@@ -45,6 +45,7 @@ module topEVR(
     input  logic       sysclk_n,
     input  logic       sysclk_p,
     output logic [3:0] led,
+    output logic [15:0]out_pulse,
     output logic       event_pulse
 );
     logic app_clk;
@@ -122,7 +123,8 @@ module topEVR(
     PS_wrapper_sv #(
         .GP0_ADDR_W(EVR_axi_params::GP0_ADDR_W),
         .GP0_DATA_W(EVR_axi_params::GP0_DATA_W),
-        .MMR_DEV_CNT2(EVR_axi_params::MMR_DEV_CNT2)
+        .MMR_DEV_CNT2(EVR_axi_params::MMR_DEV_CNT2),
+        .SIM_DEVICE("EVR")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
@@ -256,14 +258,43 @@ module topEVR(
         .delay(delay)
     );
 
-    event_comparator event_comparator_i(
-        .clk(app_clk),
-        .rst(app_reset),
-        .mmr(mmr[EVR_axi_params::EV_COMPARATOR]),
-        .ev(ev),
-        .pulse(event_pulse)
+    logic set      [EVR_axi_params::SIG_GEN_N];
+    logic clear    [EVR_axi_params::SIG_GEN_N];
+    logic trigger  [EVR_axi_params::SIG_GEN_N];
+    logic cnt_reset[EVR_axi_params::SIG_GEN_N];
+    logic gen_out  [EVR_axi_params::SIG_GEN_N];
+    ev_map #(
+        .EV_WIDTH(24),
+        .COMP_N(EVR_axi_params::EV_COMP_N),
+        .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
+    ) ev_map_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[EVR_axi_params::EV_MAP]),
+        .set(set),
+        .clear(clear),
+        .trigger(trigger),
+        .cnt_reset(cnt_reset),
+        .ev(ev)
     );
 
+    signal_generator #(
+        .N(EVR_axi_params::SIG_GEN_N),
+        .PERIOD_W(64),
+        .DELAY_W(64),
+        .WIDTH_W(64)
+    ) signal_generator_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset),
+        .mmr(mmr[EVR_axi_params::SIG_GEN_CTRL]),
+        .set(set),
+        .clear(clear),
+        .trigger(trigger),
+        .cnt_reset(cnt_reset),
+        .gen_out(gen_out)
+    );
+    assign out_pulse = {>>{gen_out}};
+    
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];
     assign led[3] = event_pulse;
