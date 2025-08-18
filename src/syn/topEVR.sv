@@ -45,8 +45,7 @@ module topEVR(
     input  logic       sysclk_n,
     input  logic       sysclk_p,
     output logic [3:0] led,
-    output logic [15:0]out_pulse,
-    output logic       event_pulse
+    output logic [15:0]out_pulse
 );
     logic app_clk;
     logic app_aresetn = 1;
@@ -297,5 +296,5 @@ module topEVR(
     
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];
-    assign led[3] = event_pulse;
+    assign led[3] = out_pulse[0];
 endmodule

@@ -1,8 +1,8 @@
 
 module signal_interconnect #(
-    parameter IN_N  = 16,
-    parameter OUT_N = 16,
-    parameter SLICE = 0
+    parameter IN_N     = 16,
+    parameter OUT_N    = 16,
+    parameter PIPELINE = 0
 )(
     input  logic  clk,
 
@@ -13,18 +13,47 @@ module signal_interconnect #(
 
     genvar i;
     generate 
-    if(SLICE == 0) begin
-        for(i = 0; i < OUT_N; i ++) begin
-            int j;
-            always_comb begin 
-                out[i] = 0;
-                for (j = 0; j < IN_N; j ++) begin
-                    out[i] |= in[j] & map[j][i];
+    if(PIPELINE <= 3) begin
+        logic in_[IN_N];
+        logic out_[IN_N];
+        if(PIPELINE >= 2) begin
+            always_ff @(posedge clk) in_ <= in;
+            always_ff @(posedge clk) out <= out_;
+        end else begin
+            assign in_ = in;
+            assign out = out_;
+        end
+        if(PIPELINE == 1 || PIPELINE == 3) begin
+            logic in_map_anded[IN_N][OUT_N];
+            logic out_or[OUT_N];
+            for(i = 0; i < OUT_N; i ++) begin
+                int j, k;
+                always_comb begin 
+                    for (j = 0; j < IN_N; j ++) begin
+                        in_map_anded[j][i] = in_[j] & map[j][i];
+                    end
+                end
+                always_ff @(posedge clk) begin 
+                    out_or[i] = 0;
+                    for (k = 0; k < IN_N; k ++) begin
+                        out_or[i] |= in_[k] & map[k][i];
+                    end
+                    out_ <= out_or;
+                end
+            end
+        end else begin
+            for(i = 0; i < OUT_N; i ++) begin
+                int j;
+                always_comb begin 
+                    out_[i] = 0;
+                    for (j = 0; j < IN_N; j ++) begin
+                        out_[i] |= in_[j] & map[j][i];
+                    end
                 end
             end
         end
     end else begin
-        $error("signal_interconnect SLICE parameter = %d is not supported", SLICE);
+        $error("signal_interconnect PIPELINE parameter = %d is not supported", PIPELINE);
     end
     endgenerate
 endmodule

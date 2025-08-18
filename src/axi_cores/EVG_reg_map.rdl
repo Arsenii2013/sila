@@ -56,14 +56,14 @@ addrmap EVG_reg_map {
         MAX_DEVICE  = `MAX_DEVICE;
     };
 
-    device_info_axi_core device_info_axi_core  @ device_numbers::DEVICE_INFO    * `MMR_BLOCK_SIZE;
-    timestamper_axi_core timestamper_axi_core  @ device_numbers::TIMESTAMPER    * `MMR_BLOCK_SIZE;
-    ev_seq_ctrl_axi_core ev_seq_ctrl_axi_core  @ device_numbers::EV_SEQ_CTRL    * `MMR_BLOCK_SIZE;
+    device_info_axi_core device_info  @ device_numbers::DEVICE_INFO    * `MMR_BLOCK_SIZE;
+    timestamper_axi_core timestamper  @ device_numbers::TIMESTAMPER    * `MMR_BLOCK_SIZE;
+    ev_seq_ctrl_axi_core ev_seq_ctrl  @ device_numbers::EV_SEQ_CTRL    * `MMR_BLOCK_SIZE;
     <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
-    ev_seq_axi_core ev_seq_axi_core_<%=$i%>    @ device_numbers::EV_SEQ_<%=$i%> * `MMR_BLOCK_SIZE;
+    ev_seq_axi_core ev_seq_<%=$i%>    @ device_numbers::EV_SEQ_<%=$i%> * `MMR_BLOCK_SIZE;
     <% } %>
-    evg_axi_core evg_axi_core_1                @ device_numbers::EVG1           * `MMR_BLOCK_SIZE;
-    evg_axi_core evg_axi_core_2                @ device_numbers::EVG2           * `MMR_BLOCK_SIZE;
+    evg_axi_core evg_1                @ device_numbers::EVG1           * `MMR_BLOCK_SIZE;
+    evg_axi_core evg_2                @ device_numbers::EVG2           * `MMR_BLOCK_SIZE;
 
 
     regfile {

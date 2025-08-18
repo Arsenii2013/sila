@@ -52,7 +52,7 @@ module ev_map #(
     signal_interconnect #(
         .IN_N(COMP_N),
         .OUT_N(SIG_GEN_N * 4),
-        .SLICE(0)
+        .PIPELINE(2)
     ) signal_interconnect_i (
         .clk(app_clk),
         .in(interconnect_in),
@@ -245,26 +245,36 @@ module ev_mapTB();
         map_writer_i.check_mapping(3, 4, '{0: 4'b1000, default:4'b0});
         map_writer_i.check_mapping(4, 5, '{0: 4'b1111, default:4'b0});
         send_ev(1);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{0: 1, default:0});
         assert (clear     == '{default:0});
         assert (trigger   == '{default:0});
         assert (cnt_reset == '{default:0});
         send_ev(2);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:0});
         assert (clear     == '{0: 1, default:0});
         assert (trigger   == '{default:0});
         assert (cnt_reset == '{default:0});
         send_ev(3);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:0});
         assert (clear     == '{default:0});
         assert (trigger   == '{0: 1, default:0});
         assert (cnt_reset == '{default:0});
         send_ev(4);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:0});
         assert (clear     == '{default:0});
         assert (trigger   == '{default:0});
         assert (cnt_reset == '{0: 1, default:0});
         send_ev(5);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{0: 1, default:0});
         assert (clear     == '{0: 1, default:0});
         assert (trigger   == '{0: 1, default:0});
@@ -287,26 +297,36 @@ module ev_mapTB();
         map_writer_i.check_mapping(4, 5, '{default:4'b1111});
 
         send_ev(1);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{0: 1, default:0});
         assert (clear     == '{1: 1, 2: 1, default:0});
         assert (trigger   == '{2: 1, default:0});
         assert (cnt_reset == '{default:0});
         send_ev(2);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:0});
         assert (clear     == '{0: 1, default:0});
         assert (trigger   == '{default:0});
         assert (cnt_reset == '{1: 1, 2: 1,default:0});
         send_ev(3);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:0});
         assert (clear     == '{1: 1, 2: 1,default:0});
         assert (trigger   == '{0: 1, default:0});
         assert (cnt_reset == '{default:0});
         send_ev(4);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{1: 1, 2: 1, default:0});
         assert (clear     == '{2: 1, default:0});
         assert (trigger   == '{default:0});
         assert (cnt_reset == '{0: 1, 2: 1, default:0});
         send_ev(5);
+        @(posedge app_clk);
+        @(posedge app_clk);
         assert (set       == '{default:1});
         assert (clear     == '{default:1});
         assert (trigger   == '{default:1});
