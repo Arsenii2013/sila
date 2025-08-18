@@ -292,7 +292,7 @@ module topEVR(
         .cnt_reset(cnt_reset),
         .gen_out(gen_out)
     );
-    assign out_pulse = {>>{gen_out}};
+    assign out_pulse = {<<{gen_out}};
     
     assign led[1] = tx_reset_done[0];
     assign led[2] = rx_reset_done[0];

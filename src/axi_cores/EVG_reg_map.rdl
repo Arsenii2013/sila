@@ -4,6 +4,7 @@
 `include "timestamper_axi_core.rdl"
 `include "ev_seq_ctrl_axi_core.rdl"
 `include "ev_seq_axi_core.rdl"
+`include "sfp_control_axi_core.rdl"
 
 `define GP0_ADDR_W       21
 `define GP0_DATA_W       32
@@ -62,6 +63,7 @@ addrmap EVG_reg_map {
     <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
     ev_seq_axi_core ev_seq_<%=$i%>    @ device_numbers::EV_SEQ_<%=$i%> * `MMR_BLOCK_SIZE;
     <% } %>
+    sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
     evg_axi_core evg_1                @ device_numbers::EVG1           * `MMR_BLOCK_SIZE;
     evg_axi_core evg_2                @ device_numbers::EVG2           * `MMR_BLOCK_SIZE;
 

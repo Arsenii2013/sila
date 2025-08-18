@@ -4,6 +4,7 @@
 `include "timestamper_axi_core.rdl"
 `include "ev_map_axi_core.rdl"
 `include "signal_gen_ctrl_axi_core.rdl"
+`include "sfp_control_axi_core.rdl"
 
 `define GP0_ADDR_W       21
 `define GP0_DATA_W       32
@@ -60,6 +61,7 @@ addrmap EVR_reg_map {
     timestamper_axi_core     timestamper     @ device_numbers::TIMESTAMPER  * `MMR_BLOCK_SIZE;
     ev_map_axi_core          ev_map          @ device_numbers::EV_MAP       * `MMR_BLOCK_SIZE;
     signal_gen_ctrl_axi_core signal_gen_ctrl @ device_numbers::SIG_GEN_CTRL * `MMR_BLOCK_SIZE;
+    sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
     evr_axi_core             evr             @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
 
 
