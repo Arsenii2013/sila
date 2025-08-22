@@ -220,10 +220,10 @@ module topEVG(
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) evg1_in_packet[4]();
-    axi_stream_if #(.DW(32)) evg1_out_packet[4]();
+    axi_stream_if #(.DW(32)) link_masters_in_packet[4]();
+    axi_stream_if #(.DW(32)) link_masters_out_packet[4]();
 
-    evg evg1(
+    link_master link_master1(
         .beacon_clk(sfp_tx_clk[0]),
 
         //------GTP signals-------
@@ -240,17 +240,17 @@ module topEVG(
         .rx_charisk(sfp_rx_is_k[0]),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk), // app_clk generated only by first master
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::EVG1]),
+        .mmr(mmr[EVG_axi_params::MASTER1]),
         
         .ev(ev), 
         .trig(),
-        .in_packet(evg1_in_packet[0]),
-        .out_packet(evg1_out_packet[0])
+        .in_packet(link_masters_in_packet[0]),
+        .out_packet(link_masters_out_packet[0])
     );
 
-    evg evg2(
+    link_master link_master2(
         .beacon_clk(sfp_tx_clk[1]),
 
         //------GTP signals-------
@@ -267,14 +267,14 @@ module topEVG(
         .rx_charisk(sfp_rx_is_k[1]),
 
         //------Application signals-------
-        .app_clk(), // app_clk generated only by first evg
+        .app_clk(), // app_clk generated only by first master
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::EVG2]),
+        .mmr(mmr[EVG_axi_params::MASTER2]),
         
         .ev(ev), 
         .trig(),
-        .in_packet(evg1_in_packet[1]),
-        .out_packet(evg1_out_packet[1])
+        .in_packet(link_masters_in_packet[1]),
+        .out_packet(link_masters_out_packet[1])
     );
 
     event_generator #(

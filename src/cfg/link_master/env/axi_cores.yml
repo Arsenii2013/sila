@@ -1,0 +1,3 @@
+
+sources:
+    - src/axi_cores/link_master_axi_core.rdl

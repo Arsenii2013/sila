@@ -1,7 +1,7 @@
 `include "evn.svh"
 `include "system_stream_if.svh"
 
-module evg_system_packet_generator(
+module master_system_packet_generator(
     input  logic                  tx_clk,
     input  logic                  app_clk,
     input  logic                  app_rst,
@@ -94,7 +94,7 @@ module evg_system_packet_generator(
 endmodule 
 
 
-module evg_system_packet_generatorTB();
+module master_system_packet_generatorTB();
 
     logic     app_clk;
     logic     app_rst;
@@ -119,7 +119,7 @@ module evg_system_packet_generatorTB();
     assign in.tdata   = connect ? out.tdata  : 0;
     assign in.tisk    = connect ? out.tisk   : 0;
 
-    evg_system_packet_generator DUT_TX(
+    master_system_packet_generator DUT_TX(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .topo_id('h12345678),

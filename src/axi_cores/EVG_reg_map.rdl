@@ -1,6 +1,6 @@
 
 `include "device_info_axi_core.rdl"
-`include "evg_axi_core.rdl"
+`include "link_master_axi_core.rdl"
 `include "timestamper_axi_core.rdl"
 `include "ev_seq_ctrl_axi_core.rdl"
 `include "ev_seq_axi_core.rdl"
@@ -51,8 +51,8 @@ addrmap EVG_reg_map {
         EV_SEQ_<%=$i%>;
         <% } %>
         SFP_CONTROL = `DEBUG_DEVICE;
-        EVG1;
-        EVG2;
+        MASTER1;
+        MASTER2;
         EVENT_COMPARATOR;
         MAX_DEVICE  = `MAX_DEVICE;
     };
@@ -64,8 +64,8 @@ addrmap EVG_reg_map {
     ev_seq_axi_core ev_seq_<%=$i%>    @ device_numbers::EV_SEQ_<%=$i%> * `MMR_BLOCK_SIZE;
     <% } %>
     sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
-    evg_axi_core evg_1                @ device_numbers::EVG1           * `MMR_BLOCK_SIZE;
-    evg_axi_core evg_2                @ device_numbers::EVG2           * `MMR_BLOCK_SIZE;
+    link_master_axi_core master_1            @ device_numbers::MASTER1           * `MMR_BLOCK_SIZE;
+    link_master_axi_core master_2            @ device_numbers::MASTER2           * `MMR_BLOCK_SIZE;
 
 
     regfile {

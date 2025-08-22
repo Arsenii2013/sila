@@ -5,9 +5,9 @@ sources:
     - src/syn/device_info.sv
     - src/syn/event_comparator.sv
     - src/syn/sfp_control.sv
-    - src/syn/event_network/evg/evg.sv
+    - src/syn/event_network/master/link_master.sv
     - src/syn/event_network/evr/evr_system_packet_reciever.sv
-    - src/syn/event_network/evg/evg_system_packet_generator.sv
+    - src/syn/event_network/master/master_system_packet_generator.sv
     - src/syn/event_network/common/evn.svh
     - src/syn/event_network/common/system_stream_if.svh
     - src/syn/event_network/common/system_packet_fsm.sv

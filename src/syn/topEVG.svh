@@ -18,8 +18,8 @@ localparam EVG_reg_map__device_numbers_e EV_SEQ_CTRL_EVAL  = EVG_reg_map__device
 localparam EVG_reg_map__device_numbers_e EV_SEQ_0_EVAL     = EVG_reg_map__device_numbers__EV_SEQ_0;
 localparam EVG_reg_map__ev_seq_params_e  EV_SEQ_N_EVAL     = EVG_reg_map__ev_seq_params__EV_SEQ_N;
 localparam EVG_reg_map__device_numbers_e SFP_CONTROL_EVAL  = EVG_reg_map__device_numbers__SFP_CONTROL;
-localparam EVG_reg_map__device_numbers_e EVG1_EVAL         = EVG_reg_map__device_numbers__EVG1;
-localparam EVG_reg_map__device_numbers_e EVG2_EVAL         = EVG_reg_map__device_numbers__EVG2;
+localparam EVG_reg_map__device_numbers_e MASTER1_EVAL      = EVG_reg_map__device_numbers__MASTER1;
+localparam EVG_reg_map__device_numbers_e MASTER2_EVAL      = EVG_reg_map__device_numbers__MASTER2;
 localparam EVG_reg_map__device_numbers_e EV_COMAPATOR_EVAL = EVG_reg_map__device_numbers__EVENT_COMPARATOR;
 
 localparam device_info_axi_core__device_type_encoding_e DEVICE_TYPE_EVAL = device_info_axi_core__device_type_encoding__EVG;
@@ -38,8 +38,8 @@ localparam EV_SEQ_CTRL    = unsigned'(EV_SEQ_CTRL_EVAL);
 localparam EV_SEQ_0       = unsigned'(EV_SEQ_0_EVAL);
 localparam EV_SEQ_N       = unsigned'(EV_SEQ_N_EVAL);
 localparam SFP_CONTROL    = unsigned'(SFP_CONTROL_EVAL);
-localparam EVG1           = unsigned'(EVG1_EVAL);
-localparam EVG2           = unsigned'(EVG2_EVAL);
+localparam MASTER1        = unsigned'(MASTER1_EVAL);
+localparam MASTER2        = unsigned'(MASTER2_EVAL);
 localparam EV_COMPARATOR  = unsigned'(EV_COMAPATOR_EVAL);
 
 endpackage

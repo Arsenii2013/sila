@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "top.svh"
 
-module evgTB(
+module link_masterTB(
 
     );
 
@@ -11,7 +11,7 @@ module evgTB(
     logic     app_rst;
     logic     beacon_clk;
 
-    axi4_lite_if #(.AW(GP0_ADDR_W), .DW(GP0_DATA_W)) mmr();
+    axi4_lite_if #(.AW(32), .DW(32)) mmr();
 
     axi_stream_if #(.DW(32)) in_packet();
     axi_stream_if #(.DW(32)) out_packet();
@@ -52,7 +52,7 @@ module evgTB(
     logic [31: 0] rx_data;
     logic [ 3: 0] rx_charisk;
 
-    evg DUT(
+    link_master DUT(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------
