@@ -1,0 +1,107 @@
+addrmap signal_gen_ctrl_axi_core{
+    name = "Модуль генераторов синхросигналов";
+    desc = "
+        Модуль генерации синхросигналов содержит три счетчика: счетчик периода генерации,
+        счетчик задержки и счетчик ширины импульса. 
+    ";
+
+    `define SIGNAL_GEN_N 16
+
+    enum trig_src_t {
+        EVENT = 0;
+        PERIOD;
+    };
+    enum output_src_t {
+        FORCE_CLEAR = 0;
+        FORCE_SET;
+        GENERATOR;
+    };
+
+    addressing = compact;
+    reg {
+        name = "SR";
+        field {sw=r; hw=w;}   gen_output[`SIGNAL_GEN_N] = 0;
+    } sr;
+
+    reg {
+        name = "CR";
+        field {sw=rw; hw=rw;} reserved[32] = 0;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        field {sw=rw; hw=rw;} reserved[32] = 0;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        field {sw=rw; hw=rw;} reserved[32] = 0;
+    } cr_c;
+
+    regfile {
+        reg {
+            name = "GEN_SR";
+            field {sw=r; hw=w;}   output     = 0;
+        } gen_sr;
+
+        reg {
+            name = "GEN_CR";
+            field {sw=rw; hw=rw;} set_ena       = 0;
+            field {sw=rw; hw=rw;} clear_ena     = 0;
+            field {sw=rw; hw=rw;} trigger_ena   = 0;
+            field {sw=rw; hw=rw;} cnt_reset_ena = 0;
+            field {sw=rw; hw=rw;} polarity      = 0;
+            field {sw=rw; hw=rw; encode=output_src_t;} out_src[2] = output_src_t::FORCE_CLEAR;
+            field {sw=rw; hw=rw; encode=trig_src_t;} trig_src[1]  = trig_src_t::EVENT;
+        } gen_cr;
+
+        reg {
+            name = "GEN_CR_S";
+            field {sw=w; hw=rw;} set_ena       = 0;
+            field {sw=w; hw=rw;} clear_ena     = 0;
+            field {sw=w; hw=rw;} trigger_ena   = 0;
+            field {sw=w; hw=rw;} cnt_reset_ena = 0;
+            field {sw=w; hw=rw;} polarity      = 0;
+            field {sw=w; hw=rw; encode=output_src_t;} out_src[2] = output_src_t::FORCE_CLEAR;
+            field {sw=w; hw=rw; encode=trig_src_t;} trig_src[1]  = trig_src_t::EVENT;
+        } gen_cr_s;
+
+        reg {
+            name = "GEN_CR_C";
+            field {sw=w; hw=rw;} set_ena       = 0;
+            field {sw=w; hw=rw;} clear_ena     = 0;
+            field {sw=w; hw=rw;} trigger_ena   = 0;
+            field {sw=w; hw=rw;} cnt_reset_ena = 0;
+            field {sw=w; hw=rw;} polarity      = 0;
+            field {sw=w; hw=rw; encode=output_src_t;} out_src[2] = output_src_t::FORCE_CLEAR;
+            field {sw=w; hw=rw; encode=trig_src_t;} trig_src[1]  = trig_src_t::EVENT;
+        } gen_cr_c;
+
+        reg {
+            name = "DELAY_LSB";
+            field {sw=rw; hw=r;} delay_lsb[32] = 0;
+        } delay_lsb;
+        reg {
+            name = "DELAY_MSB";
+            field {sw=rw; hw=r;} delay_msb[32] = 0;
+        } delay_msb;
+
+        reg {
+            name = "WIDTH_LSB";
+            field {sw=rw; hw=r;} width_lsb[32] = 0;
+        } width_lsb;
+        reg {
+            name = "WIDTH_MSB";
+            field {sw=rw; hw=r;} width_msb[32] = 0;
+        } width_msb;
+
+        reg {
+            name = "PERIOD_LSB";
+            field {sw=rw; hw=r;} period_lsb[32] = 0;
+        } period_lsb;
+        reg {
+            name = "PERIOD_MSB";
+            field {sw=rw; hw=r;} period_msb[32] = 0;
+        } period_msb;
+    } gen_regs [`SIGNAL_GEN_N];
+};
