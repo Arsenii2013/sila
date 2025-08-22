@@ -1,5 +1,5 @@
 
 sources:
-    - src/sim/event_network/evrTB.sv
+    - src/sim/event_network/link_slaveTB.sv
     - src/lib/common/sys_clk_gen.sv
     - src/lib/axi/axi_master.sv

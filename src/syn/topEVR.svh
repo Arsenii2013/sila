@@ -19,7 +19,7 @@ localparam EVR_reg_map__ev_comp_params_e    EV_COMP_N_EVAL    = EVR_reg_map__ev_
 localparam EVR_reg_map__device_numbers_e    SIG_GEN_CTRL_EVAL = EVR_reg_map__device_numbers__SIG_GEN_CTRL;
 localparam EVR_reg_map__signal_gen_params_e SIG_GEN_N_EVAL    = EVR_reg_map__signal_gen_params__SIGNAL_GEN_N;
 localparam EVR_reg_map__device_numbers_e    SFP_CONTROL_EVAL  = EVR_reg_map__device_numbers__SFP_CONTROL;
-localparam EVR_reg_map__device_numbers_e    EVR_EVAL          = EVR_reg_map__device_numbers__EVR;
+localparam EVR_reg_map__device_numbers_e    SLAVE_EVAL         = EVR_reg_map__device_numbers__SLAVE;
 localparam EVR_reg_map__device_numbers_e    EV_COMAPATOR_EVAL = EVR_reg_map__device_numbers__EVENT_COMPARATOR;
 
 
@@ -40,7 +40,7 @@ localparam EV_COMP_N      = unsigned'(EV_COMP_N_EVAL);
 localparam SIG_GEN_CTRL   = unsigned'(SIG_GEN_CTRL_EVAL);
 localparam SIG_GEN_N      = unsigned'(SIG_GEN_N_EVAL);
 localparam SFP_CONTROL    = unsigned'(SFP_CONTROL_EVAL);
-localparam EVR            = unsigned'(EVR_EVAL);
+localparam SLAVE          = unsigned'(SLAVE_EVAL);
 localparam EV_COMPARATOR  = unsigned'(EV_COMAPATOR_EVAL);
 
 endpackage

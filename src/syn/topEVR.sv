@@ -225,10 +225,10 @@ module topEVR(
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) evr1_in_packet();
-    axi_stream_if #(.DW(32)) evr1_out_packet();
+    axi_stream_if #(.DW(32)) slave_in_packet();
+    axi_stream_if #(.DW(32)) slave_out_packet();
 
-    evr evr1(
+    link_slave link_slave1(
         .beacon_clk(sfp_tx_clk[0]),
 
         //------GTP signals-------
@@ -247,12 +247,12 @@ module topEVR(
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::EVR]),
+        .mmr(mmr[EVR_axi_params::SLAVE]),
         
         .ev(ev), 
         .trig(),
-        .in_packet(evr1_in_packet),
-        .out_packet(evr1_out_packet),
+        .in_packet(slave_in_packet),
+        .out_packet(slave_out_packet),
 
         .delay(delay)
     );

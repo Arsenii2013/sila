@@ -234,7 +234,7 @@ module PS_wrapper_sv #(
     task automatic EVR_test();
         typedef logic [63: 0] uint64_t;
         localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SFP_CONTROL;
-        localparam uint64_t EVR_BASE_ADDR      = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::EVR;
+        localparam uint64_t SLAVE_BASE_ADDR      = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SLAVE;
 
         $timeformat(-3, 5, " ms");
 
@@ -244,32 +244,32 @@ module PS_wrapper_sv #(
         axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
         setup_signal_generation();
 
-        wait(DUT_EVR.evr1.link_delay_st == 5'h1);
+        wait(DUT_EVR.link_slave1.link_delay_st == 5'h1);
         $display("EVR Get INITIAL state at %t\n", $realtime);
         #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        axi_master.read(SLAVE_BASE_ADDR + 'h00, status);
+        axi_master.read(SLAVE_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(SLAVE_BASE_ADDR + 'h14, measured_delay);
         $display("status:\t %x", status);
         $display("topology ID:\t %x", topo_id);
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
 
-        wait(DUT_EVR.evr1.link_delay_st == 5'h3);
+        wait(DUT_EVR.link_slave1.link_delay_st == 5'h3);
         $display("EVR Get ONE_CYCLE state at %t\n", $realtime);
         #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        axi_master.read(SLAVE_BASE_ADDR + 'h00, status);
+        axi_master.read(SLAVE_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(SLAVE_BASE_ADDR + 'h14, measured_delay);
         $display("status:\t %x", status);
         $display("topology ID:\t %x", topo_id);
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
 
-        wait(DUT_EVR.evr1.link_delay_st == 5'h7);
+        wait(DUT_EVR.link_slave1.link_delay_st == 5'h7);
         $display("EVR Get FINE state at %t\n", $realtime);
         #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
+        axi_master.read(SLAVE_BASE_ADDR + 'h00, status);
+        axi_master.read(SLAVE_BASE_ADDR + 'h10, topo_id);
+        axi_master.read(SLAVE_BASE_ADDR + 'h14, measured_delay);
         $display("status:\t %x", status);
         $display("topology ID:\t %x", topo_id);
         $display("link delay:\t %e", (measured_delay >> 16) / 175e6);

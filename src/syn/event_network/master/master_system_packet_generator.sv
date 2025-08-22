@@ -132,7 +132,7 @@ module master_system_packet_generatorTB();
         .out(out)
     );
 
-    evr_system_packet_reciever DUT_RX(
+    slave_system_packet_reciever DUT_RX(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .topo_id(),

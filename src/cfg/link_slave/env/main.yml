@@ -1,8 +1,8 @@
 parameters:
     VARIANT_NAME        : = ARGUMENTS['bv']
     PROJECT_NAME        : = VARIANT_NAME
-    TOP_NAME            : evr
-    TESTBENCH_NAME      : evrTB
+    TOP_NAME            : link_slave
+    TESTBENCH_NAME      : link_slaveTB
     DEVICE              : xc7z035ffg676-2
     
     TARGET_AX7Z100B     : = ''

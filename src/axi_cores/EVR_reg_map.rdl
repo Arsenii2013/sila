@@ -1,6 +1,6 @@
 
 `include "device_info_axi_core.rdl"
-`include "evr_axi_core.rdl"
+`include "link_slave_axi_core.rdl"
 `include "timestamper_axi_core.rdl"
 `include "ev_map_axi_core.rdl"
 `include "signal_gen_ctrl_axi_core.rdl"
@@ -52,7 +52,7 @@ addrmap EVR_reg_map {
         EV_MAP;
         SIG_GEN_CTRL;
         SFP_CONTROL = `DEBUG_DEVICE;
-        EVR;
+        SLAVE;
         EVENT_COMPARATOR;
         MAX_DEVICE  = `MAX_DEVICE;
     };
@@ -62,7 +62,7 @@ addrmap EVR_reg_map {
     ev_map_axi_core          ev_map          @ device_numbers::EV_MAP       * `MMR_BLOCK_SIZE;
     signal_gen_ctrl_axi_core signal_gen_ctrl @ device_numbers::SIG_GEN_CTRL * `MMR_BLOCK_SIZE;
     sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
-    evr_axi_core             evr             @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
+    link_slave_axi_core      link_slave      @ device_numbers::SLAVE        * `MMR_BLOCK_SIZE;
 
 
     regfile {

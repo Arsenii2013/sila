@@ -2,7 +2,7 @@
 `include "evn.svh"
 `include "axi4_lite_if.svh"
 
-module evr
+module link_slave
 (
     input  logic            beacon_clk,
 
@@ -141,7 +141,7 @@ module evr
     assign system_stream.tisk   = rx_charisk;
     assign system_stream.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
 
-    evr_system_packet_reciever evr_system_packet_reciever_i(
+    slave_system_packet_reciever system_packet_reciever_i(
         .rx_clk(rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
@@ -237,8 +237,8 @@ module evr
 
     assign delay = link_delay + delay_comp;
 
-    evr_axi_core_pkg::evr_axi_core__in_t  hwif_in;
-    evr_axi_core_pkg::evr_axi_core__out_t hwif_out;
+    link_slave_axi_core_pkg::link_slave_axi_core__in_t  hwif_in;
+    link_slave_axi_core_pkg::link_slave_axi_core__out_t hwif_out;
 
     assign hwif_in.sr.link_up.next       = aligned;
     assign hwif_in.sr.link_delay_st.next = link_delay_st;
@@ -255,7 +255,7 @@ module evr
     assign hwif_in.tgt_delay.tgt_delay.next   = tgt_delay;
     assign hwif_in.delay_comp.delay_comp.next = delay_comp;
 
-    evr_axi_core evr_axi_core_i(
+    link_slave_axi_core link_slave_axi_core_i(
         .clk(app_clk),
         .rst(app_rst),
 

@@ -1,7 +1,7 @@
 `include "evn.svh"
 `include "system_stream_if.svh"
 
-module evr_system_packet_reciever(
+module slave_system_packet_reciever(
     input  logic                  app_clk,
     input  logic                  rx_clk,
     input  logic                  app_rst,

@@ -1,4 +1,4 @@
-addrmap evr_axi_core{
+addrmap link_slave_axi_core{
     name = "Блок отладочных регистров оптической сети";
 
     enum link_delay_st {

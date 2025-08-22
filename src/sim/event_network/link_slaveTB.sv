@@ -2,7 +2,7 @@
 `include "top.svh"
 `include "evn.svh"
 
-module evrTB(
+module link_slaveTB(
 
     );
 
@@ -12,7 +12,7 @@ module evrTB(
     logic     app_rst;
     logic     beacon_clk;
 
-    axi4_lite_if #(.AW(GP0_ADDR_W), .DW(GP0_DATA_W)) mmr();
+    axi4_lite_if #(.AW(32), .DW(32)) mmr();
 
     axi_stream_if #(.DW(32)) in_packet();
     axi_stream_if #(.DW(32)) out_packet();
@@ -94,7 +94,7 @@ module evrTB(
         end
     end
 
-    evr DUT(
+    link_slave DUT(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------

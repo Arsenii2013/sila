@@ -7,11 +7,11 @@ module linkTB(
     localparam PROPAGATION_DELAY = 12345.56ns;
 
     logic     master_tx_clk; // из опоры master
-    logic     master_rx_clk; // = evr_tx_clk + набег фазы равный задержке 
-    logic     evr_tx_clk; // = evr_rx_clk + набег фазы от вывода на джиттер клинер
-    logic     evr_rx_clk; // = master_tx_clk + набег фазы равный задержке 
+    logic     master_rx_clk; // = slave_tx_clk + набег фазы равный задержке 
+    logic     slave_tx_clk; // = slave_rx_clk + набег фазы от вывода на джиттер клинер
+    logic     slave_rx_clk; // = master_tx_clk + набег фазы равный задержке 
     logic     master_app_clk;
-    logic     evr_app_clk;
+    logic     slave_app_clk;
     logic     app_rst;
     logic     beacon_clk;
     logic     aligned;
@@ -23,9 +23,9 @@ module linkTB(
     ) CLK_GEN (
         .sys_clk (master_tx_clk)
     );
-    assign #1.5ns evr_rx_clk = master_tx_clk;
-    assign #1.5ns evr_tx_clk = evr_rx_clk;
-    assign #1.5ns master_rx_clk = evr_tx_clk;
+    assign #1.5ns slave_rx_clk = master_tx_clk;
+    assign #1.5ns slave_tx_clk = slave_rx_clk;
+    assign #1.5ns master_rx_clk = slave_tx_clk;
 
     sys_clk_gen
     #(
@@ -50,7 +50,7 @@ module linkTB(
 
     int trig_cnt = 0;
     logic [23:0] trig;
-    always_ff @(posedge evr_app_clk) begin
+    always_ff @(posedge slave_app_clk) begin
         if(trig_cnt == 0) begin
             trig     <= 'h123456;
             trig_cnt <= 4;
@@ -65,10 +65,10 @@ module linkTB(
     logic [31: 0] master_rx_data = 0;
     logic [ 3: 0] master_rx_charisk = 0;
 
-    logic [31: 0] evr_tx_data;
-    logic [ 3: 0] evr_tx_charisk;
-    logic [31: 0] evr_rx_data = 0;
-    logic [ 3: 0] evr_rx_charisk = 0;
+    logic [31: 0] slave_tx_data;
+    logic [ 3: 0] slave_tx_charisk;
+    logic [31: 0] slave_rx_data = 0;
+    logic [ 3: 0] slave_rx_charisk = 0;
 
 
     logic [31: 0] master_tx_data_propagated = 0;
@@ -77,17 +77,17 @@ module linkTB(
     always @(master_tx_data)    master_tx_data_propagated    <= #(PROPAGATION_DELAY) master_tx_data;
     always @(master_tx_charisk) master_tx_charisk_propagated <= #(PROPAGATION_DELAY) master_tx_charisk;
 
-    always_ff @(posedge evr_rx_clk) evr_rx_data    <= master_tx_data_propagated;
-    always_ff @(posedge evr_rx_clk) evr_rx_charisk <= master_tx_charisk_propagated;
+    always_ff @(posedge slave_rx_clk) slave_rx_data    <= master_tx_data_propagated;
+    always_ff @(posedge slave_rx_clk) slave_rx_charisk <= master_tx_charisk_propagated;
 
 
-    logic [31: 0] evr_tx_data_propagated = 0;
-    logic [ 3: 0] evr_tx_charisk_propagated = 0;
-    always @(evr_tx_data)    evr_tx_data_propagated    <= #(PROPAGATION_DELAY) evr_tx_data;
-    always @(evr_tx_charisk) evr_tx_charisk_propagated <= #(PROPAGATION_DELAY) evr_tx_charisk;
+    logic [31: 0] slave_tx_data_propagated = 0;
+    logic [ 3: 0] slave_tx_charisk_propagated = 0;
+    always @(slave_tx_data)    slave_tx_data_propagated    <= #(PROPAGATION_DELAY) slave_tx_data;
+    always @(slave_tx_charisk) slave_tx_charisk_propagated <= #(PROPAGATION_DELAY) slave_tx_charisk;
 
-    always_ff @(posedge master_rx_clk) master_rx_data    <= evr_tx_data_propagated;
-    always_ff @(posedge master_rx_clk) master_rx_charisk <= evr_tx_charisk_propagated;
+    always_ff @(posedge master_rx_clk) master_rx_data    <= slave_tx_data_propagated;
+    always_ff @(posedge master_rx_clk) master_rx_charisk <= slave_tx_charisk_propagated;
 
     axi4_lite_if #(.AW(32), .DW(32)) master_mmr();
 
@@ -121,35 +121,35 @@ module linkTB(
         .out_packet(master_out_packet)
     );
 
-    axi4_lite_if #(.AW(32), .DW(32)) evr_mmr();
+    axi4_lite_if #(.AW(32), .DW(32)) slave_mmr();
 
-    axi_stream_if #(.DW(32)) evr_in_packet();
-    axi_stream_if #(.DW(32)) evr_out_packet();
-    evr evrDUT(
+    axi_stream_if #(.DW(32)) slave_in_packet();
+    axi_stream_if #(.DW(32)) slave_out_packet();
+    link_slave slaveDUT(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------
         .aligned(aligned),
 
         .tx_resetdone(~app_rst),
-        .tx_clk(evr_tx_clk),
-        .tx_data(evr_tx_data),
-        .tx_charisk(evr_tx_charisk),
+        .tx_clk(slave_tx_clk),
+        .tx_data(slave_tx_data),
+        .tx_charisk(slave_tx_charisk),
 
         .rx_resetdone(~app_rst),
-        .rx_clk(evr_rx_clk),
-        .rx_data(evr_rx_data),
-        .rx_charisk(evr_rx_charisk),
+        .rx_clk(slave_rx_clk),
+        .rx_data(slave_rx_data),
+        .rx_charisk(slave_rx_charisk),
 
         //------Application signals-------
-        .app_clk(evr_app_clk),
+        .app_clk(slave_app_clk),
         .app_rst(app_rst),
-        .mmr(evr_mmr),
+        .mmr(slave_mmr),
         
         .ev(), 
         .trig(trig),
-        .in_packet(evr_in_packet),
-        .out_packet(evr_out_packet)
+        .in_packet(slave_in_packet),
+        .out_packet(slave_out_packet)
     );
 
     axi_master axi_master_link_master(
@@ -157,10 +157,10 @@ module linkTB(
         .aresetn(app_rst),
         .axi(master_mmr)
     );
-    axi_master axi_master_evr(
-        .aclk(evr_app_clk),
+    axi_master axi_master_link_slave(
+        .aclk(slave_app_clk),
         .aresetn(app_rst),
-        .axi(evr_mmr)
+        .axi(slave_mmr)
     );
 
     logic [31:0] status;
@@ -184,7 +184,7 @@ module linkTB(
         wait(masterDUT.delay_st == 4'h1);
         $display("Get INITIAL state at %t\n", $realtime);
         #100us;
-        axi_master_evr.write('h04, 'h1);
+        axi_master_link_slave.write('h04, 'h1);
 
         axi_master_link_master.read('h00, status);
         axi_master_link_master.read('h10, topo_id);
@@ -193,9 +193,9 @@ module linkTB(
         $display("EVG topology ID:\t %x", topo_id);
         $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
 
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h10, topo_id);
-        axi_master_evr.read('h14, measured_delay);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h10, topo_id);
+        axi_master_link_slave.read('h14, measured_delay);
         $display("EVR status:\t %x", status);
         $display("EVR topology ID:\t %x", topo_id);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
@@ -211,9 +211,9 @@ module linkTB(
         $display("EVG topology ID:\t %x", topo_id);
         $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
 
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h10, topo_id);
-        axi_master_evr.read('h14, measured_delay);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h10, topo_id);
+        axi_master_link_slave.read('h14, measured_delay);
         $display("EVR status:\t %x", status);
         $display("EVR topology ID:\t %x", topo_id);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
@@ -228,9 +228,9 @@ module linkTB(
         $display("EVG topology ID:\t %x", topo_id);
         $display("EVG link delay:\t %e", (measured_delay >> 16) / 175e6);
 
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h10, topo_id);
-        axi_master_evr.read('h14, measured_delay);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h10, topo_id);
+        axi_master_link_slave.read('h14, measured_delay);
         $display("EVR status:\t %x", status);
         $display("EVR topology ID:\t %x", topo_id);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
@@ -238,29 +238,29 @@ module linkTB(
     end
 
     initial begin
-        wait(evrDUT.dc_status == 4'h1);
+        wait(slaveDUT.dc_status == 4'h1);
         $display("Get compensation INITIAL state at %t\n", $realtime);
         #100us;
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h1C, delay_comp);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h1C, delay_comp);
         $display("EVR status:\t %x", status);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
         $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
 
-        wait(evrDUT.dc_status == 4'h3);
+        wait(slaveDUT.dc_status == 4'h3);
         $display("Get compensation ONE_CYCLE state at %t\n", $realtime);
         #100us;
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h1C, delay_comp);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h1C, delay_comp);
         $display("EVR status:\t %x", status);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
         $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
 
-        wait(evrDUT.dc_status == 4'h7);
+        wait(slaveDUT.dc_status == 4'h7);
         $display("Get compensation FINE state at %t\n", $realtime);
         #100us;
-        axi_master_evr.read('h00, status);
-        axi_master_evr.read('h1C, delay_comp);
+        axi_master_link_slave.read('h00, status);
+        axi_master_link_slave.read('h1C, delay_comp);
         $display("EVR status:\t %x", status);
         $display("EVR link delay:\t %e", (measured_delay >> 16) / 175e6);
         $display("EVR delay comp:\t %e", (delay_comp >> 16) / 175e6);
