@@ -9,6 +9,7 @@ sources:
     - src/syn/event_network/common/system_packet_fsm.sv
     - src/syn/event_network/master/link_master.sv
     - src/syn/event_network/master/master_system_packet_generator.sv
+    - src/syn/event_network/master/master_system_packet_reciever.sv
     - src/syn/event_network/common/evn.svh
     - src/syn/event_network/common/dc/sampler.sv
     - src/syn/event_network/common/dc/filter.sv
@@ -18,3 +19,4 @@ sources:
     - src/syn/event_network/common/dc/dc_control.sv
     - src/syn/event_network/slave/link_slave.sv
     - src/syn/event_network/slave/slave_system_packet_reciever.sv
+    - src/syn/event_network/slave/slave_system_packet_generator.sv

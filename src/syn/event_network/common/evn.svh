@@ -1,6 +1,7 @@
 `ifndef _EVN_
 `define _EVN_
 
+package evn;
 localparam EVENT_COMMA     = 8'h5C;
 localparam TRIGGER_COMMA   = 8'h7C;
 localparam PACKET_COMMA    = 8'hDC;
@@ -19,28 +20,39 @@ typedef logic [$clog2(ALIGNMENT_PERIOD): 0] alignment_cnt_t;
 localparam DELAY_INT_W      = 16;
 localparam DELAY_FRAC_W     = 16;
 localparam DELAY_W          = DELAY_INT_W + DELAY_FRAC_W;
+typedef logic [DELAY_W-1: 0] delay_t;
 
 localparam MAX_COMPENSATION = 2 ** 10; // должна быть степенью двойки; 2 ** 10 тактов = 1.76 км
 
 localparam TOPO_ID_W        = 32;
+typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
+
+localparam EVENT_W          = 24;
+typedef logic [EVENT_W                 -1: 0] ev_t;
+
+localparam TRIGGER_W        = 24;
+typedef logic [TRIGGER_W               -1: 0] trig_t;
 
 // System packets
 
 localparam SYSTEM_PACKET_ID_START   = 8'h00;
 localparam TOPO_ID_PACKET_ID        = SYSTEM_PACKET_ID_START + 8'h01;
 localparam MEAS_DELAY_PACKET_ID     = TOPO_ID_PACKET_ID      + 8'h01;
-localparam UP_DELAY_PACKET_ID       = MEAS_DELAY_PACKET_ID   + 8'h01;
-localparam TGT_DELAY_PACKET_ID      = UP_DELAY_PACKET_ID     + 8'h01;
+localparam TGT_DELAY_PACKET_ID      = MEAS_DELAY_PACKET_ID   + 8'h01;
+localparam UP_DELAY_PACKET_ID       = TGT_DELAY_PACKET_ID    + 8'h01;
+localparam SUB_DELAY_PACKET_ID      = UP_DELAY_PACKET_ID     + 8'h01;
 
 localparam TOPO_ID_PACKET_LEN       = 16'h0001;
 localparam MEAS_DELAY_PACKET_LEN    = 16'h0002;
-localparam UP_DELAY_PACKET_LEN      = 16'h0002;
 localparam TGT_DELAY_PACKET_LEN     = 16'h0001;
+localparam UP_DELAY_PACKET_LEN      = 16'h0001;
+localparam SUB_DELAY_PACKET_LEN     = 16'h0001;
 
 localparam TOPO_ID_PACKET_START     = {PACKET_COMMA, TOPO_ID_PACKET_ID,    TOPO_ID_PACKET_LEN   };
 localparam MEAS_DELAY_PACKET_START  = {PACKET_COMMA, MEAS_DELAY_PACKET_ID, MEAS_DELAY_PACKET_LEN};
-localparam UP_DELAY_PACKET_START    = {PACKET_COMMA, UP_DELAY_PACKET_ID,   UP_DELAY_PACKET_LEN  };
 localparam TGT_DELAY_PACKET_START   = {PACKET_COMMA, TGT_DELAY_PACKET_ID,  TGT_DELAY_PACKET_LEN };
+localparam UP_DELAY_PACKET_START    = {PACKET_COMMA, UP_DELAY_PACKET_ID,   UP_DELAY_PACKET_LEN  };
+localparam SUB_DELAY_PACKET_START   = {PACKET_COMMA, SUB_DELAY_PACKET_ID,  SUB_DELAY_PACKET_LEN };
 
 localparam PACKET_START_IS_K     = 4'h8;
 
@@ -48,4 +60,6 @@ localparam PACKET_START_IS_K     = 4'h8;
 
 localparam USER_ID_START    = 8'h80;
 localparam TAMESTAMP_ID     = USER_ID_START + 1;
+endpackage
+
 `endif //_EVN_ 

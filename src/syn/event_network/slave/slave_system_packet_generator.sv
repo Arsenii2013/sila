@@ -1,20 +1,13 @@
 `include "evn.svh"
 `include "system_stream_if.svh"
 
-module master_system_packet_generator(
-    input  logic           tx_clk,
-    input  logic           app_clk,
-    input  logic           app_rst,
-    input  evn::topo_id_t  topo_id,
-    input  logic           send_topo_id,
-    input  evn::delay_t    meas_delay,
-    input  logic [   3: 0] meas_delay_st,
-    input  logic           send_meas_delay,
-    input  evn::delay_t    up_delay,
-    input  logic           send_up_delay,
-    input  evn::delay_t    tgt_delay,
-    input  logic           send_tgt_delay,
-    system_stream_if.m     out
+module slave_system_packet_generator(
+    input  logic          tx_clk,
+    input  logic          app_clk,
+    input  logic          app_rst,
+    input  evn::delay_t   sub_delay,
+    input  logic          send_sub_delay,
+    system_stream_if.m    out
 );
     // модуль генерации системных пакетов
     // сигналы send_* - запросы на отправку соответствующего пакета
@@ -23,38 +16,14 @@ module master_system_packet_generator(
     // в этом случае сразу же сгенерируется запрос на новый пакет
     import evn::*;
 
-    logic send_topo_id_sync, send_meas_delay_sync, send_tgt_delay_sync, send_up_delay_sync;
+    logic send_sub_delay_sync;
 
     xpm_cdc_pulse send_topo_id_sunchronizer_i(
         .dest_clk(tx_clk),
-        .dest_pulse(send_topo_id_sync),
+        .dest_pulse(send_sub_delay_sync),
         .dest_rst(app_rst),
         .src_clk(app_clk),
-        .src_pulse(send_topo_id),
-        .src_rst(app_rst)
-    );
-    xpm_cdc_pulse send_meas_sunchronizer_i(
-        .dest_clk(tx_clk),
-        .dest_pulse(send_meas_delay_sync),
-        .dest_rst(app_rst),
-        .src_clk(app_clk),
-        .src_pulse(send_meas_delay),
-        .src_rst(app_rst)
-    );
-    xpm_cdc_pulse send_tgt_delay_sunchronizer_i(
-        .dest_clk(tx_clk),
-        .dest_pulse(send_tgt_delay_sync),
-        .dest_rst(app_rst),
-        .src_clk(app_clk),
-        .src_pulse(send_tgt_delay),
-        .src_rst(app_rst)
-    );
-    xpm_cdc_pulse send_up_delay_sunchronizer_i(
-        .dest_clk(tx_clk),
-        .dest_pulse(send_up_delay_sync),
-        .dest_rst(app_rst),
-        .src_clk(app_clk),
-        .src_pulse(send_up_delay),
+        .src_pulse(send_sub_delay),
         .src_rst(app_rst)
     );
 
@@ -69,50 +38,14 @@ module master_system_packet_generator(
 
     simple_packet_tx_fsm #(
         .DW(32),
-        .PACKET_ID(TOPO_ID_PACKET_ID),
-        .PARAM_CNT(TOPO_ID_PACKET_LEN)
-    ) topo_id_tx_fsm (
+        .PACKET_ID(SUB_DELAY_PACKET_ID),
+        .PARAM_CNT(SUB_DELAY_PACKET_LEN)
+    ) sub_delay_tx_fsm (
         .app_clk(tx_clk),
         .app_rst(app_rst),
-        .param('{topo_id}),
-        .send_packet(send_topo_id_sync),
+        .param('{sub_delay}),
+        .send_packet(send_sub_delay_sync),
         .out(system_stream[0])
-    );
-
-    simple_packet_tx_fsm #(
-        .DW(32),
-        .PACKET_ID(MEAS_DELAY_PACKET_ID),
-        .PARAM_CNT(MEAS_DELAY_PACKET_LEN)
-    ) meas_delay_tx_fsm (
-        .app_clk(tx_clk),
-        .app_rst(app_rst),
-        .param('{meas_delay, meas_delay_st}),
-        .send_packet(send_meas_delay_sync),
-        .out(system_stream[1])
-    );
-
-    simple_packet_tx_fsm #(
-        .DW(32),
-        .PACKET_ID(TGT_DELAY_PACKET_ID),
-        .PARAM_CNT(TGT_DELAY_PACKET_LEN)
-    ) tgt_delay_tx_fsm (
-        .app_clk(tx_clk),
-        .app_rst(app_rst),
-        .param('{tgt_delay}),
-        .send_packet(send_tgt_delay_sync),
-        .out(system_stream[2])
-    );
-
-    simple_packet_tx_fsm #(
-        .DW(32),
-        .PACKET_ID(UP_DELAY_PACKET_ID),
-        .PARAM_CNT(UP_DELAY_PACKET_LEN)
-    ) up_delay_tx_fsm (
-        .app_clk(tx_clk),
-        .app_rst(app_rst),
-        .param('{up_delay}),
-        .send_packet(send_up_delay_sync),
-        .out(system_stream[3])
     );
 
 endmodule 

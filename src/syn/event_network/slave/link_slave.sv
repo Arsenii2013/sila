@@ -24,18 +24,26 @@ module link_slave
     input  logic            app_rst,
     axi4_lite_if.s          mmr,
     
-    output logic [23:0]     ev, // ev_valid = ev != 0
-    input  logic [23:0]     trig, // trig_valid = trig != 0
+    output evn::ev_t        ev, // ev_valid = ev != 0
+    input  evn::trig_t      trig, // trig_valid = trig != 0
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet,
 
-    output logic            delay
+    output evn::delay_t     total_delay,
+
+    output evn::topo_id_t   topo_id,
+    output logic            topo_id_upd,
+    output evn::delay_t     tgt_delay,
+    output logic            tgt_delay_upd,
+    output evn::delay_t     up_delay,
+    output logic            up_delay_upd,
+    input  evn::delay_t     sub_delay,
+    input  logic            sub_delay_upd
 );
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
 
-    typedef logic [DELAY_INT_W+DELAY_FRAC_W-1: 0] delay_t;
-    typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
+    import evn::*;
 
 // Trigger
     logic trig_valid;
@@ -103,6 +111,47 @@ module link_slave
         end
     end
 
+// System packets
+    delay_t up_delay_iternal;
+    logic   up_delay_recv_iternal;
+    delay_t link_delay;
+    logic [3:0] link_delay_st;
+    logic link_delay_recv;
+
+    assign up_delay     = up_delay_iternal + link_delay;
+    assign up_delay_upd = up_delay_recv_iternal || link_delay_recv;
+
+    system_stream_if #(.DW(32)) system_stream_in();
+    system_stream_if #(.DW(32)) system_stream_out();
+    assign system_stream_in.tdata  = rx_data;
+    assign system_stream_in.tisk   = rx_charisk;
+    assign system_stream_in.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
+
+    slave_system_packet_reciever system_packet_reciever_i(
+        .rx_clk(rx_clk),
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .topo_id(topo_id),
+        .topo_id_recv(topo_id_upd),
+        .meas_delay(link_delay),
+        .meas_delay_st(link_delay_st),
+        .meas_delay_recv(link_delay_recv),
+        .tgt_delay(tgt_delay),
+        .tgt_delay_recv(tgt_delay_upd),
+        .up_delay(up_delay_iternal),
+        .up_delay_recv(up_delay_recv_iternal),
+        .in(system_stream_in)
+    );
+
+    slave_system_packet_generator system_packet_generator_i(
+        .tx_clk(tx_clk),
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .sub_delay(sub_delay),
+        .send_sub_delay(sub_delay_upd),
+        .out(system_stream_out)
+    );
+
 
 // Mux
     always_ff @(posedge tx_clk) begin
@@ -118,6 +167,9 @@ module link_slave
             tx_data         <= BEACON_WORD;
             tx_charisk      <= BEACON_IS_K;
             beacon_ready    <= 1;
+        end else if(system_stream_out.tvalid) begin
+            tx_data         <= system_stream_out.tdata;
+            tx_charisk      <= system_stream_out.tisk;
         end else if(alignment_valid && ~alignment_ready) begin
             tx_data         <= ALIGNMENT_WORD;
             tx_charisk      <= ALIGNMENT_IS_K;
@@ -128,32 +180,7 @@ module link_slave
         end
     end
 
-
-// System packets
-    topo_id_t topo_id;
-    delay_t link_delay, tgt_delay;
-    logic tgt_delay_recv;
-    logic [3:0] link_delay_st;
-    logic link_delay_recv;
-
-    system_stream_if #(.DW(32)) system_stream();
-    assign system_stream.tdata  = rx_data;
-    assign system_stream.tisk   = rx_charisk;
-    assign system_stream.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
-
-    slave_system_packet_reciever system_packet_reciever_i(
-        .rx_clk(rx_clk),
-        .app_clk(app_clk),
-        .app_rst(app_rst),
-        .topo_id(topo_id),
-        .topo_id_recv(),
-        .meas_delay(link_delay),
-        .meas_delay_st(link_delay_st),
-        .meas_delay_recv(link_delay_recv),
-        .tgt_delay(tgt_delay),
-        .tgt_delay_recv(tgt_delay_recv),
-        .in(system_stream)
-    );
+    assign system_stream_out.tready = !trig_valid && !beacon_valid;
 
 // Delay compensation
     logic mmcm_locked;
@@ -229,13 +256,13 @@ module link_slave
         .pll_ph_dec(pll_ph_dec),
     
         .dc_status(dc_status),
-        .delay_req(tgt_delay - link_delay),
-        .delay_req_upd(tgt_delay_recv),
+        .delay_req(tgt_delay - up_delay),
+        .delay_req_upd(tgt_delay_upd),
         
         .delay_comp(delay_comp)
     );
 
-    assign delay = link_delay + delay_comp;
+    assign total_delay = up_delay + delay_comp;
 
     link_slave_axi_core_pkg::link_slave_axi_core__in_t  hwif_in;
     link_slave_axi_core_pkg::link_slave_axi_core__out_t hwif_out;
@@ -249,9 +276,10 @@ module link_slave
     assign hwif_in.cr_c.dc_ena.next      = 0;
     assign dc_ena                        = hwif_out.cr.dc_ena.value;
 
-    assign hwif_in.topoid.topoid.next         = topo_id;
+    assign hwif_in.topo_id.topo_id.next       = topo_id;
     assign hwif_in.link_delay.link_delay.next = link_delay;
-
+    assign hwif_in.up_delay.up_delay.next     = up_delay;
+    assign hwif_in.sub_delay.sub_delay.next   = sub_delay;
     assign hwif_in.tgt_delay.tgt_delay.next   = tgt_delay;
     assign hwif_in.delay_comp.delay_comp.next = delay_comp;
 

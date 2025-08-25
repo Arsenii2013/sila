@@ -32,14 +32,24 @@ addrmap link_slave_axi_core{
     } cr_c;
 
     reg {
-        name = "LINK_TOPO_ID";
-        field {sw=r; hw=w;} topoid[32] = 0;
-    } topoid;
+        name = "TOPO_ID";
+        field {sw=r; hw=w;} topo_id[32] = 0;
+    } topo_id;
 
     reg {
         name = "LINK_DELAY";
         field {sw=r; hw=w;} link_delay[32] = 0;
     } link_delay;
+
+    reg {
+        name = "UPSTREAM_DELAY";
+        field {sw=r; hw=w;} up_delay[32] = 0;
+    } up_delay;
+
+    reg {
+        name = "SUBTREE_DELAY";
+        field {sw=r; hw=w;} sub_delay[32] = 0;
+    } sub_delay;
 
     reg {
         name = "TGT_DELAY";
