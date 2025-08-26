@@ -8,7 +8,7 @@ module master_system_packet_generator(
     input  evn::topo_id_t  topo_id,
     input  logic           send_topo_id,
     input  evn::delay_t    meas_delay,
-    input  logic [   3: 0] meas_delay_st,
+    input  evn::link_delay_st_t meas_delay_st,
     input  logic           send_meas_delay,
     input  evn::delay_t    up_delay,
     input  logic           send_up_delay,

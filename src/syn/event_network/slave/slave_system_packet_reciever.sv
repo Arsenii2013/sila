@@ -8,7 +8,7 @@ module slave_system_packet_reciever(
     output evn::topo_id_t  topo_id,
     output logic           topo_id_recv,
     output evn::delay_t    meas_delay,
-    output logic [   3: 0] meas_delay_st,
+    output evn::link_delay_st_t meas_delay_st,
     output logic           meas_delay_recv,
     output evn::delay_t    tgt_delay,
     output logic           tgt_delay_recv,

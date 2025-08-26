@@ -22,13 +22,13 @@ module dc_control
     input  logic                    dc_ena,
     input  logic                    fifo_rst_busy,
  
-    output logic [             3:0] dc_status,
-    input  logic [INT_W+FRAC_W-1:0] delay_req,
+    output evn::link_delay_st_t     dc_status,
+    input  evn::delay_t             delay_req,
     input  logic                    delay_req_upd,
 
-    output logic [INT_W+FRAC_W-1:0] delay_comp
+    output evn::delay_t             delay_comp
 );
-    typedef logic [INT_W+FRAC_W     -1: 0] delay_t;
+    import evn::*;
     typedef logic [INT_W            -1: 0] sample_t;
 
     localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 12)); 
@@ -44,14 +44,7 @@ module dc_control
 
     typedef logic [$clog2(LOCK_TIME) : 0] lock_time_t;
 
-    typedef enum
-    {
-        mfsmZERO = 0,
-        mfsmINITIAL = 1,
-        mfsmONECYCLE = 3,
-        mfsmFINE = 7,
-        mfsmERROR = 8
-    } state_t;
+    typedef link_delay_st_t state_t;
 
     logic    delay_comp_upd;
     logic    sample_error;
@@ -67,7 +60,7 @@ module dc_control
     assign delay_err_frac     = delay_err[FRAC_W-1           -: FRAC_W];
 
     // State machine
-    state_t state = mfsmZERO, next;
+    state_t state = ZERO, next;
 
     logic       error_in_one_cycle;
     logic       error_in_fine;
@@ -81,16 +74,16 @@ module dc_control
 
     always_ff @(posedge app_clk) begin
         if(app_rst || !dc_ena) begin
-            state <= mfsmZERO;
+            state <= ZERO;
             one_cycle_time    <= LOCK_TIME;
             fine_time         <= LOCK_TIME;
         end else begin
             state <= next;
-            if(state == mfsmZERO) begin
+            if(state == ZERO) begin
                 one_cycle_time <= LOCK_TIME;
                 fine_time      <= LOCK_TIME;
             end
-            if(state == mfsmINITIAL) begin
+            if(state == INITIAL) begin
                 if(delay_comp_upd) begin
                     if(error_in_one_cycle) begin
                         one_cycle_time    <= one_cycle_time - 1;
@@ -99,7 +92,7 @@ module dc_control
                     end 
                 end
             end
-            if(state == mfsmONECYCLE) begin
+            if(state == ONE_CYCLE) begin
                 if(delay_comp_upd) begin
                     if(error_in_fine) begin
                         fine_time    <= fine_time - 1;
@@ -113,17 +106,17 @@ module dc_control
 
     always_comb begin
         if(sample_error) begin
-            next = mfsmERROR;
+            next = ERROR;
         end else if(delay_req_upd) begin
-            next = mfsmZERO;
+            next = ZERO;
         end else begin
             case (state)
-                mfsmZERO     : next = delay_comp_upd      ? mfsmINITIAL  : mfsmZERO;
-                mfsmINITIAL  : next = one_cycle_time == 0 ? mfsmONECYCLE : mfsmINITIAL;
-                mfsmONECYCLE : next = fine_time      == 0 ? mfsmFINE     : mfsmONECYCLE;
-                mfsmFINE     : next = mfsmFINE;
-                mfsmERROR    : next = mfsmZERO;
-                default      : next = mfsmERROR;
+                ZERO     : next = delay_comp_upd      ? INITIAL  : ZERO;
+                INITIAL  : next = one_cycle_time == 0 ? ONE_CYCLE : INITIAL;
+                ONE_CYCLE : next = fine_time      == 0 ? FINE     : ONE_CYCLE;
+                FINE     : next = FINE;
+                ERROR    : next = ZERO;
+                default      : next = ERROR;
             endcase
         end
     end
@@ -143,9 +136,9 @@ module dc_control
         .beacon_clk(beacon_clk),
 
         .app_clk(app_clk),
-        .app_rst(app_rst || fifo_rst_busy  || state == mfsmERROR),
+        .app_rst(app_rst || fifo_rst_busy  || state == ERROR),
 
-        .fine(state == mfsmFINE),
+        .fine(state == FINE),
         .sample_upd(sample_upd),
         .sample(sample),
         .error(sample_error)
@@ -157,7 +150,7 @@ module dc_control
         .N(FILTER_N)
     ) filter_i (
         .clk(app_clk),
-        .rst(app_rst || fifo_rst_busy || state == mfsmERROR),
+        .rst(app_rst || fifo_rst_busy || state == ERROR),
 
         .in(delay_t'(sample) << (FRAC_W)),
         .in_upd(sample_upd),
@@ -185,7 +178,7 @@ module dc_control
             if(delay_comp_upd) begin
                 pulse_form_cnt <= pulse_form_cnt - 1;
             end else if (pulse_form_cnt == 0) begin
-                if(state <= mfsmINITIAL) begin
+                if(state <= INITIAL) begin
                     pulse_form_cnt <= CNT_FIFO;
                 end else begin
                     pulse_form_cnt <= CNT_PLL;
@@ -204,7 +197,7 @@ module dc_control
         .app_rst(app_rst),
         .sign(sign),
         .count(delay_err_int),
-        .start(pulse_form && state <= mfsmINITIAL),
+        .start(pulse_form && state <= INITIAL),
         .inc(fifo_inc),
         .dec(fifo_dec)
     );
@@ -217,7 +210,7 @@ module dc_control
         .app_rst(app_rst),
         .sign(sign),
         .count((delay_err_int != 0 || (delay_err_frac > FINE_TRESH + PLL_HIST)) ? 1 : 0),
-        .start(pulse_form && state > mfsmINITIAL),
+        .start(pulse_form && state > INITIAL),
         .inc(pll_ph_inc),
         .dec(pll_ph_dec)
     );

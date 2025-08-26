@@ -19,23 +19,6 @@ module linkTB(
     logic     beacon_clk;
     logic     aligned;
 
-    topo_id_t master_topo_id;
-    logic     master_topo_id_upd = 0;
-    topo_id_t slave_topo_id;
-    logic     slave_topo_id_upd;
-    delay_t   master_up_delay;
-    logic     master_up_delay_upd = 0;
-    delay_t   slave_up_delay;
-    logic     slave_up_delay_upd;
-    delay_t   master_tgt_delay;
-    logic     master_tgt_delay_upd = 0;
-    delay_t   slave_tgt_delay;
-    logic     slave_tgt_delay_upd;
-    delay_t   master_sub_delay;
-    logic     master_sub_delay_upd;
-    delay_t   slave_sub_delay;
-    logic     slave_sub_delay_upd;
-
     sys_clk_gen
     #(
         .halfcycle (2857), // 5000 ps = 125 MHz
@@ -109,10 +92,9 @@ module linkTB(
     always_ff @(posedge master_rx_clk) master_rx_data    <= slave_tx_data_propagated;
     always_ff @(posedge master_rx_clk) master_rx_charisk <= slave_tx_charisk_propagated;
 
-    axi4_lite_if #(.AW(32), .DW(32)) master_mmr();
-
     axi_stream_if #(.DW(32)) master_in_packet();
     axi_stream_if #(.DW(32)) master_out_packet();
+    link_data master_data();
 
     link_master masterDUT(
         .beacon_clk(beacon_clk),
@@ -133,27 +115,18 @@ module linkTB(
         //------Application signals-------
         .app_clk(master_app_clk),
         .app_rst(app_rst),
-        .mmr(master_mmr),
         
         .ev(ev), 
         .trig(),
         .in_packet(master_in_packet),
         .out_packet(master_out_packet),
-
-        .topo_id(master_topo_id),
-        .topo_id_upd(master_topo_id_upd),
-        .tgt_delay(master_tgt_delay),
-        .tgt_delay_upd(master_tgt_delay_upd),
-        .up_delay(master_up_delay),
-        .up_delay_upd(master_up_delay_upd),
-        .sub_delay(master_sub_delay),
-        .sub_delay_upd(master_sub_delay_upd)
+        .link_data(master_data)
     );
-
-    axi4_lite_if #(.AW(32), .DW(32)) slave_mmr();
 
     axi_stream_if #(.DW(32)) slave_in_packet();
     axi_stream_if #(.DW(32)) slave_out_packet();
+    link_data slave_data();
+
     link_slave slaveDUT(
         .beacon_clk(beacon_clk),
 
@@ -173,32 +146,12 @@ module linkTB(
         //------Application signals-------
         .app_clk(slave_app_clk),
         .app_rst(app_rst),
-        .mmr(slave_mmr),
         
         .ev(), 
         .trig(trig),
         .in_packet(slave_in_packet),
         .out_packet(slave_out_packet),
-
-        .topo_id(slave_topo_id),
-        .topo_id_upd(slave_topo_id_upd),
-        .tgt_delay(slave_tgt_delay),
-        .tgt_delay_upd(slave_tgt_delay_upd),
-        .up_delay(slave_up_delay),
-        .up_delay_upd(slave_up_delay_upd),
-        .sub_delay(slave_sub_delay),
-        .sub_delay_upd(slave_sub_delay_upd)
-    );
-
-    axi_master axi_master_link_master(
-        .aclk(master_app_clk),
-        .aresetn(app_rst),
-        .axi(master_mmr)
-    );
-    axi_master axi_master_link_slave(
-        .aclk(slave_app_clk),
-        .aresetn(app_rst),
-        .axi(slave_mmr)
+        .link_data(slave_data)
     );
 
     link_monitor link_monitor_i(
@@ -209,23 +162,9 @@ module linkTB(
         .slave_rx_clk(slave_rx_clk),
         .slave_app_clk(slave_app_clk),
         .app_rst(app_rst),
-        
-        .master_topo_id(master_topo_id),
-        .master_topo_id_upd(master_topo_id_upd),
-        .slave_topo_id(slave_topo_id),
-        .slave_topo_id_upd(slave_topo_id_upd),
-        .master_up_delay(master_up_delay),
-        .master_up_delay_upd(master_up_delay_upd),
-        .slave_up_delay(slave_up_delay),
-        .slave_up_delay_upd(slave_up_delay_upd),
-        .master_tgt_delay(master_tgt_delay),
-        .master_tgt_delay_upd(master_tgt_delay_upd),
-        .slave_tgt_delay(slave_tgt_delay),
-        .slave_tgt_delay_upd(slave_tgt_delay_upd),
-        .master_sub_delay(master_sub_delay),
-        .master_sub_delay_upd(master_sub_delay_upd),
-        .slave_sub_delay(slave_sub_delay),
-        .slave_sub_delay_upd(slave_sub_delay_upd)
+
+        .s_d(slave_data),
+        .m_d(master_data)
     );
 
     logic [31:0] rd_word;
@@ -243,15 +182,19 @@ module linkTB(
     logic slave_sub_delay_src    = 0;
     delay_t slave_sub_delay_tb   = '0;
     logic slave_sub_delay_upd_tb = 0;
-    assign slave_sub_delay     = slave_sub_delay_src == 0 ? slave_up_delay     : slave_sub_delay_tb;
-    assign slave_sub_delay_upd = slave_sub_delay_src == 0 ? slave_up_delay_upd : slave_sub_delay_upd_tb;
+    assign slave_data.sub_delay      = slave_sub_delay_src == 0 ? slave_data.up_delay     : slave_sub_delay_tb;
+    assign slave_data.sub_delay_upd  = slave_sub_delay_src == 0 ? slave_data.up_delay_upd : slave_sub_delay_upd_tb;
 
     initial begin
-        master_topo_id      <= 'h1234;
-        master_up_delay     <= 'h5678;
-        master_tgt_delay    <= 'h9abc;
-        slave_sub_delay_src <= 1;
-        slave_sub_delay_tb  <= 'hdef0;
+        slave_data.delay_comp_ena   <= 0;
+        master_data.topo_id         <= 'h1234;
+        master_data.up_delay        <= 'h5678;
+        master_data.tgt_delay       <= 'h9abc;
+        slave_sub_delay_src         <= 1;
+        slave_sub_delay_tb          <= 'hdef0;
+        master_data.topo_id_upd     <= 0;
+        master_data.up_delay_upd    <= 0;
+        master_data.tgt_delay_upd   <= 0;
 
         app_rst <= 1;
         aligned <= 0;
@@ -270,29 +213,29 @@ module linkTB(
                 slaveDelayMeasurementTest();
             end
             begin
-                wait(slaveDUT.link_delay_st >= 4'h1);
+                wait(slave_data.link_delay_st >= 4'h1);
                 @(posedge slave_app_clk);
                 slave_sub_delay_upd_tb  <= 1;
                 @(posedge slave_app_clk);
                 slave_sub_delay_upd_tb  <= 0;
                 #100us;
-                master_topo_id         <= 'h12345678;
-                master_topo_id_upd     <= 1;
-                master_up_delay        <= 'h0;
-                master_up_delay_upd    <= 1;
-                master_tgt_delay       <= PROPAGATION_DELAY * 2**16 + 'h10_8000_0000; // + 16.5 тактов
-                master_tgt_delay_upd   <= 1;
+                master_data.topo_id         <= 'h12345678;
+                master_data.topo_id_upd     <= 1;
+                master_data.up_delay        <= 'h0;
+                master_data.up_delay_upd    <= 1;
+                master_data.tgt_delay       <= PROPAGATION_DELAY * 2**16 + 'h10_8000_0000; // + 16.5 тактов
+                master_data.tgt_delay_upd   <= 1;
                 slave_sub_delay_src    <= 0;
                 @(posedge master_app_clk);
-                master_topo_id_upd     <= 0;
-                master_up_delay_upd    <= 0;
-                master_tgt_delay_upd   <= 0;
+                master_data.topo_id_upd     <= 0;
+                master_data.up_delay_upd    <= 0;
+                master_data.tgt_delay_upd   <= 0;
 
                 #100us;
                 $display("Test topo_id and up/sub/tgt delay");
-                dump_slave();
-                dump_master();
-                axi_master_link_slave.write('h04, 'h1);
+                slave_data.dump();
+                master_data.dump();
+                slave_data.delay_comp_ena   <= 1;
                 slaveDelayCompensationTest();
             end
         join
@@ -305,86 +248,49 @@ module linkTB(
     end
 
     task masterDelayMeasurementTest();
-        wait(masterDUT.link_delay_st >= 4'h1);
+        wait(master_data.link_delay_st >= 4'h1);
         $display("Get master INITIAL state at %t\n", $realtime);
         #1us;
-        dump_master();
-        wait(masterDUT.link_delay_st >= 4'h3);
+        master_data.dump();
+        wait(master_data.link_delay_st >= 4'h3);
         $display("Get master ONE_CYCLE state at %t\n", $realtime);
         #1us;
-        dump_master();
-        wait(masterDUT.link_delay_st >= 4'h7);
+        master_data.dump();
+        wait(master_data.link_delay_st >= 4'h7);
         $display("Get master FINE state at %t\n", $realtime);
         #1us;
-        dump_master();
+        master_data.dump();
     endtask
 
     task slaveDelayMeasurementTest();
-        wait(slaveDUT.link_delay_st >= 4'h1);
+        wait(slave_data.link_delay_st >= 4'h1);
         $display("Get slave INITIAL state at %t\n", $realtime);
         #1us;
-        dump_slave();
-        wait(slaveDUT.link_delay_st >= 4'h3);
+        slave_data.dump();
+        wait(slave_data.link_delay_st >= 4'h3);
         $display("Get slave ONE_CYCLE state at %t\n", $realtime);
         #1us;
-        dump_slave();
-        wait(slaveDUT.link_delay_st >= 4'h7);
+        slave_data.dump();
+        wait(slave_data.link_delay_st >= 4'h7);
         $display("Get slave FINE state at %t\n", $realtime);
         #1us;
-        dump_slave();
+        slave_data.dump();
     endtask
 
     task slaveDelayCompensationTest();
-        wait(slaveDUT.dc_status >= 4'h1);
+        wait(slave_data.delay_comp_st >= 4'h1);
         $display("Get slave compensation INITIAL state at %t\n", $realtime);
         #1us;
-        dump_slave();
-        wait(slaveDUT.dc_status >= 4'h3);
+        slave_data.dump();
+        wait(slave_data.delay_comp_st >= 4'h3);
         $display("Get slave compensation ONE_CYCLE state at %t\n", $realtime);
         #1us;
-        dump_slave();
-        wait(slaveDUT.dc_status >= 4'h7);
+        slave_data.dump();
+        wait(slave_data.delay_comp_st >= 4'h7);
         $display("Get slave  FINE state at %t\n", $realtime);
         #1us;
-        dump_slave();
+        slave_data.dump();
     endtask
-
-    task dump_slave();
-        axi_master_link_slave.read(SR_ADDR, rd_word);
-        $display("slave status:\t %x", rd_word);
-        axi_master_link_slave.read(CR_ADDR, rd_word);
-        $display("slave control:\t %x", rd_word);
-        axi_master_link_slave.read(TOPO_ID_ADDR, rd_word);
-        $display("slave topo id:\t %x", rd_word);
-        axi_master_link_slave.read(LINK_DELAY_ADDR, rd_word);
-        $display("slave link delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_slave.read(UPSTREAM_DELAY_ADDR, rd_word);
-        $display("slave upstream delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_slave.read(SUBTREE_DELAY_ADDR, rd_word);
-        $display("slave subtree delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_slave.read(TGT_DELAY_ADDR, rd_word);
-        $display("slave target delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_slave.read(DELAY_COMP_ADDR, rd_word);
-        $display("slave delay compensation:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-    endtask
-
-    task dump_master();
-        axi_master_link_master.read(SR_ADDR, rd_word);
-        $display("master status:\t %x", rd_word);
-        axi_master_link_master.read(CR_ADDR, rd_word);
-        $display("master control:\t %x", rd_word);
-        axi_master_link_master.read(TOPO_ID_ADDR, rd_word);
-        $display("master topo id:\t %x", rd_word);
-        axi_master_link_master.read(LINK_DELAY_ADDR, rd_word);
-        $display("master link delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_master.read(UPSTREAM_DELAY_ADDR, rd_word);
-        $display("master upstream delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_master.read(SUBTREE_DELAY_ADDR, rd_word);
-        $display("master subtree delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-        axi_master_link_master.read(TGT_DELAY_ADDR, rd_word);
-        $display("master target delay:\t %x = %e s", rd_word, (rd_word >> 16) / 175e6);
-    endtask
-
 endmodule
 
 
@@ -399,42 +305,27 @@ module link_monitor#(
     input logic     slave_app_clk,
     input logic     app_rst,
 
-    input topo_id_t master_topo_id,
-    input logic     master_topo_id_upd,
-    input topo_id_t slave_topo_id,
-    input logic     slave_topo_id_upd,
-    input delay_t   master_up_delay,
-    input logic     master_up_delay_upd,
-    input delay_t   slave_up_delay,
-    input logic     slave_up_delay_upd,
-    input delay_t   master_tgt_delay,
-    input logic     master_tgt_delay_upd,
-    input delay_t   slave_tgt_delay,
-    input logic     slave_tgt_delay_upd,
-    input delay_t   master_sub_delay,
-    input logic     master_sub_delay_upd,
-    input delay_t   slave_sub_delay,
-    input logic     slave_sub_delay_upd
+    link_data       m_d,
+    link_data       s_d
 );
     localparam TIMEOUT = PROPAGATION_DELAY_CYCLES + 100;
 
-    topo_id_t master_topo_id_propagated;
-    delay_t master_up_delay_propagated;
-    delay_t master_tgt_delay_propagated;
-    delay_t slave_sub_delay_propagated;
+    link_data m_d_prop();
+    link_data s_d_prop();
 
-    always @(master_topo_id)   master_topo_id_propagated   <= repeat (TIMEOUT) @(posedge master_app_clk) master_topo_id;
-    always @(master_up_delay)  master_up_delay_propagated  <= repeat (TIMEOUT) @(posedge master_app_clk) master_up_delay;
-    always @(master_tgt_delay) master_tgt_delay_propagated <= repeat (TIMEOUT) @(posedge master_app_clk) master_tgt_delay;
-    always @(slave_sub_delay)  slave_sub_delay_propagated  <= repeat (TIMEOUT) @(posedge slave_app_clk) slave_sub_delay;
+    always @(m_d.topo_id)    m_d_prop.topo_id    <= repeat (TIMEOUT) @(posedge master_app_clk) m_d.topo_id;
+    always @(m_d.link_delay) m_d_prop.link_delay <= repeat (TIMEOUT) @(posedge master_app_clk) m_d.link_delay;
+    always @(m_d.up_delay)   m_d_prop.up_delay   <= repeat (TIMEOUT) @(posedge master_app_clk) m_d.up_delay;
+    always @(m_d.tgt_delay)  m_d_prop.tgt_delay  <= repeat (TIMEOUT) @(posedge master_app_clk) m_d.tgt_delay;
+    always @(s_d.sub_delay)  s_d_prop.sub_delay  <= repeat (TIMEOUT) @(posedge slave_app_clk)  s_d.sub_delay;
 
-    assert property (@(posedge slave_app_clk)  master_topo_id_upd   |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] slave_topo_id_upd);
-    assert property (@(posedge slave_app_clk)  master_up_delay_upd  |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] slave_up_delay_upd);
-    assert property (@(posedge slave_app_clk)  master_tgt_delay_upd |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] slave_tgt_delay_upd);
-    assert property (@(posedge master_app_clk) slave_sub_delay_upd  |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] master_sub_delay_upd);
+    assert property (@(posedge slave_app_clk)  m_d.topo_id_upd   |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] s_d.topo_id_upd);
+    assert property (@(posedge slave_app_clk)  m_d.up_delay_upd  |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] s_d.up_delay_upd);
+    assert property (@(posedge slave_app_clk)  m_d.tgt_delay_upd |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] s_d.tgt_delay_upd);
+    assert property (@(posedge master_app_clk) s_d.sub_delay_upd |=> ##[PROPAGATION_DELAY_CYCLES:TIMEOUT] m_d.sub_delay_upd);
 
-    assert property (@(posedge slave_app_clk)  master_topo_id_upd   |=> ##TIMEOUT (slave_topo_id    == master_topo_id_propagated));
-    assert property (@(posedge slave_app_clk)  master_up_delay_upd  |=> ##TIMEOUT (slave_up_delay   >= master_up_delay_propagated));
-    assert property (@(posedge slave_app_clk)  master_tgt_delay_upd |=> ##TIMEOUT (slave_tgt_delay  == master_tgt_delay_propagated));
-    assert property (@(posedge master_app_clk) slave_sub_delay_upd  |=> ##TIMEOUT (master_sub_delay == slave_sub_delay_propagated));
+    assert property (@(posedge slave_app_clk)  m_d.topo_id_upd   |=> ##TIMEOUT (s_d.topo_id   == m_d_prop.topo_id));
+    assert property (@(posedge slave_app_clk)  m_d.up_delay_upd  |=> ##TIMEOUT (s_d.up_delay  >= m_d_prop.up_delay));
+    assert property (@(posedge slave_app_clk)  m_d.tgt_delay_upd |=> ##TIMEOUT (s_d.tgt_delay == m_d_prop.tgt_delay));
+    assert property (@(posedge master_app_clk) s_d.sub_delay_upd |=> ##TIMEOUT (m_d.sub_delay == s_d_prop.sub_delay));
 endmodule

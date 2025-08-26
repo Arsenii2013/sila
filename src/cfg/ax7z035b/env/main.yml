@@ -4,5 +4,3 @@ parameters:
     TOP_NAME            : topEVR
     TESTBENCH_NAME      : topTB
     DEVICE              : xc7z035ffg676-2
-    
-    TARGET_AX7Z035B     : = ''

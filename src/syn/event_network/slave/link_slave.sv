@@ -22,23 +22,14 @@ module link_slave
     //------Application signals-------
     output logic            app_clk,
     input  logic            app_rst,
-    axi4_lite_if.s          mmr,
-    
+
     output evn::ev_t        ev, // ev_valid = ev != 0
     input  evn::trig_t      trig, // trig_valid = trig != 0
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet,
 
     output evn::delay_t     total_delay,
-
-    output evn::topo_id_t   topo_id,
-    output logic            topo_id_upd,
-    output evn::delay_t     tgt_delay,
-    output logic            tgt_delay_upd,
-    output evn::delay_t     up_delay,
-    output logic            up_delay_upd,
-    input  evn::delay_t     sub_delay,
-    input  logic            sub_delay_upd
+    link_data.slave         link_data
 );
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
@@ -112,15 +103,6 @@ module link_slave
     end
 
 // System packets
-    delay_t up_delay_iternal;
-    logic   up_delay_recv_iternal;
-    delay_t link_delay;
-    logic [3:0] link_delay_st;
-    logic link_delay_recv;
-
-    assign up_delay     = up_delay_iternal + link_delay;
-    assign up_delay_upd = up_delay_recv_iternal || link_delay_recv;
-
     system_stream_if #(.DW(32)) system_stream_in();
     system_stream_if #(.DW(32)) system_stream_out();
     assign system_stream_in.tdata  = rx_data;
@@ -131,15 +113,15 @@ module link_slave
         .rx_clk(rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
-        .topo_id(topo_id),
-        .topo_id_recv(topo_id_upd),
-        .meas_delay(link_delay),
-        .meas_delay_st(link_delay_st),
-        .meas_delay_recv(link_delay_recv),
-        .tgt_delay(tgt_delay),
-        .tgt_delay_recv(tgt_delay_upd),
-        .up_delay(up_delay_iternal),
-        .up_delay_recv(up_delay_recv_iternal),
+        .topo_id(link_data.topo_id),
+        .topo_id_recv(link_data.topo_id_upd),
+        .meas_delay(link_data.link_delay),
+        .meas_delay_st(link_data.link_delay_st),
+        .meas_delay_recv(link_data.link_delay_upd),
+        .tgt_delay(link_data.tgt_delay),
+        .tgt_delay_recv(link_data.tgt_delay_upd),
+        .up_delay(link_data.up_delay),
+        .up_delay_recv(link_data.up_delay_upd),
         .in(system_stream_in)
     );
 
@@ -147,8 +129,8 @@ module link_slave
         .tx_clk(tx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
-        .sub_delay(sub_delay),
-        .send_sub_delay(sub_delay_upd),
+        .sub_delay(link_data.sub_delay),
+        .send_sub_delay(link_data.sub_delay_upd),
         .out(system_stream_out)
     );
 
@@ -184,10 +166,7 @@ module link_slave
 
 // Delay compensation
     logic mmcm_locked;
-    logic dc_ena;
     logic fifo_rst_busy;
-    logic [3:0] dc_status;
-    delay_t delay_comp;
 
     logic [31:0] fifo_in_data;
     logic [31:0] fifo_out_data;
@@ -242,7 +221,7 @@ module link_slave
     ) dc_control_i (
         .app_clk(app_clk),
         .app_rst(app_rst || !mmcm_locked),
-        .dc_ena(dc_ena),
+        .dc_ena(link_data.delay_comp_ena),
         .fifo_rst_busy(fifo_rst_busy),
 
         .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
@@ -255,35 +234,36 @@ module link_slave
         .pll_ph_inc(pll_ph_inc),
         .pll_ph_dec(pll_ph_dec),
     
-        .dc_status(dc_status),
-        .delay_req(tgt_delay - up_delay),
-        .delay_req_upd(tgt_delay_upd),
+        .dc_status(link_data.delay_comp_st),
+        .delay_req(link_data.tgt_delay - link_data.up_delay - link_data.link_delay),
+        .delay_req_upd(link_data.tgt_delay_upd),
         
-        .delay_comp(delay_comp)
+        .delay_comp(link_data.delay_comp)
     );
+    assign link_data.link_up = aligned;
 
-    assign total_delay = up_delay + delay_comp;
+    link_control_axi_core_pkg::link_control_axi_core__in_t  hwif_in;
+    link_control_axi_core_pkg::link_control_axi_core__out_t hwif_out;
 
-    link_slave_axi_core_pkg::link_slave_axi_core__in_t  hwif_in;
-    link_slave_axi_core_pkg::link_slave_axi_core__out_t hwif_out;
-
+/*
+    assign link_data.link_up = aligned;
     assign hwif_in.sr.link_up.next       = aligned;
-    assign hwif_in.sr.link_delay_st.next = link_delay_st;
-    assign hwif_in.sr.delay_comp_st.next = dc_status;
+    assign hwif_in.sr.link_delay_st.next = link_data.link_delay_st;
+    assign hwif_in.sr.delay_comp_st.next = link_data.delay_comp_st;
 
     assign hwif_in.cr.dc_ena.next        = (hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value) & ~hwif_out.cr_c.dc_ena.value;
     assign hwif_in.cr_s.dc_ena.next      = 0;
     assign hwif_in.cr_c.dc_ena.next      = 0;
     assign dc_ena                        = hwif_out.cr.dc_ena.value;
 
-    assign hwif_in.topo_id.topo_id.next       = topo_id;
-    assign hwif_in.link_delay.link_delay.next = link_delay;
-    assign hwif_in.up_delay.up_delay.next     = up_delay;
-    assign hwif_in.sub_delay.sub_delay.next   = sub_delay;
-    assign hwif_in.tgt_delay.tgt_delay.next   = tgt_delay;
-    assign hwif_in.delay_comp.delay_comp.next = delay_comp;
+    assign hwif_in.topo_id.topo_id.next       = link_data.topo_id;
+    assign hwif_in.link_delay.link_delay.next = link_data.link_delay;
+    assign hwif_in.up_delay.up_delay.next     = link_data.up_delay;
+    assign hwif_in.sub_delay.sub_delay.next   = link_data.sub_delay;
+    assign hwif_in.tgt_delay.tgt_delay.next   = link_data.tgt_delay;
+    assign hwif_in.delay_comp.delay_comp.next = link_data.delay_comp;
 
-    link_slave_axi_core link_slave_axi_core_i(
+    link_control_axi_core link_slave_axi_core_i(
         .clk(app_clk),
         .rst(app_rst),
 
@@ -291,5 +271,5 @@ module link_slave
 
         .hwif_in(hwif_in),
         .hwif_out(hwif_out)
-    );
+    );*/
 endmodule

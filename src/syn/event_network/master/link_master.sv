@@ -23,21 +23,13 @@ module link_master
     //------Application signals-------
     output logic            app_clk,
     input  logic            app_rst,
-    axi4_lite_if.s          mmr,
     
     input  evn::ev_t        ev, // ev_valid = ev != 0
     output evn::trig_t      trig, // trig_valid = trig != 0
     axi_stream_if.s         in_packet,
     axi_stream_if.m         out_packet, 
 
-    input  evn::topo_id_t   topo_id,
-    input  logic            topo_id_upd,
-    input  evn::delay_t     tgt_delay,
-    input  logic            tgt_delay_upd,
-    input  evn::delay_t     up_delay,
-    input  logic            up_delay_upd,
-    output evn::delay_t     sub_delay,
-    output logic            sub_delay_upd
+    link_data.master        link_data
 );
     assign app_clk = tx_clk;
 
@@ -46,7 +38,6 @@ module link_master
 
     import evn::*;
 
-    logic [3:0] link_delay_st;
 // Event
     logic ev_valid;
     assign ev_valid = ev != '0;
@@ -67,11 +58,11 @@ module link_master
 
     always_ff @(posedge tx_clk) begin
         if(app_rst) begin
-            beacon_cnt   <= link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
+            beacon_cnt   <= link_data.link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
             beacon_valid <= 0;
         end else begin
             if(beacon_cnt == 0) begin
-                beacon_cnt   <= link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
+                beacon_cnt   <= link_data.link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
                 beacon_valid <= 1;
             end else begin
                 beacon_cnt <= beacon_cnt - 1;
@@ -109,56 +100,52 @@ module link_master
     end
 
 // System packets
-
-    delay_t link_delay;
-    logic   link_delay_upd;
-
     // Отправка нового значения задержки если разность между
     // текущим значением и прошлым отправленным больше SEND_TRESH
     localparam SEND_TRESH = delay_t'((1<<DELAY_FRAC_W) >> 9); // Для 175 МГц интервал 1/175e6/2**9 = 11,16 ps
     delay_t last_sended_link_delay = '0;
-    logic [3:0] last_sended_st;
+    link_delay_st_t last_sended_st;
     logic   send_link_delay        = 0;
     logic   send_in_tresh;
 
-    assign send_in_tresh      = last_sended_link_delay > link_delay ? 
-                                last_sended_link_delay - link_delay < SEND_TRESH : 
-                                link_delay - last_sended_link_delay < SEND_TRESH;
+    assign send_in_tresh      = last_sended_link_delay > link_data.link_delay ? 
+                                last_sended_link_delay - link_data.link_delay < SEND_TRESH : 
+                                link_data.link_delay   - last_sended_link_delay < SEND_TRESH;
 
     always_ff @(posedge app_clk) begin
         if(app_rst) begin
             send_link_delay        <= 0;
             last_sended_link_delay <= '0;
-            last_sended_st    <= '0;
+            last_sended_st         <= evn::ZERO;
         end else begin
-            if(link_delay_upd && (!send_in_tresh || last_sended_st != link_delay_st)) begin
+            if(link_data.link_delay_upd && (!send_in_tresh || last_sended_st != link_data.link_delay_st)) begin
                 send_link_delay        <= 1;
-                last_sended_link_delay <= link_delay;
-                last_sended_st    <= link_delay_st;
+                last_sended_link_delay <= link_data.link_delay;
+                last_sended_st         <= link_data.link_delay_st;
             end else begin
                 send_link_delay        <= 0;
                 last_sended_link_delay <= last_sended_link_delay;
-                last_sended_st    <= last_sended_st;
+                last_sended_st         <= last_sended_st;
             end
         end
     end
 
     // Определения подключения приемника
-    logic [3:0] prev_link_delay_st = '0;
+    link_delay_st_t prev_link_delay_st = evn::ZERO;
     logic device_connected    = 0;
 
     always_ff @(posedge app_clk) begin
         if(app_rst) begin
             device_connected     <= 0;
-            prev_link_delay_st        <= '0;
+            prev_link_delay_st   <= evn::ZERO;
         end else begin
-            if(link_delay_upd && prev_link_delay_st[0] == 0 && link_delay_st[0] == 1) begin
+            if(link_data.link_delay_upd && prev_link_delay_st[0] == 0 && link_data.link_delay_st[0] == 1) begin
                 device_connected <= 1;
             end else begin
                 device_connected <= 0;
             end
-            if(link_delay_upd)
-                prev_link_delay_st    <= link_delay_st;
+            if(link_data.link_delay_upd)
+                prev_link_delay_st    <= link_data.link_delay_st;
         end
     end 
 
@@ -168,15 +155,15 @@ module link_master
         .app_clk(app_clk),
         .tx_clk(tx_clk),
         .app_rst(app_rst),
-        .topo_id(topo_id),
-        .send_topo_id(topo_id_upd || device_connected),
-        .meas_delay(link_delay),
-        .meas_delay_st(link_delay_st),
+        .topo_id(link_data.topo_id),
+        .send_topo_id(link_data.topo_id_upd || device_connected),
+        .meas_delay(link_data.link_delay),
+        .meas_delay_st(link_data.link_delay_st),
         .send_meas_delay(send_link_delay),
-        .tgt_delay(tgt_delay),
-        .send_tgt_delay(tgt_delay_upd || device_connected),
-        .up_delay(up_delay),
-        .send_up_delay(up_delay_upd || device_connected),
+        .tgt_delay(link_data.tgt_delay),
+        .send_tgt_delay(link_data.tgt_delay_upd || device_connected),
+        .up_delay(link_data.up_delay),
+        .send_up_delay(link_data.up_delay_upd || device_connected),
         .out(system_stream_out)
     );
 
@@ -184,8 +171,8 @@ module link_master
         .rx_clk(rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
-        .sub_delay(sub_delay),
-        .sub_delay_recv(sub_delay_upd),
+        .sub_delay(link_data.sub_delay),
+        .sub_delay_recv(link_data.sub_delay_upd),
         .in(system_stream_in)
     );
     assign system_stream_in.tdata  = rx_data;
@@ -236,28 +223,30 @@ module link_master
         .rx_clk(rx_clk),
         .beacon_clk(beacon_clk),
 
-        .delay_upd(link_delay_upd),
-        .delay(link_delay),
-        .delay_status(link_delay_st)
+        .delay_upd(link_data.link_delay_upd),
+        .delay(link_data.link_delay),
+        .delay_status(link_data.link_delay_st)
     );
+    assign link_data.link_up = aligned;
 
-    link_master_axi_core_pkg::link_master_axi_core__in_t  hwif_in;
-    link_master_axi_core_pkg::link_master_axi_core__out_t hwif_out;
+/*
+    link_control_axi_core_pkg::link_control_axi_core__in_t  hwif_in;
+    link_control_axi_core_pkg::link_control_axi_core__out_t hwif_out;
 
     assign hwif_in.sr.link_up.next       = aligned;
-    assign hwif_in.sr.link_delay_st.next = link_delay_st;
+    assign hwif_in.sr.link_delay_st.next = link_data.link_delay_st;
 
     assign hwif_in.cr.reserved.next      = (hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value) & ~hwif_out.cr_c.reserved.value;
     assign hwif_in.cr_s.reserved.next    = 0;
     assign hwif_in.cr_c.reserved.next    = 0;
 
-    assign hwif_in.topo_id.topo_id.next       = topo_id;
-    assign hwif_in.link_delay.link_delay.next = link_delay;
-    assign hwif_in.up_delay.up_delay.next     = up_delay;
+    assign hwif_in.topo_id.topo_id.next       = link_data.topo_id;
+    assign hwif_in.link_delay.link_delay.next = link_data.link_delay;
+    assign hwif_in.up_delay.up_delay.next     = link_data.up_delay;
     assign hwif_in.sub_delay.sub_delay.next   = sub_delay;
-    assign hwif_in.tgt_delay.tgt_delay.next   = tgt_delay;
+    assign hwif_in.tgt_delay.tgt_delay.next   = link_data.tgt_delay;
 
-    link_master_axi_core link_master_axi_core_i(
+    link_control_axi_core link_master_axi_core_i(
         .clk(app_clk),
         .rst(app_rst),
 
@@ -265,5 +254,5 @@ module link_master
 
         .hwif_in(hwif_in),
         .hwif_out(hwif_out)
-    );
+    );*/
 endmodule
