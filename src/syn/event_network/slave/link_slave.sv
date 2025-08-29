@@ -241,35 +241,4 @@ module link_slave
         .delay_comp(link_data.delay_comp)
     );
     assign link_data.link_up = aligned;
-
-    link_control_axi_core_pkg::link_control_axi_core__in_t  hwif_in;
-    link_control_axi_core_pkg::link_control_axi_core__out_t hwif_out;
-
-/*
-    assign link_data.link_up = aligned;
-    assign hwif_in.sr.link_up.next       = aligned;
-    assign hwif_in.sr.link_delay_st.next = link_data.link_delay_st;
-    assign hwif_in.sr.delay_comp_st.next = link_data.delay_comp_st;
-
-    assign hwif_in.cr.dc_ena.next        = (hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value) & ~hwif_out.cr_c.dc_ena.value;
-    assign hwif_in.cr_s.dc_ena.next      = 0;
-    assign hwif_in.cr_c.dc_ena.next      = 0;
-    assign dc_ena                        = hwif_out.cr.dc_ena.value;
-
-    assign hwif_in.topo_id.topo_id.next       = link_data.topo_id;
-    assign hwif_in.link_delay.link_delay.next = link_data.link_delay;
-    assign hwif_in.up_delay.up_delay.next     = link_data.up_delay;
-    assign hwif_in.sub_delay.sub_delay.next   = link_data.sub_delay;
-    assign hwif_in.tgt_delay.tgt_delay.next   = link_data.tgt_delay;
-    assign hwif_in.delay_comp.delay_comp.next = link_data.delay_comp;
-
-    link_control_axi_core link_slave_axi_core_i(
-        .clk(app_clk),
-        .rst(app_rst),
-
-        .s_axil(mmr),
-
-        .hwif_in(hwif_in),
-        .hwif_out(hwif_out)
-    );*/
 endmodule

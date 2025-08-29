@@ -35,11 +35,11 @@ localparam TRIGGER_W        = 24;
 typedef logic [TRIGGER_W               -1: 0] trig_t;
 
 typedef enum {
-    ZERO      = link_control_axi_core_pkg::link_control_axi_core__link_delay_st__ZERO,
-    INITIAL   = link_control_axi_core_pkg::link_control_axi_core__link_delay_st__INITIAL,
-    ONE_CYCLE = link_control_axi_core_pkg::link_control_axi_core__link_delay_st__ONE_CYCLE,
-    FINE      = link_control_axi_core_pkg::link_control_axi_core__link_delay_st__FINE,
-    ERROR     = link_control_axi_core_pkg::link_control_axi_core__link_delay_st__ERROR
+    ZERO      = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__ZERO,
+    INITIAL   = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__INITIAL,
+    ONE_CYCLE = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__ONE_CYCLE,
+    FINE      = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__FINE,
+    ERROR     = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__ERROR
 } link_delay_st_t;
 // System packets
 
@@ -137,6 +137,25 @@ modport slave_no_dc(
     output up_delay_upd,
     input  sub_delay,
     input  sub_delay_upd
+);
+
+modport monitor(
+    input  link_up,
+    input  link_delay,
+    input  link_delay_st,
+    input  link_delay_upd,
+    input  topo_id,
+    input  topo_id_upd,
+    input  tgt_delay,
+    input  tgt_delay_upd,
+    input  up_delay,
+    input  up_delay_upd,
+    input  sub_delay,
+    input  sub_delay_upd,
+    input  delay_comp,
+    input  delay_comp_ena,
+    input  delay_comp_st,
+    input  delay_comp_upd
 );
 
 function dump();
