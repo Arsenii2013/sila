@@ -1,6 +1,6 @@
 
 `include "device_info_axi_core.rdl"
-`include "link_master_axi_core.rdl"
+`include "link_csr_axi_core.rdl"
 `include "timestamper_axi_core.rdl"
 `include "ev_seq_ctrl_axi_core.rdl"
 `include "ev_seq_axi_core.rdl"
@@ -45,27 +45,25 @@ addrmap EVG_reg_map {
 
     enum device_numbers{
         DEVICE_INFO = 0;
+        EVG;
         TIMESTAMPER;
         EV_SEQ_CTRL;
         <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
         EV_SEQ_<%=$i%>;
         <% } %>
         SFP_CONTROL = `DEBUG_DEVICE;
-        MASTER1;
-        MASTER2;
         EVENT_COMPARATOR;
         MAX_DEVICE  = `MAX_DEVICE;
     };
 
     device_info_axi_core device_info  @ device_numbers::DEVICE_INFO    * `MMR_BLOCK_SIZE;
+    link_csr_axi_core    evg_ctrl     @ device_numbers::MASTER1        * `MMR_BLOCK_SIZE;
     timestamper_axi_core timestamper  @ device_numbers::TIMESTAMPER    * `MMR_BLOCK_SIZE;
     ev_seq_ctrl_axi_core ev_seq_ctrl  @ device_numbers::EV_SEQ_CTRL    * `MMR_BLOCK_SIZE;
     <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
     ev_seq_axi_core ev_seq_<%=$i%>    @ device_numbers::EV_SEQ_<%=$i%> * `MMR_BLOCK_SIZE;
     <% } %>
-    sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
-    link_master_axi_core master_1            @ device_numbers::MASTER1           * `MMR_BLOCK_SIZE;
-    link_master_axi_core master_2            @ device_numbers::MASTER2           * `MMR_BLOCK_SIZE;
+    sfp_control_axi_core sfp_control  @ device_numbers::SFP_CONTROL    * `MMR_BLOCK_SIZE;
 
 
     regfile {

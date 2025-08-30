@@ -61,19 +61,19 @@ module topEVR(
     logic PS_clk, PS_aresetn, PS_reset;
 
     axi4_lite_if #(
-        .DW(EVR_axi_params::GP0_DATA_W),
-        .AW(EVR_axi_params::GP0_ADDR_W)
+        .DW(axi_params::GP0_DATA_W),
+        .AW(axi_params::GP0_ADDR_W)
     ) GP_0();
 
     axi4_lite_if #(
-        .DW(EVR_axi_params::MMR_DATA_W),
-        .AW(EVR_axi_params::MMR_ADDR_W)
-    ) mmr[EVR_axi_params::MMR_DEV_CNT2]();
+        .DW(axi_params::MMR_DATA_W),
+        .AW(axi_params::MMR_ADDR_W)
+    ) mmr[axi_params::MMR_DEV_CNT2]();
 
     axi_crossbar #(
-        .N(EVR_axi_params::MMR_DEV_CNT2),
-        .AW(EVR_axi_params::GP0_ADDR_W),
-        .DW(EVR_axi_params::GP0_DATA_W)
+        .N(axi_params::MMR_DEV_CNT2),
+        .AW(axi_params::GP0_ADDR_W),
+        .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
@@ -81,8 +81,8 @@ module topEVR(
         .s(mmr)
     );
 
-    logic [23:0] ev;
-    logic [31:0] delay;
+    evn::ev_t    ev;
+    evn::delay_t delay;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -90,7 +90,7 @@ module topEVR(
     `define GIT_HASH          'habcd
     `endif
     device_info #(
-        .DEVICE_TYPE(EVR_axi_params::DEVICE_TYPE),
+        .DEVICE("EVR"),
         .FW_MAJOR(`GIT_VERSION_MAJOR),
         .FW_MINOR(`GIT_VERSION_MINOR),
         .FW_HASH(`GIT_HASH)
@@ -120,9 +120,9 @@ module topEVR(
     );
 
     PS_wrapper_sv #(
-        .GP0_ADDR_W(EVR_axi_params::GP0_ADDR_W),
-        .GP0_DATA_W(EVR_axi_params::GP0_DATA_W),
-        .MMR_DEV_CNT2(EVR_axi_params::MMR_DEV_CNT2),
+        .GP0_ADDR_W(axi_params::GP0_ADDR_W),
+        .GP0_DATA_W(axi_params::GP0_DATA_W),
+        .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
         .SIM_DEVICE("EVR")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
@@ -180,43 +180,27 @@ module topEVR(
         .clk(app_clk),
         .led(led[0])
     );
-    
-    logic        sfp_reset;
-    logic        sfp_tx_clk[4];
-    logic        sfp_rx_clk[4];
-    logic [31:0] sfp_tx_data[4];
-    logic [31:0] sfp_rx_data[4];
-    logic [3:0]  sfp_tx_is_k[4];
-    logic [3:0]  sfp_rx_is_k[4];
-    logic        tx_reset_done[4];
-    logic        rx_reset_done[4];
-    logic        sfp_aligned[4];
-
-    assign sfp_tx_disable = '0;
-
-    logic sfp_loss [4];
 
 
-    gtwizard_wrapper gtwizard_i (
+    localparam GTX_PORTS = `PORT_N("EVR");
+    logic sfp_loss [GTX_PORTS];
+    gtx_if evr_gtx_if[GTX_PORTS]();
+
+    gtwizard_wrapper #(
+        .DEVICE("EVR")
+    ) gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
-        .tx_reset_done(tx_reset_done),
-        .rx_reset_done(rx_reset_done),
-        .tx_clk(sfp_tx_clk),
-        .rx_clk(sfp_rx_clk),
-        .aligned(sfp_aligned),
-        .tx_data(sfp_tx_data),
-        .rx_data(sfp_rx_data),
-        .txcharisk(sfp_tx_is_k),
-        .rxcharisk(sfp_rx_is_k),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),
         .tx_n(sfp_tx_n),
-        .tx_p(sfp_tx_p)
+        .tx_p(sfp_tx_p),
+        .gtx_if(evr_gtx_if)
     );
+    assign sfp_tx_disable = '0;
 
     sfp_control sfp_control_i(
         .app_clk(app_clk),
@@ -225,34 +209,19 @@ module topEVR(
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) slave_in_packet();
-    axi_stream_if #(.DW(32)) slave_out_packet();
-
-    link_slave link_slave1(
-        .beacon_clk(sfp_tx_clk[0]),
-
-        //------GTP signals-------
-        .aligned(sfp_aligned[0]),
-
-        .tx_resetdone(tx_reset_done[0]),
-        .tx_clk(sfp_tx_clk[0]),
-        .tx_data(sfp_tx_data[0]),
-        .tx_charisk(sfp_tx_is_k[0]),
-
-        .rx_resetdone(rx_reset_done[0]),
-        .rx_clk(sfp_rx_clk[0]),
-        .rx_data(sfp_rx_data[0]),
-        .rx_charisk(sfp_rx_is_k[0]),
+    evr #(
+        .PORT_N(GTX_PORTS)
+    ) evr_i (
+        .beacon_clk(gtx_if[0].tx_clk),
+        .gtx_if(gtx_if),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::SLAVE]),
         
         .ev(ev), 
         .trig(),
-        .in_packet(slave_in_packet),
-        .out_packet(slave_out_packet),
 
         .delay(delay)
     );
