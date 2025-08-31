@@ -5,19 +5,7 @@
 `include "ev_map_axi_core.rdl"
 `include "signal_gen_ctrl_axi_core.rdl"
 `include "sfp_control_axi_core.rdl"
-
-`define GP0_ADDR_W       21
-`define GP0_DATA_W       32
-
-`define MMR_BLOCK_ADDR_W 16 // 0x10000 per device
-`define MMR_BLOCK_DATA_W `GP0_DATA_W
-`define MMR_BLOCK_SIZE   2**`MMR_BLOCK_ADDR_W
-
-`define MMR_DEV_ADDR_W   (`GP0_ADDR_W - `MMR_BLOCK_ADDR_W)
-`define MMR_DEV_CNT      2**`MMR_DEV_ADDR_W
-`define MAX_DEVICE       (`MMR_DEV_CNT - 1)
-
-`define DEBUG_DEVICE     (`MMR_DEV_CNT / 2)
+`include "axi_params.rdl"
 
 addrmap EVR_reg_map {
     name = "Блок приемника событий";
@@ -27,18 +15,7 @@ addrmap EVR_reg_map {
     default accesswidth = `MMR_BLOCK_DATA_W;
     default alignment   = 0x4;
     alignment   = `MMR_BLOCK_SIZE;
-    
-    enum gp0_params{
-        GP0_ADDR_W       = `GP0_ADDR_W;
-        GP0_DATA_W       = `GP0_DATA_W;
-    };
-    enum mmr_params{
-        MMR_BLOCK_ADDR_W = `MMR_BLOCK_ADDR_W;
-        MMR_BLOCK_DATA_W = `MMR_BLOCK_DATA_W;
-    };
-    enum mmr_dev_params{
-        MMR_DEV_CNT      = `MMR_DEV_CNT;
-    };
+
     enum signal_gen_params{
         SIGNAL_GEN_N      = `SIGNAL_GEN_N;
     };
@@ -75,15 +52,6 @@ addrmap EVR_reg_map {
         reg {
             field {encode = device_numbers;} mmr_device_numbers[32];
         } mmr_device_numbers;
-        reg {
-            field {encode = gp0_params;} gp0_axi_params[32];
-        } gp0_axi_params;
-        reg {
-            field {encode = mmr_params;} mmr_params[32];
-        } mmr_params;
-        reg {
-            field {encode = mmr_dev_params;} mmr_dev_params[32];
-        } mmr_dev_params;
         reg {
             field {encode = signal_gen_params;} signal_gen_params[32];
         } signal_gen_params;
