@@ -50,6 +50,9 @@ class axi_driver;
         this.axi          = axi;
         this.req_mailbox  = req_mailbox;
         this.resp_mailbox = resp_mailbox;
+        fork
+            serve_mailboxes();
+        join_none
     endfunction
 
     task automatic serve_mailboxes();
@@ -72,6 +75,10 @@ class axi_driver;
             axi_transaction_pkg::WRITE_VERIFY : this.write_verify(req_item.addr, req_item.data);
             endcase
         end
+    endtask
+
+    task sync();
+    forever @(posedge clk_if.clk) if(req_mailbox.num() == 0) return;
     endtask
 
     task automatic read(input axi_transaction_pkg::addr_t addr, output axi_transaction_pkg::data_t data);

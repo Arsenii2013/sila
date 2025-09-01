@@ -179,10 +179,6 @@ module axi_monitor(
         evg_generator = new(evg_clk_if, evg_req_mbx, evg_resp_mbx, 0);
         evr_driver    = new(evr_clk_if, evr_axi, evr_req_mbx, evr_resp_mbx);
         evr_generator = new(evr_clk_if, evr_req_mbx, evr_resp_mbx, 0);
-        fork
-            evg_driver.serve_mailboxes();
-            evr_driver.serve_mailboxes();
-        join_none
     end
 
     task evrDelayMeasurementTest();
