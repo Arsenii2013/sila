@@ -4,4 +4,6 @@ sources:
     - src/lib/axi/axi_driver.sv
     - src/lib/axi/axi_generator.sv
     - src/sim/event_generator/ev_seq_generator.sv
+    - src/sim/event_generator/ev_seq_ctrl_generator.sv
     - src/sim/event_generator/ev_seqTB.sv
+    - src/sim/event_generator/ev_seq_ctrlTB.sv
