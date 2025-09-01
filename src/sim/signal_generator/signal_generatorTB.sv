@@ -38,7 +38,7 @@ module signal_generatorTB();
     virtual_clock_if clk_if (app_clk, app_rst);
     axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
     axi_driver driver;
-    ev_generator_generator generator;
+    signal_generator_generator generator;
 
     initial begin
         driver = new(clk_if, mmr, req_mbx, resp_mbx);

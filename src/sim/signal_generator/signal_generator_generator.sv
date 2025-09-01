@@ -24,7 +24,7 @@ typedef struct{
 } setup_item_t;
 endpackage
 
-class ev_generator_generator#(
+class signal_generator_generator#(
     parameter BASE  = 'h0,
     parameter GEN_N = 16
 ) extends axi_generator;
@@ -112,7 +112,7 @@ class ev_generator_generator#(
     task get_cfg(input int unsigned gen_n, output cfg_t cfg);
         data_t rd_word;
         read(reg_by_offs(gen_n, GEN_CR_OFFS), rd_word);
-        cfg = cfg_t'(rd_word[3:0]);
+        cfg = cfg_t'({rd_word[0], rd_word[1], rd_word[2], rd_word[3]});
     endtask
     task check_cfg(input int unsigned gen_n, input cfg_t cfg);
         verify(reg_by_offs(gen_n, GEN_CR_OFFS), data_t'({cfg.trig_src, cfg.out_src, cfg.polarity, 

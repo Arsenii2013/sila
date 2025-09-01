@@ -5,3 +5,5 @@ sources:
     - src/lib/axi/axi_generator.sv
     - src/sim/signal_generator/signal_generator_generator.sv
     - src/sim/signal_generator/signal_generatorTB.sv
+    - src/sim/signal_generator/ev_map_generator.sv
+    - src/sim/signal_generator/ev_mapTB.sv
