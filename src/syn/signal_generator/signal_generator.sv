@@ -18,18 +18,17 @@ localparam PERIOD_W = 64;
 localparam DELAY_W  = 64;
 localparam WIDTH_W  = 64;
 
-typedef enum {
+typedef enum logic [$bits(signal_gen_ctrl_axi_core__trig_src_t_e)-1:0] {
     EVENT      = TRIG_EVENT,
     PERIOD     = TRIG_PERIOD
 } trig_source_t;
 
-typedef enum {
+typedef enum logic [$bits(signal_gen_ctrl_axi_core__output_src_t_e)-1:0] {
     FORCE_SET   = OUT_SET,
     FORCE_CLEAR = OUT_CLEAR,
     GENERATOR   = OUT_GENERATOR
 } out_source_t;
 
-typedef evn::ev_t            ev_t;
 typedef logic [PERIOD_W-1:0] period_t;
 typedef logic [DELAY_W-1:0]  delay_t;
 typedef logic [WIDTH_W-1:0]  width_t;
