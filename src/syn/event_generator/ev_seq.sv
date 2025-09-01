@@ -3,6 +3,7 @@ module ev_seq (
     input  logic                        app_rst,
     axi4_lite_if.s                      mmr,
 
+    input  logic                        disable_,
     input  logic                        start,
     input  logic                        stop,
     output logic                        running,
@@ -107,7 +108,7 @@ module ev_seq (
 
     always_comb begin
         case (state)
-            SQ_WAIT    : next = start ? SQ_START : SQ_WAIT;
+            SQ_WAIT    : next = start && !disable_ ? SQ_START : SQ_WAIT;
             SQ_START   : next = stop  ? SQ_WAIT  : (prefetch_cnt == 0   ? SQ_RUNNING : SQ_START);
             SQ_RUNNING : next = stop  ? SQ_WAIT  : (ev == END_OF_SEQ    ? SQ_WAIT    : SQ_RUNNING);
             default    : next = SQ_WAIT;
@@ -178,7 +179,7 @@ module ev_seq (
             .clka(app_clk),
             .clkb(app_clk),
             .ena(1),
-            .enb(1),
+            .enb(!(disable_ && state == SQ_WAIT)),
             .regcea(1),
             .regceb(1),
             .rsta(app_rst),

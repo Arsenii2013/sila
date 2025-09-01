@@ -1,6 +1,4 @@
 package ev_seq_generator_pkg;
-typedef event_generator_pkg::timestamp_t timestamp_t;
-typedef event_generator_pkg::ev_t        ev_t;
 typedef struct{
     event_generator_pkg::timestamp_t timestamp;
     event_generator_pkg::ev_t        ev;
@@ -12,8 +10,8 @@ class ev_seq_generator#(
 ) extends axi_generator;
 
     local int entrys_num;
-    typedef ev_seq_generator_pkg::timestamp_t timestamp_t;
-    typedef ev_seq_generator_pkg::ev_t        ev_t;
+    typedef event_generator_pkg::timestamp_t  timestamp_t;
+    typedef event_generator_pkg::ev_t         ev_t;
     typedef ev_seq_generator_pkg::seq_item_t  seq_item_t;
 
     function new (
@@ -50,6 +48,7 @@ class ev_seq_generator#(
     task clear_events();
         while(entrys_num) begin
             write_event(entrys_num, '0, '0);
+            entrys_num -= 1;
         end
     endtask
 

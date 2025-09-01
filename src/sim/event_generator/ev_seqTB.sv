@@ -23,6 +23,7 @@ module ev_seqTB();
         .app_rst(app_rst),
         .mmr(mmr),
         .ev(ev),
+        .disable_(0),
         .start(start),
         .stop(stop),
         .running(running)
@@ -57,9 +58,6 @@ module ev_seqTB();
         };
         driver = new(clk_if, mmr, req_mbx, resp_mbx);
         generator = new(clk_if, req_mbx, resp_mbx, 0);
-        fork
-            driver.serve_mailboxes();
-        join_none;
         reset();
         #10us;
         generator.write_seq(seq);

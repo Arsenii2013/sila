@@ -49,6 +49,7 @@ module event_generator #(
     output event_generator_pkg::ev_t    ev
 );
     import event_generator_pkg::*;
+    logic seq_enable[EV_SEQ_N];
     logic seq_start[EV_SEQ_N];
     logic seq_stop[EV_SEQ_N];
     logic seq_running[EV_SEQ_N];
@@ -61,6 +62,7 @@ module event_generator #(
         .app_rst(app_rst),
         .mmr(mmr_ctrl),
 
+        .seq_enable(seq_enable),
         .seq_start(seq_start),
         .seq_stop(seq_stop),
         .seq_running(seq_running),
@@ -75,7 +77,8 @@ module event_generator #(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .mmr(mmr_mem[i]),
-
+        
+        .disable_(!seq_enable[i]),
         .start(seq_start[i]),
         .stop(seq_stop[i]),
         .running(seq_running[i]),
