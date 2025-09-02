@@ -1,0 +1,4 @@
+import : main
+
+sources:
+    - src/syn/top.svh

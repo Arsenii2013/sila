@@ -2,5 +2,5 @@ parameters:
     VARIANT_NAME        : = ARGUMENTS['bv']
     PROJECT_NAME        : = VARIANT_NAME
     TOP_NAME            : topEVR
-    TESTBENCH_NAME      : topTB
+    TESTBENCH_NAME      : ''
     DEVICE              : xc7z035ffg676-2
