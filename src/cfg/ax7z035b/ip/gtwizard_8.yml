@@ -46,3 +46,4 @@ config:
     gt0_val_txbuf_en : "false"
     gt0_val_txoutclk_source : "true"
     gt8_val : "true"
+    gt0_val : "false"

@@ -11,11 +11,11 @@ localparam DATA_W = 32;
 typedef logic [DATA_W  -1:0] data_t;
 typedef logic [DATA_W/8-1:0] is_k_t;
 
-localparam int unsigned EVG_PORT_N    = 4;
-localparam int unsigned FANOUT_PORT_N = 4;
-localparam int unsigned EVR_PORT_N    = 1;
+localparam EVG_PORT_N    = 4;
+localparam FANOUT_PORT_N = 4;
+localparam EVR_PORT_N    = 1;
 `define PORT_N(DEVICE) \
-    ((``DEVICE`` == "EVG") ? gtx::EVG_PORT_N : ((``DEVICE`` == "FANOUT") ? gtx::FANOUT_PORT_N  : ((``DEVICE`` == "EVG") ? gtx::EVR_PORT_N: 0)))
+    ((DEVICE == "EVG") ? gtx::EVG_PORT_N : ((DEVICE == "FANOUT") ? gtx::FANOUT_PORT_N  : ((DEVICE == "EVG") ? gtx::EVR_PORT_N: 0)))
 
 endpackage
 
@@ -146,7 +146,7 @@ module gtwizard_wrapper#(
     assign gtx_if[j].aligned = state[j] == wafsmALIGNED;
 
     always_ff @(posedge gtx_if[j].rx_clk or negedge gtx_if[j].rx_reset_done) begin // async reset becouse rx_clk loss when rx_reset_done fall
-        if (!gtx_if[j].rx_reset_done[j]) begin
+        if (!gtx_if[j].rx_reset_done) begin
             state[j]      <= wafsmPATTERN_SEARCH;
             detect[j]     <= 0;
             word_cnt[j]   <= '0;
@@ -157,7 +157,7 @@ module gtwizard_wrapper#(
             state[j] <= next[j];
             case (state[j])
                 wafsmPATTERN_SEARCH: begin
-                    if (gtx_if[j].rx_is_k == evn::ALIGNMENT_IS_K && gtx_if[j].rx_data[j] == evn::ALIGNMENT_WORD)
+                    if (gtx_if[j].rx_is_k == evn::ALIGNMENT_IS_K && gtx_if[j].rx_data == evn::ALIGNMENT_WORD)
                         if (~test)
                             detect[j] <= 1;
                     word_cnt[j] <= word_cnt[j] + word_cnt_t'(1);
@@ -273,14 +273,14 @@ module gtwizard_wrapper#(
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
-        .gt0_rxcharisk_out              (gtx_if[0].rx_is_k[0]),
+        .gt0_rxcharisk_out              (gtx_if[0].rx_is_k),
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt0_rxresetdone_out            (rxresetdone[0]),
         //------------------- TX Initialization and Reset Ports --------------------
         .gt0_gttxreset_in               ('0),
         .gt0_txuserrdy_in               ('b1),
         //---------------- Transmit Ports - TX Data Path interface -----------------
-        .gt0_txdata_in                  (gtx_if[0].tx_data[0]),
+        .gt0_txdata_in                  (gtx_if[0].tx_data),
         //-------------- Transmit Ports - TX Driver and OOB signaling --------------
         .gt0_gtxtxn_out                 (tx_n[0]),
         .gt0_gtxtxp_out                 (tx_p[0]),
@@ -613,7 +613,7 @@ module gtwizard_wrapper#(
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[3]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
-        .gt0_rxcharisk_out              (gtx_if[3].rx_is_k[3]),
+        .gt0_rxcharisk_out              (gtx_if[3].rx_is_k),
         //------------ Receive Ports -RX Initialization and Reset Ports ------------
         .gt0_rxresetdone_out            (rxresetdone[3]),
         //------------------- TX Initialization and Reset Ports --------------------

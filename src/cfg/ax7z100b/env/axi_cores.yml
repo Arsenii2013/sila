@@ -1,5 +1,6 @@
 
 sources:
+    - src/axi_cores/rdl_axi_params.rdl
     - src/axi_cores/device_info_axi_core.rdl
     - src/axi_cores/EVG_reg_map.rdl
     - src/axi_cores/EVR_reg_map.rdl

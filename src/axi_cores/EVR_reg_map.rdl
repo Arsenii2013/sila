@@ -5,7 +5,7 @@
 `include "ev_map_axi_core.rdl"
 `include "signal_gen_ctrl_axi_core.rdl"
 `include "sfp_control_axi_core.rdl"
-`include "axi_params.rdl"
+`include "rdl_axi_params.rdl"
 
 addrmap EVR_reg_map {
     name = "Блок приемника событий";

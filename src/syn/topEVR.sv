@@ -1,11 +1,3 @@
-`timescale 1ns/1ns
-
-`include "axi4_lite_if.svh"
-`include "axi_stream.svh"
-`include "top.svh"
-`include "topEVR.svh"
-`include "cfg_params.svh"
-
 module topEVR(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
@@ -36,10 +28,10 @@ module topEVR(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       sfp_rx_n[4],
-    input  logic       sfp_rx_p[4],
-    output logic       sfp_tx_n[4],
-    output logic       sfp_tx_p[4],
+    input  logic       sfp_rx_n[gtx::EVR_PORT_N],
+    input  logic       sfp_rx_p[gtx::EVR_PORT_N],
+    output logic       sfp_tx_n[gtx::EVR_PORT_N],
+    output logic       sfp_tx_p[gtx::EVR_PORT_N],
     output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
@@ -101,11 +93,6 @@ module topEVR(
     );
 
 
-    typedef logic [63:0] cycle_cnt_t;
-    typedef logic [31:0] pulse_cnt_t;
-    cycle_cnt_t cycle_cnt;
-    pulse_cnt_t pulse_cnt;
-
     timestamper #(
         .CYCLE_CNT_WIDTH(64), 
         .PULSE_CNT_WIDTH(32)
@@ -113,9 +100,9 @@ module topEVR(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
-        .cycle_start_val(cycle_cnt_t'(delay) >> 16), // ожидаю, что задержка получилась целеая
-        .cycle_cnt(cycle_cnt),
-        .pulse_cnt(pulse_cnt),
+        .cycle_start_val(delay >> 16), // ожидаю, что задержка получилась целеая
+        .cycle_cnt(),
+        .pulse_cnt(),
         .ev(ev)
     );
 
@@ -182,12 +169,13 @@ module topEVR(
     );
 
 
-    localparam GTX_PORTS = `PORT_N("EVR");
+    localparam GTX_PORTS = gtx::EVR_PORT_N;
     logic sfp_loss [GTX_PORTS];
     gtx_if evr_gtx_if[GTX_PORTS]();
 
     gtwizard_wrapper #(
-        .DEVICE("EVR")
+        .DEVICE("EVR"),
+        .PORT_N(GTX_PORTS)
     ) gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
@@ -202,7 +190,9 @@ module topEVR(
     );
     assign sfp_tx_disable = '0;
 
-    sfp_control sfp_control_i(
+    sfp_control #(
+        .PORT_N(GTX_PORTS)
+    ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
@@ -212,16 +202,16 @@ module topEVR(
     evr #(
         .PORT_N(GTX_PORTS)
     ) evr_i (
-        .beacon_clk(gtx_if[0].tx_clk),
-        .gtx_if(gtx_if),
+        .beacon_clk(evr_gtx_if[0].tx_clk),
+        .gtx_if(evr_gtx_if),
 
         //------Application signals-------
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::SLAVE]),
+        .mmr(mmr[EVR_axi_params::EVR]),
         
         .ev(ev), 
-        .trig(),
+        .trig('0),
 
         .delay(delay)
     );
@@ -232,7 +222,6 @@ module topEVR(
     logic cnt_reset[EVR_axi_params::SIG_GEN_N];
     logic gen_out  [EVR_axi_params::SIG_GEN_N];
     ev_map #(
-        .EV_WIDTH(24),
         .COMP_N(EVR_axi_params::EV_COMP_N),
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
     ) ev_map_i (
@@ -247,10 +236,7 @@ module topEVR(
     );
 
     signal_generator #(
-        .N(EVR_axi_params::SIG_GEN_N),
-        .PERIOD_W(64),
-        .DELAY_W(64),
-        .WIDTH_W(64)
+        .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
@@ -263,7 +249,7 @@ module topEVR(
     );
     assign out_pulse = {<<{gen_out}};
     
-    assign led[1] = tx_reset_done[0];
-    assign led[2] = rx_reset_done[0];
+    assign led[1] = evr_gtx_if[0].tx_reset_done;
+    assign led[2] = evr_gtx_if[0].rx_reset_done;
     assign led[3] = out_pulse[0];
 endmodule

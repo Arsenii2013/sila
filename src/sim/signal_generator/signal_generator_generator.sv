@@ -66,87 +66,87 @@ class signal_generator_generator#(
     endfunction
 
     task get_outputs_all(output logic [GEN_N-1:0] outs);
-        read(SR, outs);
+        read(BASE + SR, outs);
     endtask
     task check_outputs_all(input logic [GEN_N-1:0] outs);
-        verify(SR, outs);
+        verify(BASE + SR, outs);
     endtask
     task get_output(input int unsigned gen_n, output logic out);
-        read(reg_by_offs(gen_n, GEN_SR_OFFS), out);
+        read(BASE + reg_by_offs(gen_n, GEN_SR_OFFS), out);
     endtask
     task check_output(input int unsigned gen_n, input logic out);
-        verify(reg_by_offs(gen_n, GEN_SR_OFFS), out);
+        verify(BASE + reg_by_offs(gen_n, GEN_SR_OFFS), out);
     endtask
 
     task set_ena(input int unsigned gen_n, input ena_t ena);
-        write(reg_by_offs(gen_n, GEN_CR_C_OFFS), 4'b1111);
-        write(reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'({ena.cnt_reset, ena.trigger, ena.clear, ena.set}));
+        write(BASE + reg_by_offs(gen_n, GEN_CR_C_OFFS), 4'b1111);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'({ena.cnt_reset, ena.trigger, ena.clear, ena.set}));
     endtask
     task enable_all(input int unsigned gen_n);
-        write(reg_by_offs(gen_n, GEN_CR_S_OFFS), 4'b1111);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_S_OFFS), 4'b1111);
     endtask
     task disable_all(input int unsigned gen_n);
-        write(reg_by_offs(gen_n, GEN_CR_C_OFFS), 4'b1111);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_C_OFFS), 4'b1111);
     endtask
 
     task set_polarity(input int unsigned gen_n, input logic polarity);
         if(polarity)
-            write(reg_by_offs(gen_n, GEN_CR_S_OFFS), 5'b10000);
+            write(BASE + reg_by_offs(gen_n, GEN_CR_S_OFFS), 5'b10000);
         else
-            write(reg_by_offs(gen_n, GEN_CR_C_OFFS), 5'b10000);
+            write(BASE + reg_by_offs(gen_n, GEN_CR_C_OFFS), 5'b10000);
     endtask
 
     task set_out_src(input int unsigned gen_n, input out_source_t out_src);
-        write(reg_by_offs(gen_n, GEN_CR_C_OFFS), data_t'(2'b11) << 5);
-        write(reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'(out_src) << 5);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_C_OFFS), data_t'(2'b11) << 5);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'(out_src) << 5);
     endtask
     task set_trig_src(input int unsigned gen_n, input trig_source_t trig_src);
-        write(reg_by_offs(gen_n, GEN_CR_C_OFFS), data_t'(1'b1) << 7);
-        write(reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'(trig_src) << 7);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_C_OFFS), data_t'(1'b1) << 7);
+        write(BASE + reg_by_offs(gen_n, GEN_CR_S_OFFS), data_t'(trig_src) << 7);
     endtask
 
     task set_cfg(input int unsigned gen_n, input cfg_t cfg);
-        write(reg_by_offs(gen_n, GEN_CR_OFFS), data_t'({cfg.trig_src, cfg.out_src, cfg.polarity, 
+        write(BASE + reg_by_offs(gen_n, GEN_CR_OFFS), data_t'({cfg.trig_src, cfg.out_src, cfg.polarity, 
                                                     {cfg.ena.cnt_reset, cfg.ena.trigger, cfg.ena.clear, cfg.ena.set}}));
     endtask
     task get_cfg(input int unsigned gen_n, output cfg_t cfg);
         data_t rd_word;
-        read(reg_by_offs(gen_n, GEN_CR_OFFS), rd_word);
+        read(BASE + reg_by_offs(gen_n, GEN_CR_OFFS), rd_word);
         cfg = cfg_t'({rd_word[0], rd_word[1], rd_word[2], rd_word[3]});
     endtask
     task check_cfg(input int unsigned gen_n, input cfg_t cfg);
-        verify(reg_by_offs(gen_n, GEN_CR_OFFS), data_t'({cfg.trig_src, cfg.out_src, cfg.polarity, 
+        verify(BASE + reg_by_offs(gen_n, GEN_CR_OFFS), data_t'({cfg.trig_src, cfg.out_src, cfg.polarity, 
                                                     {cfg.ena.cnt_reset, cfg.ena.trigger, cfg.ena.clear, cfg.ena.set}}));
     endtask
 
     task set_period(input int unsigned gen_n, input period_t period);
-        write(reg_by_offs(gen_n, PERIOD_LSB_OFFS), data_t'(period[31:0]));
-        write(reg_by_offs(gen_n, PERIOD_MSB_OFFS), data_t'(period[63:32]));
+        write(BASE + reg_by_offs(gen_n, PERIOD_LSB_OFFS), data_t'(period[31:0]));
+        write(BASE + reg_by_offs(gen_n, PERIOD_MSB_OFFS), data_t'(period[63:32]));
     endtask
     task get_period(input int unsigned gen_n, output period_t period);
         data_t rd_word1, rd_word2;
-        read(reg_by_offs(gen_n, PERIOD_LSB_OFFS), rd_word1);
-        read(reg_by_offs(gen_n, PERIOD_MSB_OFFS), rd_word2);
+        read(BASE + reg_by_offs(gen_n, PERIOD_LSB_OFFS), rd_word1);
+        read(BASE + reg_by_offs(gen_n, PERIOD_MSB_OFFS), rd_word2);
         period = period_t'({rd_word2, rd_word1});
     endtask
     task set_delay(input int unsigned gen_n, input delay_t delay);
-        write(reg_by_offs(gen_n, DELAY_LSB_OFFS), data_t'(delay[31:0]));
-        write(reg_by_offs(gen_n, DELAY_MSB_OFFS), data_t'(delay[63:32]));
+        write(BASE + reg_by_offs(gen_n, DELAY_LSB_OFFS), data_t'(delay[31:0]));
+        write(BASE + reg_by_offs(gen_n, DELAY_MSB_OFFS), data_t'(delay[63:32]));
     endtask
     task get_delay(input int unsigned gen_n, output delay_t delay);
         data_t rd_word1, rd_word2;
-        read(reg_by_offs(gen_n, DELAY_LSB_OFFS), rd_word1);
-        read(reg_by_offs(gen_n, DELAY_MSB_OFFS), rd_word2);
+        read(BASE + reg_by_offs(gen_n, DELAY_LSB_OFFS), rd_word1);
+        read(BASE + reg_by_offs(gen_n, DELAY_MSB_OFFS), rd_word2);
         delay = delay_t'({rd_word2, rd_word1});
     endtask
     task set_width(input int unsigned gen_n, input width_t width);
-        write(reg_by_offs(gen_n, WIDTH_LSB_OFFS), data_t'(width[31:0]));
-        write(reg_by_offs(gen_n, WIDTH_MSB_OFFS), data_t'(width[63:32]));
+        write(BASE + reg_by_offs(gen_n, WIDTH_LSB_OFFS), data_t'(width[31:0]));
+        write(BASE + reg_by_offs(gen_n, WIDTH_MSB_OFFS), data_t'(width[63:32]));
     endtask
     task get_width(input int unsigned gen_n, output width_t width);
         data_t rd_word1, rd_word2;
-        read(reg_by_offs(gen_n, WIDTH_LSB_OFFS), rd_word1);
-        read(reg_by_offs(gen_n, WIDTH_MSB_OFFS), rd_word2);
+        read(BASE + reg_by_offs(gen_n, WIDTH_LSB_OFFS), rd_word1);
+        read(BASE + reg_by_offs(gen_n, WIDTH_MSB_OFFS), rd_word2);
         width = width_t'({rd_word2, rd_word1});
     endtask
 

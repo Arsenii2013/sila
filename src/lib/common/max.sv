@@ -10,7 +10,7 @@ module max #(
     output logic [W-1:0] out,
     output logic         out_upd
 );
-    typedef logic [$clog2(N)-1: 0] ptr_t;
+    typedef logic [$clog2(N)  : 0] ptr_t;
     typedef logic [W        -1: 0] data_t;
     typedef enum { 
         WAIT,
@@ -31,9 +31,11 @@ module max #(
 
     always_ff @(posedge app_clk) begin
         if(app_rst) begin
-            state <= WAIT;
-            ptr   <= '0;
-            max   <= '0;
+            state   <= WAIT;
+            ptr     <= '0;
+            max     <= '0;
+            out     <= '0;
+            out_upd <= 0;
         end else begin
             out_upd <= 0;
             if(state == WAIT) begin

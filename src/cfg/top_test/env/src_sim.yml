@@ -58,4 +58,5 @@ sources:
     - src/syn/PS_wrapper.sv
     - src/syn/topEVR.sv
     - src/syn/topEVG.sv
+    - src/sim/link_emulator.sv
     - src/sim/topTB.sv

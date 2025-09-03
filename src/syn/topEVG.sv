@@ -1,11 +1,3 @@
-`timescale 1ns/1ns
-
-`include "axi4_lite_if.svh"
-`include "axi_stream.svh"
-`include "top.svh"
-`include "topEVG.svh"
-`include "cfg_params.svh"
-
 module topEVG(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
@@ -36,10 +28,10 @@ module topEVG(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       sfp_rx_n[4],
-    input  logic       sfp_rx_p[4],
-    output logic       sfp_tx_n[4],
-    output logic       sfp_tx_p[4],
+    input  logic       sfp_rx_n[gtx::EVG_PORT_N],
+    input  logic       sfp_rx_p[gtx::EVG_PORT_N],
+    output logic       sfp_tx_n[gtx::EVG_PORT_N],
+    output logic       sfp_tx_p[gtx::EVG_PORT_N],
     output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
@@ -81,7 +73,7 @@ module topEVG(
         .s(mmr)
     );
 
-    logic [23:0] ev;
+    evn::ev_t ev;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -118,7 +110,8 @@ module topEVG(
     PS_wrapper_sv #(
         .GP0_ADDR_W(axi_params::GP0_ADDR_W),
         .GP0_DATA_W(axi_params::GP0_DATA_W),
-        .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2)
+        .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
+        .SIM_DEVICE("EVG")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
@@ -176,12 +169,13 @@ module topEVG(
         .led(led[0])
     );
 
-    localparam GTX_PORTS = `PORT_N("EVG");
+    localparam GTX_PORTS = gtx::EVG_PORT_N;
     logic sfp_loss [GTX_PORTS];
-    gtx_if evr_gtx_if[GTX_PORTS]();
+    gtx_if evg_gtx_if[GTX_PORTS]();
 
     gtwizard_wrapper #(
-        .DEVICE("EVG")
+        .DEVICE("EVG"),
+        .PORT_N(GTX_PORTS)
     ) gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
@@ -192,37 +186,36 @@ module topEVG(
         .rx_p(sfp_rx_p),
         .tx_n(sfp_tx_n),
         .tx_p(sfp_tx_p),
-        .gtx_if(evr_gtx_if)
+        .gtx_if(evg_gtx_if)
     );
     assign sfp_tx_disable = '0;
 
-    sfp_control sfp_control_i(
+    sfp_control #(
+        .PORT_N(GTX_PORTS)
+    ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
-
+    
     evg #(
         .PORT_N(GTX_PORTS)
     ) evg_i (
-        .beacon_clk(gtx_if[0].tx_clk),
-        .gtx_if(gtx_if),
+        .beacon_clk(evg_gtx_if[0].tx_clk),
+        .gtx_if(evg_gtx_if),
 
         //------Application signals-------
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::SLAVE]),
+        .mmr(mmr[EVG_axi_params::EVG]),
         
         .ev(ev), 
-        .trig(),
+        .trig()
     );
 
     event_generator #(
-        .EV_SEQ_N(EVG_axi_params::EV_SEQ_N),
-        .EV_WIDTH(24),
-        .CNT_WIDTH(64),
-        .ENTRY_NUM(2048)
+        .EV_SEQ_N(EVG_axi_params::EV_SEQ_N)
     ) event_generator_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
@@ -240,7 +233,7 @@ module topEVG(
         .pulse(event_pulse)
     );
 
-    assign led[1] = tx_reset_done[0];
-    assign led[2] = rx_reset_done[0];
+    assign led[1] = evg_gtx_if[0].tx_reset_done;
+    assign led[2] = evg_gtx_if[0].rx_reset_done;
     assign led[3] = event_pulse;
 endmodule

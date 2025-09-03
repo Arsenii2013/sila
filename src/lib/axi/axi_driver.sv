@@ -33,16 +33,19 @@ interface virtual_clock_if(
 );
 endinterface
 
-class axi_driver;
+class axi_driver #(
+    parameter AW = 32,
+    parameter DW = 32
+);
 
-    virtual axi4_lite_if #(.AW(axi_transaction_pkg::AW), .DW(axi_transaction_pkg::DW)) axi;
+    virtual axi4_lite_if #(.AW(AW), .DW(DW)) axi;
     virtual virtual_clock_if            clk_if;
     axi_transaction_pkg::item_mailbox_t req_mailbox;
     axi_transaction_pkg::item_mailbox_t resp_mailbox;
 
     function new (
         virtual virtual_clock_if clk_if, 
-        virtual axi4_lite_if #(.AW(axi_transaction_pkg::AW), .DW(axi_transaction_pkg::DW)) axi, 
+        virtual axi4_lite_if #(.AW(AW), .DW(DW)) axi, 
         axi_transaction_pkg::item_mailbox_t req_mailbox, 
         axi_transaction_pkg::item_mailbox_t resp_mailbox
     );
