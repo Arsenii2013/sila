@@ -1,5 +1,6 @@
+
 sources:
-    - ip/EVR_gtwizard_port_0.yml
+    - ip/axi_memory.yml
     - ip/EVG_gtwizard_port_0.yml
     - ip/EVG_gtwizard_port_1.yml
     - ip/EVG_gtwizard_port_2.yml

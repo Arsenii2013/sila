@@ -219,7 +219,7 @@ module gtwizard_wrapper#(
 
     generate 
     if(DEVICE == "EVR") begin
-    gtwizard_8 gtwizard_8_i
+    EVR_gtwizard_port_0 gtwizard_port_0
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -304,7 +304,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
     end else if(DEVICE == "EVG" || DEVICE == "FANOUT") begin
-    gtwizard_4 gtwizard_4_i
+    EVG_gtwizard_port_0 gtwizard_port_0
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -389,7 +389,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    gtwizard_5 gtwizard_5_i
+    EVG_gtwizard_port_1 gtwizard_port_1
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -474,7 +474,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    gtwizard_6 gtwizard_6_i
+    EVG_gtwizard_port_2 gtwizard_port_2
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -559,7 +559,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    gtwizard_7 gtwizard_7_i
+    EVG_gtwizard_port_3 gtwizard_port_3
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
