@@ -43,20 +43,11 @@ module sampler #(
     );
 
     logic beacon_rst;
-    logic beacon_rst_sync;
 
-    xpm_cdc_sync_rst beacon_rst_sunchronizer_i(
+    xpm_cdc_async_rst beacon_rst_sunchronizer_i(
         .dest_clk(beacon_clk),
-        .dest_rst(beacon_rst_sync),
-        .src_rst(app_rst)
-    );
-
-    pf_m #(
-        .WIDTH(10)
-    ) pf_beacon_rst (
-        .clk(beacon_clk),
-        .in(beacon_rst_sync),
-        .out(beacon_rst)
+        .dest_arst(beacon_rst),
+        .src_arst(app_rst)
     );
 
     logic fine_sync;
@@ -106,30 +97,31 @@ module sampler #(
         end
     end
 
-    FIFO18E1 #(
-        .DATA_WIDTH(18),
-        .DO_REG(1), 
-        .EN_SYN("TRUE"),
-        .FIFO_MODE("FIFO18"),
-        .FIRST_WORD_FALL_THROUGH("FALSE"),
-        .INIT(36'h000000000),
-        .SIM_DEVICE("7SERIES"),
-        .SRVAL(36'h000000000),
-        .ALMOST_FULL_OFFSET(BEACON_CNT_MAX)
-    ) beacon_cnt_FIFO_i (
-        .DO(sample_cnt),
-        .DOP(),
-        .EMPTY(no_beacons),
-        .ALMOSTFULL(beacons_over),
-        .RDCLK(beacon_clk),
-        .RDEN(beacon_rx_sync && ~no_beacons),
-        .REGCE(1),
-        .RST(beacon_rst),
-        .RSTREG(beacon_rst),
-        .WRCLK(beacon_clk),
-        .WREN(beacon_tx_sync),
-        .DI(current_cnt),
-        .DIP()
+    xpm_fifo_async #(
+        .CASCADE_HEIGHT(0),
+        .CDC_SYNC_STAGES(2),
+        .DOUT_RESET_VALUE("0"),
+        .FIFO_MEMORY_TYPE("block"),
+        .FIFO_READ_LATENCY(1),
+        .FIFO_WRITE_DEPTH(2**10),
+        .READ_DATA_WIDTH(18),
+        .READ_MODE("std"),
+        .RELATED_CLOCKS(0),
+        .SIM_ASSERT_CHK(1),
+        .WRITE_DATA_WIDTH(18),
+        .PROG_FULL_THRESH(BEACON_CNT_MAX)
+    ) xpm_fifo_async_inst (
+        .rd_clk(beacon_clk),
+        .rd_en(beacon_rx_sync && ~no_beacons),
+        .dout(sample_cnt),
+
+        .wr_clk(beacon_clk),
+        .wr_en(beacon_tx_sync),
+        .din(current_cnt),
+
+        .empty(no_beacons),
+        .prog_full(beacons_over),
+        .rst(beacon_rst)
     );
 
 
@@ -181,6 +173,21 @@ module sampler #(
         else 
             sample_valid = 1;
     end
+
+    ila_0 ila_i(
+        .clk(app_clk),
+        .probe0(beacon_tx_sync),
+        .probe1(beacon_rx_sync),
+        .probe2(sample),
+        .probe3(sample_cnt),
+        .probe4(current_cnt),
+        .probe5(sample_upd_sync),
+        .probe6(fine_sync),
+        .probe7(state),
+        .probe8(app_rst),
+        .probe9(beacon_rst)
+    );
+
 endmodule
 
 

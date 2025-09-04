@@ -25,20 +25,12 @@ create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports syscl
 
 set_property PACKAGE_PIN AF8 [get_ports {sfp_tx_p[0]}]
 set_property PACKAGE_PIN AD8 [get_ports {sfp_rx_p[0]}]
-set_property PACKAGE_PIN AF4 [get_ports {sfp_tx_p[1]}]
-set_property PACKAGE_PIN AE6 [get_ports {sfp_rx_p[1]}]
-set_property PACKAGE_PIN AE2 [get_ports {sfp_tx_p[2]}]
-set_property PACKAGE_PIN AC6 [get_ports {sfp_rx_p[2]}]
-set_property PACKAGE_PIN AC2 [get_ports {sfp_tx_p[3]}]
-set_property PACKAGE_PIN AD4 [get_ports {sfp_rx_p[3]}]
 
 set_property -dict { PACKAGE_PIN AF17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[0] }];
 set_property -dict { PACKAGE_PIN AE17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[1] }];
 
-set_property LOC GTXE2_CHANNEL_X0Y8 [get_cells gtwizard_i/gtwizard_8_i/inst/gtwizard_8_i/gt0_gtwizard_8_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y9 [get_cells gtwizard_i/gtwizard_9_i/inst/gtwizard_9_i/gt0_gtwizard_9_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y10 [get_cells gtwizard_i/gtwizard_10_i/inst/gtwizard_10_i/gt0_gtwizard_10_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y11 [get_cells gtwizard_i/gtwizard_11_i/inst/gtwizard_11_i/gt0_gtwizard_11_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y8 [get_cells gtwizard_i/gtwizard_port_0/inst/EVR_gtwizard_port_0_i/gt0_EVR_gtwizard_port_0_i/gtxe2_i]
+
 set_property RXSLIDE_MODE PMA [get_cells -regexp -hierarchical .*gtxe2_i ]
 
 set_property PACKAGE_PIN AA6 [get_ports {REFCLK_SFP_p}]

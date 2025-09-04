@@ -63,6 +63,7 @@ module max #(
     end
 endmodule
 
+`ifndef SYNTHESIS
 module maxTB();
     localparam W = 32;
     localparam N = 8;
@@ -140,3 +141,4 @@ module maxTB();
     assert property (@(posedge app_clk) out_upd   |=> (out == in.max()[0])) ;
     assert property (@(posedge app_clk) out_upd   |=> (out == in.max()[0])) else $display("expect %d got %d", in.max()[0], out);;
 endmodule
+`endif

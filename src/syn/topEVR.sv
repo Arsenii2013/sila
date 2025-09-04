@@ -1,3 +1,5 @@
+`include "topEVR.svh"
+
 module topEVR(
         //-------Processing System-------\\
     `ifdef SYNTHESIS

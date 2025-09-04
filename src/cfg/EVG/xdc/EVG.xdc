@@ -20,10 +20,10 @@ set_property PACKAGE_PIN AD6 [get_ports {sfp_rx_p[3]}]
 set_property -dict { PACKAGE_PIN AE18   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[0] }];
 set_property -dict { PACKAGE_PIN AE17   IOSTANDARD LVCMOS33 } [get_ports { sfp_tx_disable[1] }];
 
-set_property LOC GTXE2_CHANNEL_X0Y4 [get_cells gtwizard_i/gtwizard_4_i/inst/gtwizard_4_i/gt0_gtwizard_4_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y5 [get_cells gtwizard_i/gtwizard_5_i/inst/gtwizard_5_i/gt0_gtwizard_5_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y6 [get_cells gtwizard_i/gtwizard_6_i/inst/gtwizard_6_i/gt0_gtwizard_6_i/gtxe2_i]
-set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_7_i/inst/gtwizard_7_i/gt0_gtwizard_7_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y4 [get_cells gtwizard_i/gtwizard_port_0/inst/EVG_gtwizard_port_0_i/gt0_EVG_gtwizard_port_0_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y5 [get_cells gtwizard_i/gtwizard_port_1/inst/EVG_gtwizard_port_1_i/gt0_EVG_gtwizard_port_1_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y6 [get_cells gtwizard_i/gtwizard_port_2/inst/EVG_gtwizard_port_2_i/gt0_EVG_gtwizard_port_2_i/gtxe2_i]
+set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_port_3/inst/EVG_gtwizard_port_3_i/gt0_EVG_gtwizard_port_3_i/gtxe2_i]
 set_property RXSLIDE_MODE PMA [get_cells -regexp -hierarchical .*gtxe2_i ]
 
 set_property PACKAGE_PIN AC8 [get_ports {REFCLK_SFP_p}]

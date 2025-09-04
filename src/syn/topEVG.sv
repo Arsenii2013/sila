@@ -195,7 +195,7 @@ module topEVG(
     ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
+        .mmr(mmr[EVG_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
     

@@ -210,7 +210,7 @@ module PS_wrapper_sv #(
 
             ev_seq_ctrl_generator_i.enable(0);
             ev_seq_ctrl_generator_i.sw_trig(0);
-            EVG_generator_i.set_tgt_delay(EVG_generator_i.time_to_delay_t(12345.56ns + 175ns));
+            EVG_generator_i.set_tgt_delay(EVG_generator_i.time_to_delay_t(1234.56ns + 175ns));
 
             EVG_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
             $display("EVG Get INITIAL state at %t\n", $realtime);

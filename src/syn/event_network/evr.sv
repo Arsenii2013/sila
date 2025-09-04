@@ -1,3 +1,5 @@
+`include "axi_stream.svh"
+
 module evr#(
     parameter PORT_N = 1
 )(
@@ -24,7 +26,7 @@ module evr#(
     assign ports_data[0].sub_delay     = ports_data[0].up_delay + ports_data[0].link_delay;
     assign ports_data[0].sub_delay_upd = ports_data[0].up_delay_upd || ports_data[0].link_delay_upd;
 
-    link_slave link_slave(
+    link_slave link_slave_i(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------

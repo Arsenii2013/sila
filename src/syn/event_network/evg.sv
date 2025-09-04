@@ -1,3 +1,5 @@
+`include "axi_stream.svh"
+
 module evg#(
     parameter PORT_N = 4
 )(
@@ -36,7 +38,7 @@ module evg#(
     assign ports_data[i].up_delay_upd   = 0;
     assign sub_delay_iternal[i]         = ports_data[i].sub_delay;
     assign sub_delay_iternal_upd[i]     = ports_data[i].sub_delay_upd;
-    link_master link_master(
+    link_master link_master_i(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------
@@ -102,7 +104,7 @@ module evg#(
 endmodule
 
 module evg_axi_core#(
-    parameter PORT_N
+    parameter PORT_N = 4
 )(
     input  logic                app_clk,
     input  logic                app_rst,
