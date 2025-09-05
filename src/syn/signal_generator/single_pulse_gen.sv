@@ -1,7 +1,4 @@
-module single_pulse_gen #(
-    parameter DELAY_W = 64,
-    parameter WIDTH_W = 64
-) (
+module single_pulse_gen (
     input  logic                app_clk,
     input  logic                app_rst,
 
@@ -9,13 +6,12 @@ module single_pulse_gen #(
     input  logic                clear,
     input  logic                trigger,
 
-    input  logic [DELAY_W-1: 0] delay,
-    input  logic [WIDTH_W-1: 0] width,
+    input  signal_generator_pkg::delay_t delay,
+    input  signal_generator_pkg::width_t width,
 
     output logic                gen_out
 ); 
-    typedef logic [DELAY_W-1: 0] delay_t;
-    typedef logic [WIDTH_W-1: 0] width_t;
+    import signal_generator_pkg::*;
 
 // Request Prioritizer
     logic clear_req;
@@ -85,11 +81,12 @@ module single_pulse_gen #(
 endmodule
 
 module single_pulse_genTB();
-localparam TEST_CYCLE_N = 10;
+    localparam TEST_CYCLE_N = 10;
+    import signal_generator_pkg::*;
     logic app_clk;
     logic app_rst = 0;
-    logic [63:0] delay = 0;
-    logic [63:0] width = 0;
+    delay_t delay = 0;
+    width_t width = 0;
     logic set     = 0;
     logic clear   = 0;
     logic trigger;
@@ -103,10 +100,7 @@ localparam TEST_CYCLE_N = 10;
         .sys_clk (app_clk)
     );
 
-    single_pulse_gen #(
-        .DELAY_W(64),
-        .WIDTH_W(64)
-    ) DUT (
+    single_pulse_gen DUT (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .set(set),
@@ -140,7 +134,7 @@ localparam TEST_CYCLE_N = 10;
         general_subtest(9, 9);
     endtask
 
-    task general_subtest(input logic [63:0] test_delay, input logic [63:0] test_width);
+    task general_subtest(input delay_t test_delay, input width_t test_width);
         $display("generic subtest: delay %d, width %d", test_delay, test_width);
         delay <= test_delay;
         width <= test_width;
@@ -179,7 +173,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_valid_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_valid_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic all valid subtest: \t\t\t period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay <= test_delay;
         width <= test_width;
@@ -204,7 +198,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_dnwv_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dnwv_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic delay invalid subtest: period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay <= test_delay;
         width <= test_width;
@@ -226,7 +220,7 @@ localparam TEST_CYCLE_N = 10;
         assert(gen_out == 0);
     endtask
 
-    task periodic_dvwn_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dvwn_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic width invalid subtest: period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay <= test_delay;
         width <= test_width;
@@ -254,7 +248,7 @@ localparam TEST_CYCLE_N = 10;
             assert(gen_out == 1);
     endtask
 
-    task periodic_dnwn_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dnwn_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         if(test_delay > test_period + 1)
             periodic_dnwv_subtest(test_period, test_delay, test_width);
         else begin
@@ -290,10 +284,11 @@ module trigger_generator #(
     input  logic app_clk,
     output logic trigger
 );
+    import signal_generator_pkg::*;
     event start;
     event once;
     logic busy;
-    logic [63:0] period;
+    period_t period;
 
     initial trigger = 0;
 
@@ -318,7 +313,7 @@ module trigger_generator #(
         busy <= 0;
     end
 
-    task set_period(input logic [63:0] new_period);
+    task set_period(input period_t new_period);
         period <= new_period;
         @(posedge app_clk);
     endtask

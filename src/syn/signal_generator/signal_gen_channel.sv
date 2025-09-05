@@ -1,37 +1,4 @@
-package signal_gen_ctrl_pkg;
-
-import signal_gen_ctrl_axi_core_pkg::*;
-
-localparam signal_gen_ctrl_axi_core__output_src_t_e SET_EVAL       = signal_gen_ctrl_axi_core__output_src_t__FORCE_SET;
-localparam signal_gen_ctrl_axi_core__output_src_t_e CLEAR_EVAL     = signal_gen_ctrl_axi_core__output_src_t__FORCE_CLEAR;
-localparam signal_gen_ctrl_axi_core__output_src_t_e GENERATOR_EVAL = signal_gen_ctrl_axi_core__output_src_t__GENERATOR;
-localparam signal_gen_ctrl_axi_core__trig_src_t_e   EVENT_EVAL     = signal_gen_ctrl_axi_core__trig_src_t__EVENT;
-localparam signal_gen_ctrl_axi_core__trig_src_t_e   PERIOD_EVAL    = signal_gen_ctrl_axi_core__trig_src_t__PERIOD;
-
-localparam OUT_SET       = unsigned'(SET_EVAL);
-localparam OUT_CLEAR     = unsigned'(CLEAR_EVAL);
-localparam OUT_GENERATOR = unsigned'(GENERATOR_EVAL);
-localparam TRIG_EVENT    = unsigned'(EVENT_EVAL);
-localparam TRIG_PERIOD   = unsigned'(PERIOD_EVAL);
-
-typedef enum logic [0:0] {
-    EVENT      = signal_gen_ctrl_pkg::TRIG_EVENT,
-    PERIOD     = signal_gen_ctrl_pkg::TRIG_PERIOD
-} trig_source_t;
-
-typedef enum logic [1:0] {
-    FORCE_SET   = signal_gen_ctrl_pkg::OUT_SET,
-    FORCE_CLEAR = signal_gen_ctrl_pkg::OUT_CLEAR,
-    GENERATOR   = signal_gen_ctrl_pkg::OUT_GENERATOR
-} output_source_t;
-
-endpackage
-
-module signal_gen_channel #(
-    parameter PERIOD_W = 64,
-    parameter DELAY_W  = 64,
-    parameter WIDTH_W  = 64
-) (
+module signal_gen_channel(
     input  logic                 app_clk,
     input  logic                 app_rst,
 
@@ -40,22 +7,18 @@ module signal_gen_channel #(
     input  logic                 trigger,
     input  logic                 cnt_reset,
 
-    input  logic [DELAY_W -1: 0] delay,
-    input  logic [WIDTH_W -1: 0] width,
-    input  logic [PERIOD_W-1: 0] period,
+    input  signal_generator_pkg::delay_t  delay,
+    input  signal_generator_pkg::width_t  width,
+    input  signal_generator_pkg::period_t period,
     input  logic                 polarity,
 
     output logic                 gen_out,
 
 
-    input  signal_gen_ctrl_pkg::trig_source_t   trig_src,
-    input  signal_gen_ctrl_pkg::output_source_t out_src
+    input  signal_generator_pkg::trig_source_t trig_src,
+    input  signal_generator_pkg::out_source_t  out_src
 ); 
-    typedef logic [PERIOD_W-1: 0] period_t;
-    typedef logic [DELAY_W -1: 0] delay_t;
-    typedef logic [WIDTH_W -1: 0] width_t;
-
-    import signal_gen_ctrl_pkg::*;
+    import signal_generator_pkg::*;
 
 // Period Counter
     logic   period_cnt_eq;
@@ -93,10 +56,7 @@ module signal_gen_channel #(
 
 // Single Pulse Generator
     logic gen_out_iternal;
-    single_pulse_gen #(
-        .DELAY_W(DELAY_W),
-        .WIDTH_W(WIDTH_W)
-    ) single_pulse_gen_i (
+    single_pulse_gen single_pulse_gen_i (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .set(set),
@@ -121,12 +81,14 @@ endmodule
 
 
 module signal_gen_channelTB();
-localparam TEST_CYCLE_N = 10;
+    localparam TEST_CYCLE_N = 10;
+    import signal_generator_pkg::*;
+
     logic app_clk;
     logic app_rst = 0;
-    logic [63:0] delay  = 0;
-    logic [63:0] width  = 0;
-    logic [63:0] period = 0;
+    delay_t  delay  = '0;
+    width_t  width  = '0;
+    period_t period = '0;
     logic cnt_reset = 0;
     logic gen_out;
     
@@ -138,11 +100,7 @@ localparam TEST_CYCLE_N = 10;
         .sys_clk (app_clk)
     );
 
-    signal_gen_channel #(
-        .PERIOD_W(64),
-        .DELAY_W(64),
-        .WIDTH_W(64)
-    ) DUT (
+    signal_gen_channel DUT (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .set(0),
@@ -154,8 +112,8 @@ localparam TEST_CYCLE_N = 10;
         .period(period),
         .polarity(0),
         .gen_out(gen_out),
-        .trig_src(signal_gen_ctrl_pkg::PERIOD),
-        .out_src(signal_gen_ctrl_pkg::GENERATOR)
+        .trig_src(signal_generator_pkg::PERIOD),
+        .out_src(signal_generator_pkg::GENERATOR)
     );
 
     initial begin
@@ -188,7 +146,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_valid_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_valid_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic all valid subtest: \t\t\t period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay  <= test_delay;
         width  <= test_width;
@@ -213,7 +171,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_dnwv_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dnwv_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic delay invalid subtest: period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay  <= test_delay;
         width  <= test_width;
@@ -233,7 +191,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_dvwn_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dvwn_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         $display("periodic width invalid subtest: period %d, delay %d, width %d", test_period, test_delay, test_width);
         delay  <= test_delay;
         width  <= test_width;
@@ -250,7 +208,7 @@ localparam TEST_CYCLE_N = 10;
         end
     endtask
 
-    task periodic_dnwn_subtest(input logic [63:0] test_period, input logic [63:0] test_delay, input logic [63:0] test_width);
+    task periodic_dnwn_subtest(input period_t test_period, input delay_t test_delay, input width_t test_width);
         if(test_delay > test_period + 1)
             periodic_dnwv_subtest(test_period, test_delay, test_width);
         else begin

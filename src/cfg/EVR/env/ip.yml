@@ -1,0 +1,4 @@
+
+sources:
+    - ip/axi_memory.yml
+    - ip/EVR_gtwizard_port_0.yml

@@ -42,15 +42,28 @@ module topTB(
         .sys_clk (REFCLK_SFP[1])
     );
 
-    logic sfp_rx_n [2][4];
-    logic sfp_rx_p [2][4];
-    logic sfp_tx_n [2][4];
-    logic sfp_tx_p [2][4];
+    logic evg_rx_n [gtx::EVG_PORT_N];
+    logic evg_rx_p [gtx::EVG_PORT_N];
+    logic evg_tx_n [gtx::EVG_PORT_N];
+    logic evg_tx_p [gtx::EVG_PORT_N];
 
-    always @(sfp_tx_p[0][0])    sfp_rx_p[1][0]    <= #(PROPAGATION_DELAY) sfp_tx_p[0][0];
-    always @(sfp_tx_n[0][0])    sfp_rx_n[1][0]    <= #(PROPAGATION_DELAY) sfp_tx_n[0][0];
-    always @(sfp_tx_p[1][0])    sfp_rx_p[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_p[1][0];
-    always @(sfp_tx_n[1][0])    sfp_rx_n[0][0]    <= #(PROPAGATION_DELAY) sfp_tx_n[1][0];
+    logic evr_rx_n [gtx::EVR_PORT_N];
+    logic evr_rx_p [gtx::EVR_PORT_N];
+    logic evr_tx_n [gtx::EVR_PORT_N];
+    logic evr_tx_p [gtx::EVR_PORT_N];
+
+    link_emulator #(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY)
+    ) link_evg_evr (
+        .up_rx_n(evg_rx_n[0]),
+        .up_rx_p(evg_rx_p[0]),
+        .up_tx_n(evg_tx_n[0]),
+        .up_tx_p(evg_tx_p[0]),
+        .down_rx_n(evr_rx_n[0]),
+        .down_rx_p(evr_rx_p[0]),
+        .down_tx_n(evr_tx_n[0]),
+        .down_tx_p(evr_tx_p[0])
+    );
 
     topEVG DUT_EVG(
         .sysclk_n(~sysclk[0]),
@@ -58,10 +71,10 @@ module topTB(
         .REFCLK_SFP_n(~REFCLK_SFP[0]),
         .REFCLK_SFP_p(REFCLK_SFP[0]),
 
-        .sfp_rx_n(sfp_rx_n[0]),
-        .sfp_rx_p(sfp_rx_p[0]),
-        .sfp_tx_n(sfp_tx_n[0]),
-        .sfp_tx_p(sfp_tx_p[0]),
+        .sfp_rx_n(evg_rx_n),
+        .sfp_rx_p(evg_rx_p),
+        .sfp_tx_n(evg_tx_n),
+        .sfp_tx_p(evg_tx_p),
         .led(led)
     );
 
@@ -71,10 +84,10 @@ module topTB(
         .REFCLK_SFP_n(~REFCLK_SFP[1]),
         .REFCLK_SFP_p(REFCLK_SFP[1]),
 
-        .sfp_rx_n(sfp_rx_n[1]),
-        .sfp_rx_p(sfp_rx_p[1]),
-        .sfp_tx_n(sfp_tx_n[1]),
-        .sfp_tx_p(sfp_tx_p[1]),
+        .sfp_rx_n(evr_rx_n),
+        .sfp_rx_p(evr_rx_p),
+        .sfp_tx_n(evr_tx_n),
+        .sfp_tx_p(evr_tx_p),
         .led()
     );
 
@@ -84,3 +97,4 @@ initial begin
     $stop();
 end
 endmodule
+

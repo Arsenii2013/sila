@@ -1,5 +1,5 @@
 module device_info #(
-    parameter DEVICE_TYPE = 0,
+    parameter DEVICE      = "EVG",
     parameter FW_MAJOR    = 0,
     parameter FW_MINOR    = 0,
     parameter FW_HASH     = 0
@@ -15,7 +15,12 @@ module device_info #(
     assign hwif_in.cr.reserved.next             = (hwif_out.cr.reserved.value | hwif_out.cr_s.reserved.value) & ~hwif_out.cr_c.reserved.value;
     assign hwif_in.cr_s.reserved.next           = 0;
     assign hwif_in.cr_c.reserved.next           = 0;
-    assign hwif_in.device_type.device_type.next = DEVICE_TYPE;
+    generate 
+    case (DEVICE)
+    "EVG" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVG;
+    "EVR" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVR;
+    endcase
+    endgenerate
     assign hwif_in.fw_version.major.next        = FW_MAJOR;
     assign hwif_in.fw_version.minor.next        = FW_MINOR;
     assign hwif_in.fw_hash.fw_hash.next         = FW_HASH;

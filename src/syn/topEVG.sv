@@ -1,11 +1,3 @@
-`timescale 1ns/1ns
-
-`include "axi4_lite_if.svh"
-`include "axi_stream.svh"
-`include "top.svh"
-`include "topEVG.svh"
-`include "cfg_params.svh"
-
 module topEVG(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
@@ -36,10 +28,10 @@ module topEVG(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       sfp_rx_n[4],
-    input  logic       sfp_rx_p[4],
-    output logic       sfp_tx_n[4],
-    output logic       sfp_tx_p[4],
+    input  logic       sfp_rx_n[gtx::EVG_PORT_N],
+    input  logic       sfp_rx_p[gtx::EVG_PORT_N],
+    output logic       sfp_tx_n[gtx::EVG_PORT_N],
+    output logic       sfp_tx_p[gtx::EVG_PORT_N],
     output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
@@ -61,19 +53,19 @@ module topEVG(
     logic PS_clk, PS_aresetn, PS_reset;
 
     axi4_lite_if #(
-        .DW(EVG_axi_params::GP0_DATA_W),
-        .AW(EVG_axi_params::GP0_ADDR_W)
+        .DW(axi_params::GP0_DATA_W),
+        .AW(axi_params::GP0_ADDR_W)
     ) GP_0();
     
     axi4_lite_if #(
-        .DW(EVG_axi_params::MMR_DATA_W),
-        .AW(EVG_axi_params::MMR_ADDR_W)
-    ) mmr[EVG_axi_params::MMR_DEV_CNT2]();
+        .DW(axi_params::MMR_DATA_W),
+        .AW(axi_params::MMR_ADDR_W)
+    ) mmr[axi_params::MMR_DEV_CNT2]();
 
     axi_crossbar #(
-        .N(EVG_axi_params::MMR_DEV_CNT2),
-        .AW(EVG_axi_params::GP0_ADDR_W),
-        .DW(EVG_axi_params::GP0_DATA_W)
+        .N(axi_params::MMR_DEV_CNT2),
+        .AW(axi_params::GP0_ADDR_W),
+        .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
@@ -81,7 +73,7 @@ module topEVG(
         .s(mmr)
     );
 
-    logic [23:0] ev;
+    evn::ev_t ev;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -89,7 +81,7 @@ module topEVG(
     `define GIT_HASH          'habcd
     `endif
     device_info #(
-        .DEVICE_TYPE(EVG_axi_params::DEVICE_TYPE),
+        .DEVICE("EVG"),
         .FW_MAJOR(`GIT_VERSION_MAJOR),
         .FW_MINOR(`GIT_VERSION_MINOR),
         .FW_HASH(`GIT_HASH)
@@ -116,9 +108,10 @@ module topEVG(
     );
 
     PS_wrapper_sv #(
-        .GP0_ADDR_W(EVG_axi_params::GP0_ADDR_W),
-        .GP0_DATA_W(EVG_axi_params::GP0_DATA_W),
-        .MMR_DEV_CNT2(EVG_axi_params::MMR_DEV_CNT2)
+        .GP0_ADDR_W(axi_params::GP0_ADDR_W),
+        .GP0_DATA_W(axi_params::GP0_DATA_W),
+        .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
+        .SIM_DEVICE("EVG")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
@@ -175,113 +168,54 @@ module topEVG(
         .clk(app_clk),
         .led(led[0])
     );
-    
-    logic        sfp_reset;
-    logic        sfp_tx_clk[4];
-    logic        sfp_rx_clk[4];
-    logic [31:0] sfp_tx_data[4];
-    logic [31:0] sfp_rx_data[4];
-    logic [3:0]  sfp_tx_is_k[4];
-    logic [3:0]  sfp_rx_is_k[4];
-    logic        tx_reset_done[4];
-    logic        rx_reset_done[4];
-    logic        sfp_aligned[4];
 
-    assign sfp_tx_disable = '0;
+    localparam GTX_PORTS = gtx::EVG_PORT_N;
+    logic sfp_loss [GTX_PORTS];
+    gtx_if evg_gtx_if[GTX_PORTS]();
 
-    logic sfp_loss [4];
-
-
-    gtwizard_wrapper gtwizard_i (
+    gtwizard_wrapper #(
+        .DEVICE("EVG"),
+        .PORT_N(GTX_PORTS)
+    ) gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
-        .tx_reset_done(tx_reset_done),
-        .rx_reset_done(rx_reset_done),
-        .tx_clk(sfp_tx_clk),
-        .rx_clk(sfp_rx_clk),
-        .aligned(sfp_aligned),
-        .tx_data(sfp_tx_data),
-        .rx_data(sfp_rx_data),
-        .txcharisk(sfp_tx_is_k),
-        .rxcharisk(sfp_rx_is_k),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),
         .tx_n(sfp_tx_n),
-        .tx_p(sfp_tx_p)
+        .tx_p(sfp_tx_p),
+        .gtx_if(evg_gtx_if)
     );
+    assign sfp_tx_disable = '0;
 
-    sfp_control sfp_control_i(
+    sfp_control #(
+        .PORT_N(GTX_PORTS)
+    ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVG_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
-
-    axi_stream_if #(.DW(32)) evg1_in_packet[4]();
-    axi_stream_if #(.DW(32)) evg1_out_packet[4]();
-
-    evg evg1(
-        .beacon_clk(sfp_tx_clk[0]),
-
-        //------GTP signals-------
-        .aligned(sfp_aligned[0]),
-
-        .tx_resetdone(tx_reset_done[0]),
-        .tx_clk(sfp_tx_clk[0]),
-        .tx_data(sfp_tx_data[0]),
-        .tx_charisk(sfp_tx_is_k[0]),
-
-        .rx_resetdone(rx_reset_done[0]),
-        .rx_clk(sfp_rx_clk[0]),
-        .rx_data(sfp_rx_data[0]),
-        .rx_charisk(sfp_rx_is_k[0]),
+    
+    evg #(
+        .PORT_N(GTX_PORTS)
+    ) evg_i (
+        .beacon_clk(evg_gtx_if[0].tx_clk),
+        .gtx_if(evg_gtx_if),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::EVG1]),
+        .mmr(mmr[EVG_axi_params::EVG]),
         
         .ev(ev), 
-        .trig(),
-        .in_packet(evg1_in_packet[0]),
-        .out_packet(evg1_out_packet[0])
-    );
-
-    evg evg2(
-        .beacon_clk(sfp_tx_clk[1]),
-
-        //------GTP signals-------
-        .aligned(sfp_aligned[1]),
-
-        .tx_resetdone(tx_reset_done[1]),
-        .tx_clk(sfp_tx_clk[1]),
-        .tx_data(sfp_tx_data[1]),
-        .tx_charisk(sfp_tx_is_k[1]),
-
-        .rx_resetdone(rx_reset_done[1]),
-        .rx_clk(sfp_rx_clk[1]),
-        .rx_data(sfp_rx_data[1]),
-        .rx_charisk(sfp_rx_is_k[1]),
-
-        //------Application signals-------
-        .app_clk(), // app_clk generated only by first evg
-        .app_rst(app_reset),
-        .mmr(mmr[EVG_axi_params::EVG2]),
-        
-        .ev(ev), 
-        .trig(),
-        .in_packet(evg1_in_packet[1]),
-        .out_packet(evg1_out_packet[1])
+        .trig()
     );
 
     event_generator #(
-        .EV_SEQ_N(EVG_axi_params::EV_SEQ_N),
-        .EV_WIDTH(24),
-        .CNT_WIDTH(64),
-        .ENTRY_NUM(2048)
+        .EV_SEQ_N(EVG_axi_params::EV_SEQ_N)
     ) event_generator_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
@@ -299,7 +233,7 @@ module topEVG(
         .pulse(event_pulse)
     );
 
-    assign led[1] = tx_reset_done[0];
-    assign led[2] = rx_reset_done[0];
+    assign led[1] = evg_gtx_if[0].tx_reset_done;
+    assign led[2] = evg_gtx_if[0].rx_reset_done;
     assign led[3] = event_pulse;
 endmodule

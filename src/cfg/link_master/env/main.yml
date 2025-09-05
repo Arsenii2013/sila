@@ -1,0 +1,8 @@
+parameters:
+    VARIANT_NAME        : = ARGUMENTS['bv']
+    PROJECT_NAME        : = VARIANT_NAME
+    TOP_NAME            : link_master
+    TESTBENCH_NAME      : link_masterTB
+    DEVICE              : xc7z100ffg900-2
+    
+    TARGET_AX7Z100B     : = ''

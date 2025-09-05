@@ -20,6 +20,7 @@ module fifo_wrapper
 
     output logic         rst_busy
 );
+    import evn::*;
     logic rd_rst_busy, wr_rst_busy;
     logic almost_empty, almost_full;
     logic fifo_inc_sync, fifo_dec_sync;

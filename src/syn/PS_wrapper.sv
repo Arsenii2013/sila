@@ -137,264 +137,176 @@ module PS_wrapper_sv #(
     assign GP_0_iternal.rvalid = GP_0.rvalid;
     assign GP_0.rready = GP_0_iternal.rready;
 
-    axi_master axi_master(
-        .aclk(app_clk),
-        .aresetn(~app_aresetn),
-        .axi(GP_0_iternal)
-    );
+    virtual_clock_if clk_if (app_clk, peripheral_reset);
+    axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
+    axi_driver #(
+        .AW(axi_params::GP0_ADDR_W),
+        .DW(axi_params::GP0_DATA_W)
+    ) driver;
+    axi_generator generic_generator;
 
-    logic [31:0] status;
-    logic [31:0] topo_id;
-    logic [31:0] measured_delay;
-    initial begin
-        if(SIM_DEVICE == "EVG")
+    `define BASE_FROM_NUMBER(number) (GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * (number))
+
+    genvar gen_i;
+    generate 
+    if(SIM_DEVICE == "EVG") begin
+        typedef enum{
+            GENERIC_RD_CH = 0,
+            EVG_RD_CH,
+            EV_SEQ_0_RD_CH,
+            EV_SEQ_1_RD_CH,
+            EV_SEQ_CTRL_RD_CH
+        } rd_ch_enum;
+
+        link_csr_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EVG))
+        ) EVG_generator_i;
+
+        for(gen_i = 0; gen_i < EVG_axi_params::EV_SEQ_N; gen_i++) begin : ev_seq_generator_i
+            ev_seq_generator #(
+                .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EV_SEQ_0 + gen_i))
+            ) inst;
+        end
+
+        ev_seq_ctrl_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EV_SEQ_CTRL)),
+            .SEQ_N(EVG_axi_params::EV_SEQ_N)
+        ) ev_seq_ctrl_generator_i;
+
+        initial begin
+            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
+            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
+            EVG_generator_i = new(clk_if, req_mbx, resp_mbx, EVG_RD_CH);
+            ev_seq_generator_i[0].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_0_RD_CH);
+            ev_seq_generator_i[1].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_1_RD_CH);
+            ev_seq_ctrl_generator_i = new(clk_if, req_mbx, resp_mbx, EV_SEQ_CTRL_RD_CH);
             EVG_test();
-        else if(SIM_DEVICE == "EVR")
-            EVR_test();
+        end
+
+        task automatic EVG_test();
+            $timeformat(-3, 5, " ms");
+
+            @(posedge app_aresetn);
+            @(posedge app_aresetn);
+            #50us;
+            generic_generator.write(`BASE_FROM_NUMBER(EVG_axi_params::SFP_CONTROL) + 'h10, 'h0);
+            ev_seq_generator_i[0].inst.write_seq('{
+                '{0,    'h1},
+                '{1,    'h2},
+                '{2,    'h3},
+                '{3,    'h4},
+                '{10,   'h10},
+                '{20,   'h20},
+                '{40,   'h40},
+                '{80,   'h80},
+                '{8000, 'h1234},
+                '{8001, event_generator_pkg::END_OF_SEQ}
+            });
+            ev_seq_ctrl_generator_i.setup('{
+                '{event_generator_pkg::PROG, event_generator_pkg::RECYCLE},
+                '{event_generator_pkg::PROG, event_generator_pkg::SINGLE}
+            });
+            driver.sync();
+
+            ev_seq_ctrl_generator_i.enable(0);
+            ev_seq_ctrl_generator_i.sw_trig(0);
+            EVG_generator_i.set_tgt_delay(EVG_generator_i.time_to_delay_t(1234.56ns + 175ns));
+
+            EVG_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
+            $display("EVG Get INITIAL state at %t\n", $realtime);
+            #10us;
+            EVG_generator_i.dump();
+            EVG_generator_i.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
+            $display("EVG Get ONE_CYCLE state at %t\n", $realtime);
+            #10us;
+            EVG_generator_i.dump();
+            EVG_generator_i.wait_delay_status(0, evn::FINE, 100ms);
+            $display("EVG Get FINE state at %t\n", $realtime);
+            #10us;
+            EVG_generator_i.dump();
+        endtask
     end
+
+    if(SIM_DEVICE == "EVR") begin
+        typedef enum{
+            GENERIC_RD_CH = 0,
+            EVR_RD_CH,
+            SIG_GEN_RD_CH,
+            EV_MAP_RD_CH
+        } rd_ch_enum;
+
+        link_csr_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EVR))
+        ) EVR_generator_i;
+
+        signal_generator_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::SIG_GEN_CTRL)),
+            .GEN_N(EVR_axi_params::SIG_GEN_N)
+        ) signal_generator_generator_i;
+
+        ev_map_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EV_MAP))
+        ) ev_map_generator_i;
+
+
+        initial begin
+            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
+            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
+
+            EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH);
+            signal_generator_generator_i = new(clk_if, req_mbx, resp_mbx, SIG_GEN_RD_CH);
+            ev_map_generator_i = new(clk_if, req_mbx, resp_mbx, EV_MAP_RD_CH);
+            EVR_test();
+        end
+
+
+        task automatic EVR_test();
+            $timeformat(-3, 5, " ms");
+
+            @(posedge app_aresetn);
+            @(posedge app_aresetn);
+            #50us;
+            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
+
+            signal_generator_generator_i.set_cfg(0, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
+            signal_generator_generator_i.set_cfg(1, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
+            signal_generator_generator_i.set_delay(1, 100);
+            signal_generator_generator_i.set_width(1, 100);
+            signal_generator_generator_i.set_cfg(2, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::PERIOD});
+            signal_generator_generator_i.set_period(2, 10);
+            signal_generator_generator_i.set_delay(2, 2);
+            signal_generator_generator_i.set_width(2, 2);
+
+            ev_map_generator_i.write_mapping('{
+                '{ev: 'h1,    map: '{'{set  :1, default:0},     '{           default:0},    '{cnt_reset:1, default:0}}},
+                '{ev: 'h20,   map: '{'{         default:0},     '{trigger:1, default:0}                              }},
+                '{ev: 'h80,   map: '{'{clear:1, default:0}                                                           }},
+                '{ev: 'h1234, map: '{'{         default:0},     '{trigger:1, default:0}                              }}
+            });
+            driver.sync();
+
+            EVR_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
+            #10us;
+            EVR_generator_i.enable_dc();
+            #10us;
+            $display("Get EVR port 0 INITIAL state at %t\n", $realtime);
+            EVR_generator_i.dump();
+            EVR_generator_i.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
+            $display("Get EVR port 0 ONE_CYCLE state at %t\n", $realtime);
+            #1us;
+            EVR_generator_i.dump();
+            EVR_generator_i.wait_delay_status(0, evn::FINE, 100ms);
+            $display("Get EVR port 0 FINE state at %t\n", $realtime);
+            #1us;
+            EVR_generator_i.dump();
+        endtask
+    end
+    endgenerate
 
     initial begin
         #500ms;
         $display("Timeout! Cant get FINE state in %t\n", $realtime);
         $stop();
     end
-
-    localparam EV_N = 9;
-    task automatic setup_event_generation();
-        typedef logic [63: 0] uint64_t;
-        localparam uint64_t SEQ_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EV_SEQ_CTRL;
-        localparam uint64_t SEQ_0_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EV_SEQ_0;
-        write_seq(SEQ_0_BASE_ADDR, '{'h1, 'h2, 'h3, 'h4, 'h10, 'h20, 'h40, 'h80, 'h1234},
-                                   '{  0,   1,   2,   3,   10,   20,   40,   80,   8000});
-        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h08, 'h1); // cr enable 
-        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h34, 'h2); // mode = RECYCLE
-        axi_master.write(SEQ_CTRL_BASE_ADDR + 'h28, 'h4); // sq_cr sw trig
-    endtask
-    
-    task automatic EVG_test();
-        typedef logic [63: 0] uint64_t;
-        localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::SFP_CONTROL;
-        localparam uint64_t EVG1_BASE_ADDR     = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVG_axi_params::EVG1;
-
-        $timeformat(-3, 5, " ms");
-
-        @(posedge app_aresetn);
-        @(posedge app_aresetn);
-        #50us;
-        axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
-        setup_event_generation();
-
-        wait(DUT_EVG.evg1.delay_st == 5'h1);
-
-        $display("EVG Get INITIAL state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
-        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-
-        wait(DUT_EVG.evg1.delay_st == 5'h3);
-        $display("EVG Get ONE_CYCLE state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
-        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-
-        wait(DUT_EVG.evg1.delay_st == 5'h7);
-        $display("EVG Get FINE state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVG1_BASE_ADDR + 'h00, status);
-        axi_master.read(EVG1_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVG1_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-        $stop();
-    endtask
-
-    task automatic setup_signal_generation();
-        localparam longint unsigned EV_MAP_BASE_ADDR   = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::EV_MAP;
-        localparam longint unsigned GEN_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SIG_GEN_CTRL;
-        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(0));
-        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(1), .periodic(0), .delay(100), .width(1000));
-        setup_signal_generator(.base(GEN_CTRL_BASE_ADDR), .gen_number(2), .periodic(1), .period(10), .delay(2), .width(2));
-
-        reset_mapping();
-        add_mapping(EV_MAP_BASE_ADDR, 'h1,    '{0: 4'b0001, 2: 4'b1000, default:4'b0});
-        add_mapping(EV_MAP_BASE_ADDR, 'h20,   '{1: 4'b0100, default:4'b0});
-        add_mapping(EV_MAP_BASE_ADDR, 'h80,   '{0: 4'b0010, default:4'b0});
-        add_mapping(EV_MAP_BASE_ADDR, 'h1234, '{1: 4'b0100, default:4'b0});
-    endtask
-
-    task automatic EVR_test();
-        typedef logic [63: 0] uint64_t;
-        localparam uint64_t SFP_CTRL_BASE_ADDR = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::SFP_CONTROL;
-        localparam uint64_t EVR_BASE_ADDR      = GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * EVR_axi_params::EVR;
-
-        $timeformat(-3, 5, " ms");
-
-        @(posedge app_aresetn);
-        @(posedge app_aresetn);
-        #50us;
-        axi_master.write(SFP_CTRL_BASE_ADDR + 'h10, 'h0);
-        setup_signal_generation();
-
-        wait(DUT_EVR.evr1.link_delay_st == 5'h1);
-        $display("EVR Get INITIAL state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-
-        wait(DUT_EVR.evr1.link_delay_st == 5'h3);
-        $display("EVR Get ONE_CYCLE state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-
-        wait(DUT_EVR.evr1.link_delay_st == 5'h7);
-        $display("EVR Get FINE state at %t\n", $realtime);
-        #10us;
-        axi_master.read(EVR_BASE_ADDR + 'h00, status);
-        axi_master.read(EVR_BASE_ADDR + 'h10, topo_id);
-        axi_master.read(EVR_BASE_ADDR + 'h14, measured_delay);
-        $display("status:\t %x", status);
-        $display("topology ID:\t %x", topo_id);
-        $display("link delay:\t %e", (measured_delay >> 16) / 175e6);
-        $stop();
-    endtask
-
-
-    int entrys_num_SEQ = 0;
-    logic [31:0] rd_timestamp_lsb;
-    logic [31:0] rd_timestamp_msb;
-    logic [31:0] rd_ev;
-    logic [63:0] rd_timestamp_seq;
-    logic [31:0] rd_ev_seq;
-
-    task add_event(input logic [63: 0] base, input logic [63:0] timestamp, input logic [23:0] ev);
-        @(posedge app_clk);
-        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h00, timestamp[31:0]);
-        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h04, timestamp[63:32]);
-        axi_master.write(base + entrys_num_SEQ * 'h10 + 'h08, {8'h0, ev});
-        entrys_num_SEQ <= entrys_num_SEQ + 1;
-    endtask
-    
-    task add_end_of_sequency(input logic [63: 0] base, input logic [63:0] timestamp);
-        @(posedge app_clk);
-        add_event(base, timestamp, 'h50DEAD);
-    endtask
-
-    task reset_events();
-        entrys_num_SEQ <= 0;
-    endtask
-
-    task read_event(input logic [63: 0] base, int entry, output logic [63:0] timestamp, output logic [23:0] ev);
-        @(posedge app_clk);
-        axi_master.read(base + entry * 'h10 + 'h00, rd_timestamp_lsb);
-        axi_master.read(base + entry * 'h10 + 'h04, rd_timestamp_msb);
-        axi_master.read(base + entry * 'h10 + 'h08, rd_ev);
-        @(posedge app_clk);
-        timestamp <= {rd_timestamp_msb, rd_timestamp_lsb};
-        ev        <= rd_ev;
-        @(posedge app_clk);
-    endtask
-
-    task write_seq(input logic [63: 0] base, logic [23:0] events [EV_N], logic [63:0] timestamps [EV_N]);
-        begin
-        reset_events();
-        for (int i = 0; i < EV_N; i++) begin
-            add_event(base, timestamps[i], events[i]);
-        end
-        add_end_of_sequency(base, timestamps[EV_N-1] + 1);
-        #1us;
-        for (int i = 0; i < 11; i++) begin
-            read_event(base, i, rd_timestamp_seq, rd_ev_seq);
-            if(rd_timestamp_seq != timestamps[i] || rd_ev_seq != events[i]) begin
-                $display("error read timestamp : %016h, event : %08h, expect timestamp : %016h, event : %08h,", 
-                        rd_timestamp_seq, rd_ev_seq, timestamps[i], events[i]);
-                $stop();
-            end
-        end
-        end
-    endtask
-
-    import EVR_axi_params::SIG_GEN_N;
-    task setup_signal_generator(input longint unsigned base,       input int unsigned gen_number,     input logic periodic = 0,
-                                input longint unsigned period = 0, input longint unsigned delay = 0,  input longint unsigned width = 0);
-
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'hc, 'hff); // cr_c
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h8, {periodic ? signal_gen_ctrl_pkg::PERIOD : signal_gen_ctrl_pkg::EVENT, 
-                                                                signal_gen_ctrl_pkg::GENERATOR,
-                                                                5'b01111}); // all enable, pol normal
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h10, delay[31:0]);
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h14, delay[63:32]);
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h18, width[31:0]);
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h1c, width[63:32]);
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h20, period[31:0]);
-        axi_master.write(base + 'h10 + gen_number * 'h28 + 'h24, period[63:32]);
-    endtask
-
-    int entrys_num_MAP = 0;
-    logic [3:0] rd_func [SIG_GEN_N];
-    logic [4 * SIG_GEN_N - 1: 0] func_flat;
-    localparam SIG_GEN_N_MINUS_MAX_I = SIG_GEN_N <= 8  ? SIG_GEN_N * 4 :
-                                       SIG_GEN_N <= 16 ? SIG_GEN_N * 4 - 32:
-                                       SIG_GEN_N <= 24 ? SIG_GEN_N * 4 - 64:
-                                       SIG_GEN_N * 4 - 96;
-
-    task add_mapping(input longint unsigned base, input logic [23:0] ev, input logic [3:0] func [SIG_GEN_N]);
-        @(posedge app_clk);
-        axi_master.write(base + entrys_num_MAP * 'h10 + 'h00, ev);
-        func_flat = {<<4{func}};
-        for(int i = 0; i < 3; i ++) begin
-            if(i * 32 + 32 < SIG_GEN_N * 4) begin
-                axi_master.write(base + entrys_num_MAP * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: 32]);
-            end else if(i * 32 < SIG_GEN_N * 4) begin
-                axi_master.write(base + entrys_num_MAP * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: SIG_GEN_N_MINUS_MAX_I]);
-            end
-        end
-        check_mapping(base, entrys_num_MAP, ev, func);
-        entrys_num_MAP <= entrys_num_MAP + 1;
-    endtask
-
-    task reset_mapping();
-        entrys_num_MAP <= 0;
-    endtask
-
-    task read_mapping(input longint unsigned base, int entry, output logic [23:0] ev, output logic [3:0] func [SIG_GEN_N]);
-        @(posedge app_clk);
-        axi_master.read(entry * 'h10 + 'h00, ev);
-        for(int i = 0; i < 3; i ++) begin
-            if(i * 32 + 32 < SIG_GEN_N * 4) begin
-                axi_master.read(base + entry * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: 32]);
-            end else if(i * 32 < SIG_GEN_N * 4) begin
-                axi_master.read(base + entry * 'h10 + 'h04 + i * 'h04, func_flat[i * 32 +: SIG_GEN_N_MINUS_MAX_I]);
-            end
-        end
-        for(int i = 0; i < SIG_GEN_N; i ++) begin
-            func[i] = func_flat[i * 4 +: 4];
-        end
-        @(posedge app_clk);
-    endtask
-
-    task check_mapping(input longint unsigned base, int entry, input logic [23:0] ev, input logic [3:0] func [SIG_GEN_N]);
-        read_mapping(base, entry, rd_ev, rd_func);
-        assert(rd_ev == ev);
-        assert(rd_func == func);
-    endtask
-
     `endif //SYNTHESIS 
  endmodule

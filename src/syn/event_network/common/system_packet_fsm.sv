@@ -2,9 +2,9 @@
 `include "system_stream_if.svh"
 
 module simple_packet_tx_fsm #(
-    parameter DW        = 32,
-    parameter PACKET_ID = 8'h00,
-    parameter PARAM_CNT = 1
+    parameter DW           = 32,
+    parameter PACKET_ID    = 8'h00,
+    parameter PARAM_CNT    = 1
 ) (
     input  logic           app_clk,
     input  logic           app_rst,
@@ -15,6 +15,8 @@ module simple_packet_tx_fsm #(
     // Простой генератор пакетов состоящих из PARAM_CNT слов.
     // send_packet запускает генерацию
     // дожен учитывать, что транзакции на интерфейсе могут быть приостановлены
+    import evn::*;
+
     typedef logic [15: 0] uint16_t;
     localparam START_WORD  = {PACKET_COMMA, PACKET_ID, uint16_t'(PARAM_CNT)};
 
@@ -185,9 +187,10 @@ module system_stream_mux4 #(
 endmodule
 
 module simple_packet_rx_fsm #(
-    parameter DW        = 32,
-    parameter PACKET_ID = 8'h00,
-    parameter PARAM_CNT = 1
+    parameter DW           = 32,
+    parameter PACKET_COMMA = 8'hDC,
+    parameter PACKET_ID    = 8'h00,
+    parameter PARAM_CNT    = 1
 ) (
     input  logic           app_clk,
     input  logic           app_rst,
@@ -198,6 +201,8 @@ module simple_packet_rx_fsm #(
 
     // должен учитывать что valid может пропасть
     // valid должен формироваться как отутствик к символов
+    import evn::*;
+
     typedef logic [15: 0] uint16_t;
     localparam START_WORD  = {PACKET_COMMA, PACKET_ID, uint16_t'(PARAM_CNT)};
 

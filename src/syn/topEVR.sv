@@ -1,10 +1,4 @@
-`timescale 1ns/1ns
-
-`include "axi4_lite_if.svh"
-`include "axi_stream.svh"
-`include "top.svh"
 `include "topEVR.svh"
-`include "cfg_params.svh"
 
 module topEVR(
         //-------Processing System-------\\
@@ -36,10 +30,10 @@ module topEVR(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       sfp_rx_n[4],
-    input  logic       sfp_rx_p[4],
-    output logic       sfp_tx_n[4],
-    output logic       sfp_tx_p[4],
+    input  logic       sfp_rx_n[gtx::EVR_PORT_N],
+    input  logic       sfp_rx_p[gtx::EVR_PORT_N],
+    output logic       sfp_tx_n[gtx::EVR_PORT_N],
+    output logic       sfp_tx_p[gtx::EVR_PORT_N],
     output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
@@ -61,19 +55,19 @@ module topEVR(
     logic PS_clk, PS_aresetn, PS_reset;
 
     axi4_lite_if #(
-        .DW(EVR_axi_params::GP0_DATA_W),
-        .AW(EVR_axi_params::GP0_ADDR_W)
+        .DW(axi_params::GP0_DATA_W),
+        .AW(axi_params::GP0_ADDR_W)
     ) GP_0();
 
     axi4_lite_if #(
-        .DW(EVR_axi_params::MMR_DATA_W),
-        .AW(EVR_axi_params::MMR_ADDR_W)
-    ) mmr[EVR_axi_params::MMR_DEV_CNT2]();
+        .DW(axi_params::MMR_DATA_W),
+        .AW(axi_params::MMR_ADDR_W)
+    ) mmr[axi_params::MMR_DEV_CNT2]();
 
     axi_crossbar #(
-        .N(EVR_axi_params::MMR_DEV_CNT2),
-        .AW(EVR_axi_params::GP0_ADDR_W),
-        .DW(EVR_axi_params::GP0_DATA_W)
+        .N(axi_params::MMR_DEV_CNT2),
+        .AW(axi_params::GP0_ADDR_W),
+        .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
         .aresetn(app_aresetn),
@@ -81,8 +75,8 @@ module topEVR(
         .s(mmr)
     );
 
-    logic [23:0] ev;
-    logic [31:0] delay;
+    evn::ev_t    ev;
+    evn::delay_t delay;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -90,7 +84,7 @@ module topEVR(
     `define GIT_HASH          'habcd
     `endif
     device_info #(
-        .DEVICE_TYPE(EVR_axi_params::DEVICE_TYPE),
+        .DEVICE("EVR"),
         .FW_MAJOR(`GIT_VERSION_MAJOR),
         .FW_MINOR(`GIT_VERSION_MINOR),
         .FW_HASH(`GIT_HASH)
@@ -101,11 +95,6 @@ module topEVR(
     );
 
 
-    typedef logic [63:0] cycle_cnt_t;
-    typedef logic [31:0] pulse_cnt_t;
-    cycle_cnt_t cycle_cnt;
-    pulse_cnt_t pulse_cnt;
-
     timestamper #(
         .CYCLE_CNT_WIDTH(64), 
         .PULSE_CNT_WIDTH(32)
@@ -113,16 +102,16 @@ module topEVR(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
-        .cycle_start_val(cycle_cnt_t'(delay) >> 16), // ожидаю, что задержка получилась целеая
-        .cycle_cnt(cycle_cnt),
-        .pulse_cnt(pulse_cnt),
+        .cycle_start_val(delay >> 16), // ожидаю, что задержка получилась целеая
+        .cycle_cnt(),
+        .pulse_cnt(),
         .ev(ev)
     );
 
     PS_wrapper_sv #(
-        .GP0_ADDR_W(EVR_axi_params::GP0_ADDR_W),
-        .GP0_DATA_W(EVR_axi_params::GP0_DATA_W),
-        .MMR_DEV_CNT2(EVR_axi_params::MMR_DEV_CNT2),
+        .GP0_ADDR_W(axi_params::GP0_ADDR_W),
+        .GP0_DATA_W(axi_params::GP0_DATA_W),
+        .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
         .SIM_DEVICE("EVR")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
@@ -180,79 +169,51 @@ module topEVR(
         .clk(app_clk),
         .led(led[0])
     );
-    
-    logic        sfp_reset;
-    logic        sfp_tx_clk[4];
-    logic        sfp_rx_clk[4];
-    logic [31:0] sfp_tx_data[4];
-    logic [31:0] sfp_rx_data[4];
-    logic [3:0]  sfp_tx_is_k[4];
-    logic [3:0]  sfp_rx_is_k[4];
-    logic        tx_reset_done[4];
-    logic        rx_reset_done[4];
-    logic        sfp_aligned[4];
-
-    assign sfp_tx_disable = '0;
-
-    logic sfp_loss [4];
 
 
-    gtwizard_wrapper gtwizard_i (
+    localparam GTX_PORTS = gtx::EVR_PORT_N;
+    logic sfp_loss [GTX_PORTS];
+    gtx_if evr_gtx_if[GTX_PORTS]();
+
+    gtwizard_wrapper #(
+        .DEVICE("EVR"),
+        .PORT_N(GTX_PORTS)
+    ) gtwizard_i (
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
-        .tx_reset_done(tx_reset_done),
-        .rx_reset_done(rx_reset_done),
-        .tx_clk(sfp_tx_clk),
-        .rx_clk(sfp_rx_clk),
-        .aligned(sfp_aligned),
-        .tx_data(sfp_tx_data),
-        .rx_data(sfp_rx_data),
-        .txcharisk(sfp_tx_is_k),
-        .rxcharisk(sfp_rx_is_k),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),
         .tx_n(sfp_tx_n),
-        .tx_p(sfp_tx_p)
+        .tx_p(sfp_tx_p),
+        .gtx_if(evr_gtx_if)
     );
+    assign sfp_tx_disable = '0;
 
-    sfp_control sfp_control_i(
+    sfp_control #(
+        .PORT_N(GTX_PORTS)
+    ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
 
-    axi_stream_if #(.DW(32)) evr1_in_packet();
-    axi_stream_if #(.DW(32)) evr1_out_packet();
-
-    evr evr1(
-        .beacon_clk(sfp_tx_clk[0]),
-
-        //------GTP signals-------
-        .aligned(sfp_aligned[0]),
-
-        .tx_resetdone(tx_reset_done[0]),
-        .tx_clk(sfp_tx_clk[0]),
-        .tx_data(sfp_tx_data[0]),
-        .tx_charisk(sfp_tx_is_k[0]),
-
-        .rx_resetdone(rx_reset_done[0]),
-        .rx_clk(sfp_rx_clk[0]),
-        .rx_data(sfp_rx_data[0]),
-        .rx_charisk(sfp_rx_is_k[0]),
+    evr #(
+        .PORT_N(GTX_PORTS)
+    ) evr_i (
+        .beacon_clk(evr_gtx_if[0].tx_clk),
+        .gtx_if(evr_gtx_if),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk),
         .app_rst(app_reset),
         .mmr(mmr[EVR_axi_params::EVR]),
         
         .ev(ev), 
-        .trig(),
-        .in_packet(evr1_in_packet),
-        .out_packet(evr1_out_packet),
+        .trig('0),
 
         .delay(delay)
     );
@@ -263,7 +224,6 @@ module topEVR(
     logic cnt_reset[EVR_axi_params::SIG_GEN_N];
     logic gen_out  [EVR_axi_params::SIG_GEN_N];
     ev_map #(
-        .EV_WIDTH(24),
         .COMP_N(EVR_axi_params::EV_COMP_N),
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
     ) ev_map_i (
@@ -278,10 +238,7 @@ module topEVR(
     );
 
     signal_generator #(
-        .N(EVR_axi_params::SIG_GEN_N),
-        .PERIOD_W(64),
-        .DELAY_W(64),
-        .WIDTH_W(64)
+        .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
@@ -294,7 +251,7 @@ module topEVR(
     );
     assign out_pulse = {<<{gen_out}};
     
-    assign led[1] = tx_reset_done[0];
-    assign led[2] = rx_reset_done[0];
+    assign led[1] = evr_gtx_if[0].tx_reset_done;
+    assign led[2] = evr_gtx_if[0].rx_reset_done;
     assign led[3] = out_pulse[0];
 endmodule

@@ -2,6 +2,6 @@ addrmap sfp_control_axi_core{
     name = "Блок отладочных регистров оптической сети";
     reg {
         name = "SFP_LOSS";
-        field {sw=rw; hw=r;} sfp_loss[4] = 1;
+        field {sw=rw; hw=r;} sfp_loss[32] = 32'hFFFFFFFF;
     } sfp_loss;
 };

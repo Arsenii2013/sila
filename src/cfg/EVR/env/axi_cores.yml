@@ -1,0 +1,13 @@
+
+sources:
+    - src/axi_cores/rdl_axi_params.rdl
+    - src/axi_cores/device_info_axi_core.rdl
+    - src/axi_cores/EVR_reg_map.rdl
+    - src/axi_cores/EVG_reg_map.rdl
+    - src/axi_cores/link_csr_axi_core.rdl
+    - src/axi_cores/timestamper_axi_core.rdl
+    - src/axi_cores/ev_seq_axi_core.rdl
+    - src/axi_cores/ev_seq_ctrl_axi_core.rdl
+    - src/axi_cores/signal_gen_ctrl_axi_core.rdl
+    - src/axi_cores/ev_map_axi_core.rdl
+    - src/axi_cores/sfp_control_axi_core.rdl
