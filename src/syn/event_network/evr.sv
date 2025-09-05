@@ -30,17 +30,7 @@ module evr#(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------
-        .aligned(gtx_if[0].aligned),
-
-        .tx_resetdone(gtx_if[0].tx_reset_done),
-        .tx_clk(gtx_if[0].tx_clk),
-        .tx_data(gtx_if[0].tx_data),
-        .tx_charisk(gtx_if[0].tx_is_k),
-
-        .rx_resetdone(gtx_if[0].rx_reset_done),
-        .rx_clk(gtx_if[0].rx_clk),
-        .rx_data(gtx_if[0].rx_data),
-        .rx_charisk(gtx_if[0].rx_is_k),
+        .gtx_if(gtx_if[0]),
 
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg

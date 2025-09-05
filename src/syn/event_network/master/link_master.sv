@@ -8,20 +8,10 @@ module link_master
     input  logic            beacon_clk,
 
     //------GTP signals-------
-    input  logic            aligned,
-
-    input  logic            tx_resetdone,
-    input  logic            tx_clk,
-    output logic [31:0]     tx_data,
-    output logic [3:0]      tx_charisk,
-
-    input  logic            rx_resetdone,
-    input  logic            rx_clk,
-    input  logic [31:0]     rx_data,
-    input  logic [3:0]      rx_charisk,
+    gtx_if.app              gtx_if,
 
     //------Application signals-------
-    output logic            app_clk,
+    input  logic            app_clk,
     input  logic            app_rst,
     
     input  evn::ev_t        ev, // ev_valid = ev != 0
@@ -31,8 +21,6 @@ module link_master
 
     link_data.master        link_data
 );
-    assign app_clk = tx_clk;
-
     assign in_packet.tready = 0;
     assign out_packet.tvalid = 0;
 
@@ -56,7 +44,7 @@ module link_master
     logic beacon_ready = 0;
     beacon_cnt_t beacon_cnt = MAX_DELAY;
 
-    always_ff @(posedge tx_clk) begin
+    always_ff @(posedge app_clk) begin
         if(app_rst) begin
             beacon_cnt   <= link_data.link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
             beacon_valid <= 0;
@@ -80,7 +68,7 @@ module link_master
     logic alignment_ready = 0;
     alignment_cnt_t alignment_cnt = ALIGNMENT_PERIOD;
 
-    always_ff @(posedge tx_clk) begin
+    always_ff @(posedge app_clk) begin
         if(app_rst) begin
             alignment_cnt   <= ALIGNMENT_PERIOD;
             alignment_valid <= 0;
@@ -149,11 +137,10 @@ module link_master
         end
     end 
 
-    system_stream_if #(.DW(32)) system_stream_out();
-    system_stream_if #(.DW(32)) system_stream_in();
+    system_stream_if system_stream_out();
+    system_stream_if system_stream_in();
     master_system_packet_generator system_packet_generator_i(
         .app_clk(app_clk),
-        .tx_clk(tx_clk),
         .app_rst(app_rst),
         .topo_id(link_data.topo_id),
         .send_topo_id(link_data.topo_id_upd || device_connected),
@@ -168,45 +155,70 @@ module link_master
     );
 
     master_system_packet_reciever system_packet_reciever_i(
-        .rx_clk(rx_clk),
+        .rx_clk(gtx_if.rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
         .sub_delay(link_data.sub_delay),
         .sub_delay_recv(link_data.sub_delay_upd),
         .in(system_stream_in)
     );
-    assign system_stream_in.tdata  = rx_data;
-    assign system_stream_in.tisk   = rx_charisk;
-    assign system_stream_in.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
+    assign system_stream_in.tdata  = gtx_if.rx_data;
+    assign system_stream_in.tisk   = gtx_if.rx_is_k;
+    assign system_stream_in.tvalid = is_packet(gtx_if.rx_data, gtx_if.rx_is_k);
 
 // Mux
-    always_ff @(posedge tx_clk) begin
+    gtx::data_t tx_data_app_clk;
+    gtx::is_k_t tx_is_k_app_clk;
+    always_ff @(posedge app_clk) begin
         beacon_ready    <= 0;
         alignment_ready <= 0;
-        tx_data         <= '0;
-        tx_charisk      <= '0;
+        tx_data_app_clk         <= '0;
+        tx_is_k_app_clk      <= '0;
 
         if(ev_valid) begin
-            tx_data         <= {EVENT_COMMA, ev};
-            tx_charisk      <= 'h8;
+            tx_data_app_clk <= {EVENT_COMMA, ev};
+            tx_is_k_app_clk <= 'h8;
         end else if(beacon_valid && ~beacon_ready) begin
-            tx_data         <= BEACON_WORD;
-            tx_charisk      <= BEACON_IS_K;
+            tx_data_app_clk <= BEACON_WORD;
+            tx_is_k_app_clk <= BEACON_IS_K;
             beacon_ready    <= 1;
         end else if(system_stream_out.tvalid) begin
-            tx_data         <= system_stream_out.tdata;
-            tx_charisk      <= system_stream_out.tisk;
+            tx_data_app_clk <= system_stream_out.tdata;
+            tx_is_k_app_clk <= system_stream_out.tisk;
         end else if(alignment_valid && ~alignment_ready) begin
-            tx_data         <= ALIGNMENT_WORD;
-            tx_charisk      <= ALIGNMENT_IS_K;
+            tx_data_app_clk <= ALIGNMENT_WORD;
+            tx_is_k_app_clk <= ALIGNMENT_IS_K;
             alignment_ready <= 1;
         end else begin
-            tx_data         <= '0;
-            tx_charisk      <= '0;
+            tx_data_app_clk <= '0;
+            tx_is_k_app_clk <= '0;
         end
     end
-
     assign system_stream_out.tready = !ev_valid && !beacon_valid;
+
+    xpm_fifo_async #(
+        .CASCADE_HEIGHT(0),
+        .CDC_SYNC_STAGES(2),
+        .DOUT_RESET_VALUE("0"),
+        .FIFO_MEMORY_TYPE("auto"),
+        .FIFO_READ_LATENCY(1),
+        .FIFO_WRITE_DEPTH(16),
+        .READ_DATA_WIDTH(36),
+        .READ_MODE("std"),
+        .RELATED_CLOCKS(0),
+        .SIM_ASSERT_CHK(1),
+        .WRITE_DATA_WIDTH(36)
+    ) tx_data_syncronizer (
+        .rd_clk(gtx_if.tx_clk),
+        .rd_en(1),
+        .dout({gtx_if.tx_data, gtx_if.tx_is_k}),
+
+        .wr_clk(app_clk),
+        .wr_en(1),
+        .din({tx_data_app_clk, tx_is_k_app_clk}),
+
+        .rst(app_rst)
+    );
 
 // Delay measurement
     delay_measure #(
@@ -217,15 +229,15 @@ module link_master
         .app_clk(app_clk),
         .app_rst(app_rst),
         
-        .beacon_tx((tx_data == BEACON_WORD) && (tx_charisk == BEACON_IS_K)),
-        .tx_clk(tx_clk),
-        .beacon_rx((rx_data == BEACON_WORD) && (rx_charisk == BEACON_IS_K)),
-        .rx_clk(rx_clk),
+        .beacon_tx(is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
+        .tx_clk(gtx_if.tx_clk),
+        .beacon_rx(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
+        .rx_clk(gtx_if.rx_clk),
         .beacon_clk(beacon_clk),
 
         .delay_upd(link_data.link_delay_upd),
         .delay(link_data.link_delay),
         .delay_status(link_data.link_delay_st)
     );
-    assign link_data.link_up = aligned;
+    assign link_data.link_up = gtx_if.aligned;
 endmodule
