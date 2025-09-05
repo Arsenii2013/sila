@@ -1,7 +1,6 @@
 `timescale 1ns/1ns
 
 `include "cfg_params.svh"
-`include "evn.svh"
 /*
 Wrapper for GTX Wizard IP
 */
@@ -10,6 +9,14 @@ package gtx;
 localparam DATA_W = 32;
 typedef logic [DATA_W  -1:0] data_t;
 typedef logic [DATA_W/8-1:0] is_k_t;
+
+localparam ALIGNMENT_COMMA = 8'hBC;
+localparam ALIGNMENT_WORD   = {ALIGNMENT_COMMA,  8'h00,      8'h00, 8'h00};
+localparam ALIGNMENT_IS_K   = 'h8;
+
+function logic is_alignment(gtx::data_t data, gtx::is_k_t is_k);
+    return data == ALIGNMENT_WORD && is_k == ALIGNMENT_IS_K;
+endfunction
 
 localparam EVG_PORT_N    = 4;
 localparam FANOUT_PORT_N = 4;
@@ -157,7 +164,7 @@ module gtwizard_wrapper#(
             state[j] <= next[j];
             case (state[j])
                 wafsmPATTERN_SEARCH: begin
-                    if (gtx_if[j].rx_is_k == evn::ALIGNMENT_IS_K && gtx_if[j].rx_data == evn::ALIGNMENT_WORD)
+                    if (gtx::is_alignment(gtx_if[j].rx_data, gtx_if[j].rx_is_k))
                         if (~test)
                             detect[j] <= 1;
                     word_cnt[j] <= word_cnt[j] + word_cnt_t'(1);

@@ -27,9 +27,9 @@ module slave_system_packet_generator(
         .src_rst(app_rst)
     );
 
-    system_stream_if #(.DW(32)) system_stream[4]();
+    system_stream_if system_stream[4]();
 
-    system_stream_mux4 #(.DW(4)) packet_mux (
+    system_stream_mux4 packet_mux (
         .app_clk(tx_clk),
         .app_rst(app_rst),
         .in(system_stream),
@@ -37,7 +37,7 @@ module slave_system_packet_generator(
     );
 
     simple_packet_tx_fsm #(
-        .DW(32),
+        .PARAM_W(DELAY_W),
         .PACKET_ID(SUB_DELAY_PACKET_ID),
         .PARAM_CNT(SUB_DELAY_PACKET_LEN)
     ) sub_delay_tx_fsm (
@@ -64,8 +64,8 @@ module master_system_packet_generatorTB();
         .sys_clk (app_clk)
     );
 
-    system_stream_if #(.DW(32)) out();
-    system_stream_if #(.DW(32)) in();
+    system_stream_if out();
+    system_stream_if in();
     
     logic           send_packet = 0;
     logic           connect     = 1;
