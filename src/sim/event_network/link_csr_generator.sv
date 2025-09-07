@@ -21,13 +21,20 @@ class link_csr_generator#(
     localparam TGT_DELAY_ADDR       = BASE + 32'h40;
     localparam DELAY_COMP_ADDR      = BASE + 32'h44;
 
+    localparam int MAX_PORTS_ARRAY []  = '{0, 1, 2, 3};
+    localparam string MAX_PORTS_STRING = $sformatf("%p", MAX_PORTS_ARRAY);
+    localparam int PORTS_PRINT_SIZE    = MAX_PORTS_STRING.len();
+
+    string name;
     function new (
         virtual virtual_clock_if clk_if,
         axi_transaction_pkg::item_mailbox_t req_mailbox,
         axi_transaction_pkg::item_mailbox_t resp_mailbox,
-        int resp_channel
+        int resp_channel,
+        string name = "name"
     );
         super.new(clk_if, req_mailbox, resp_mailbox, resp_channel);
+        this.name = name;
     endfunction
 
     static function time delay_t_to_time(evn::delay_t delay);
@@ -68,6 +75,9 @@ class link_csr_generator#(
     task verify_tgt_delay(input evn::delay_t tgt_delay);
         this.verify(TGT_DELAY_ADDR, tgt_delay);
     endtask
+    task get_tgt_delay(output evn::delay_t tgt_delay);
+        this.read(TGT_DELAY_ADDR, tgt_delay);
+    endtask
 
     task enable_dc();
         this.write(CR_S_ADDR, 32'h1);
@@ -99,37 +109,78 @@ class link_csr_generator#(
     endtask
 
     task wait_delay_status(input int port, input evn::link_delay_st_t pool_status, input time pool_duration);
-        static logic                rd_link_up;
-        static evn::link_delay_st_t rd_status;
-        static evn::link_delay_st_t rd_dc_status;
+        logic                rd_link_up;
+        evn::link_delay_st_t rd_status;
+        evn::link_delay_st_t rd_dc_status;
 
-        get_port_status(port, rd_link_up, rd_status, rd_dc_status);
+        string port_str = $sformatf("%d", port);
+        int space_cnt = PORTS_PRINT_SIZE - port_str.len();
+
         do begin
-            $display("Wait link_delay_st %s for device %m port %d: current link_up %x, current link_delay_st %s", 
-                                                            pool_status.name, port, rd_link_up, rd_status.name);
-            #(pool_duration);
             get_port_status(port, rd_link_up, rd_status, rd_dc_status);
-        end while(!(rd_link_up == 1 && rd_status == pool_status));
+            $display("Wait link_delay_st %s for device %s port %s%d: current link_up %s%b, current link_delay_st %s", 
+                                                            pool_status.name, name, {space_cnt{" "}}, port, 
+                                                            {space_cnt{" "}}, rd_link_up, rd_status.name);
+            #(pool_duration);
+        end while(!(rd_link_up == 1 && rd_status >= pool_status));
+    endtask
+
+    task get_ports_status(input int ports[], ref logic link_ups[], ref evn::link_delay_st_t link_delay_sts[], 
+                                ref evn::link_delay_st_t delay_comp_sts[]);
+        assert(ports.size() == link_ups.size());
+        assert(ports.size() == link_delay_sts.size());
+        assert(ports.size() == delay_comp_sts.size());
+        for(int i = 0; i < ports.size(); i++) begin
+            get_port_status(ports[i], link_ups[i], link_delay_sts[i], delay_comp_sts[i]);
+        end
+    endtask
+
+    local function void statuses_to_strings(evn::link_delay_st_t arr [], ref string arr_str []);
+        assert (arr.size() == arr_str.size());
+        foreach (arr[i]) begin
+            arr_str[i] = arr[i].name;
+        end
+    endfunction
+
+    task wait_delay_statuses(input int ports[], input evn::link_delay_st_t pool_status, input time pool_duration);
+        logic                rd_link_ups    [] = new[ports.size()];
+        evn::link_delay_st_t rd_statuses    [] = new[ports.size()];
+        evn::link_delay_st_t rd_dc_statuses [] = new[ports.size()];
+        string               statuses_names [] = new[ports.size()];
+
+        string ports_str = $sformatf("%p", ports);
+        int space_cnt = PORTS_PRINT_SIZE - ports_str.len();
+
+        do begin
+            get_ports_status(ports, rd_link_ups, rd_statuses, rd_dc_statuses);
+            statuses_to_strings(rd_statuses, statuses_names);
+            $display("Wait link_delay_st %s for device %s ports %s%p: current link_up %s%p, current link_delay_st %p", 
+                                                            pool_status.name, name, {space_cnt{" "}}, ports,
+                                                            {space_cnt{" "}}, rd_link_ups, statuses_names);
+            #(pool_duration);
+        end while(!(rd_link_ups.and() == 1 && rd_statuses.and() with (item >= pool_status)));
     endtask
 
     task wait_dc_status(input int port, input evn::link_delay_st_t pool_dc_status, input time pool_duration);
         static logic                rd_link_up;
         static evn::link_delay_st_t rd_status;
         static evn::link_delay_st_t rd_dc_status;
-        get_port_status(port, rd_link_up, rd_status, rd_dc_status);
-        $display("Wait delay_comp_st %s for device %m port %d: current link_up %x, current delay_comp_st %s", 
-                                                        pool_dc_status.name, port, rd_link_up, rd_dc_status.name);
+
+        string port_str = $sformatf("%d", port);
+        int space_cnt = PORTS_PRINT_SIZE - port_str.len();
+
         do begin
-            $display("Wait delay_comp_st %s for device %m port %d: current link_up %x, current delay_comp_st %s", 
-                                                            pool_dc_status.name, port, rd_link_up, rd_dc_status.name);
-            #(pool_duration);
             get_port_status(port, rd_link_up, rd_status, rd_dc_status);
-        end while(!(rd_link_up == 1 && rd_dc_status == pool_dc_status));
+            $display("Wait delay_comp_st %s for device %s port %s%d: current link_up %s%b, current delay_comp_st %s", 
+                                                            pool_dc_status.name, name, {space_cnt{" "}}, port, 
+                                                            {space_cnt{" "}}, rd_link_up, rd_dc_status.name);
+            #(pool_duration);
+        end while(!(rd_link_up == 1 && rd_dc_status >= pool_dc_status));
     endtask
 
     task dump();
         axi_transaction_pkg::data_t rd_word;
-        $display("dump link csr for : %m");
+        $display("dump link csr for : %s", name);
         this.read(SR_ADDR, rd_word);
         $display("status            : %x", rd_word);
         this.read(CR_ADDR, rd_word);

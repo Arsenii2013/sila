@@ -1,153 +1,117 @@
-`timescale 1ns/1ns
-`include "top.svh"
-`include "evn.svh"
-
 import evn::*;
 
 module treeTB(
 
     );
-    localparam PROPAGATION_DELAY = 12345.56ns;
-    localparam EVR_CNT = 1;
+    localparam time PROPAGATION_DELAY_DEEP_0_PORT_0 = 1234.56ns;
+    localparam time PROPAGATION_DELAY_DEEP_0_PORT_1 = 560.12ns;
+    localparam time PROPAGATION_DELAY_DEEP_1_PORT_0 = 346.98ns;
+    localparam time ENDPOINT_DELAY_ARR [2]     = '{
+                                                 PROPAGATION_DELAY_DEEP_0_PORT_0, 
+                                                 PROPAGATION_DELAY_DEEP_0_PORT_1 + PROPAGATION_DELAY_DEEP_1_PORT_0
+                                                  };
+    function time max_time(time times [2]);
+        max_time = 0ps;
+        foreach(times[i])
+            if(times[i] > max_time)
+                max_time = times[i];
+    endfunction
+    localparam time MAX_SUBTREE_DELAY          = max_time(ENDPOINT_DELAY_ARR);
+
+    localparam FANOUT_CNT = 1;
+    localparam EVR_CNT = 2;
     import evn::*;
+    import gtx::*;
 
-    logic     evg_ref_clk;
-    logic     evg_app_clk;
-    gtx_if    evg_gtx[EVR_CNT]();
-    ev_t      evg_ev;
-    trig_t    evg_trig;
+    logic app_rst;
+    semaphore display_key = new(1);
 
-    logic     evr_ref_clk[EVR_CNT];
-    logic     evr_app_clk[EVR_CNT];
-    gtx_if    evr_gtx[EVR_CNT]();
-    ev_t      evr_ev[EVR_CNT];
-    trig_t    evr_trig[EVR_CNT];
+    gtx_if evg_gtx[EVG_PORT_N]();
+    logic evg_gtx_refclk;
 
-    logic     app_rst;
-    logic     beacon_clk;
+    gtx_if fanout_gtx[FANOUT_CNT][FANOUT_PORT_N]();
+    logic fanout_gtx_refclk[FANOUT_CNT];
 
-    sys_clk_gen
-    #(
-        .halfcycle (2857), // 5000 ps = 125 MHz
-        .offset    (0)
-    ) CLK_GEN (
-        .sys_clk (evg_ref_clk)
-    );
-    genvar i;
-    generate
-    for(i = 0; i < EVR_CNT; i ++) begin : evr_ref_clocking
-    sys_clk_gen
-    #(
-        .halfcycle (2857), // 5000 ps = 125 MHz
-        .offset    (i * 1234)
-    ) CLK_GEN (
-        .sys_clk (evr_ref_clk[i])
-    );
-    end
-    endgenerate
-    sys_clk_gen
-    #(
-        .halfcycle (2856.5), // 2856.5 ps ~ 175_039_383  Hz
-        .offset    (0)
-    ) CLK_GEN2 (
-        .sys_clk (beacon_clk)
+    gtx_if evr_gtx[EVR_CNT][EVR_PORT_N]();
+    logic evr_gtx_refclk[EVR_CNT];
+
+    evg_board_emulator #(
+        .PORTS_USED('{0, 1}),
+        .SUBTREE_DELAY(MAX_SUBTREE_DELAY)
+    ) head_evg (
+        .gtx_if(evg_gtx),
+        .gtx_refclk(evg_gtx_refclk),
+        .app_rst(app_rst)
     );
 
-    axi4_lite_if #(.AW(32), .DW(32)) evg_axi();
-    axi4_lite_if #(.AW(32), .DW(32)) evr_axi();
+    fanout_board_emulator #(
+        .PORTS_USED('{0, 1}),
+        .TOPO_ID('h1)
+    ) fanout_deep_0_port_0(
+        .gtx_if(fanout_gtx[0]),
+        .gtx_refclk(fanout_gtx_refclk[0]),
+        .app_rst(app_rst)
+    );
+
+    evr_board_emulator #(
+        .TOPO_ID('h2)
+    ) evr_deep_0_port_1(
+        .gtx_if(evr_gtx[0]),
+        .gtx_refclk(evr_gtx_refclk[0]),
+        .app_rst(app_rst)
+    );
+
+    evr_board_emulator #(
+        .TOPO_ID('h12)
+    ) evr_deep_1_port_0(
+        .gtx_if(evr_gtx[1]),
+        .gtx_refclk(evr_gtx_refclk[1]),
+        .app_rst(app_rst)
+    );
 
     gtx_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY)
-    ) evg_to_evr(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_0)
+    ) link_deep_0_port_0 (
         .from(evg_gtx[0]),
-        .from_ref_clk(evg_ref_clk),
-        .to(evr_gtx[0]),
-        .to_ref_clk(evr_ref_clk[0])
+        .from_ref_clk(evg_gtx_refclk),
+        .to(fanout_gtx[0][0]),
+        .to_ref_clk(fanout_gtx_refclk[0])
     );
-
-    evg #(
-        .PORT_N(EVR_CNT)
-    ) DUT_EVG (
-        .beacon_clk(beacon_clk),
-        .gtx_if(evg_gtx),
-        .app_clk(evg_app_clk),
-        .app_rst(app_rst),
-        .mmr(evg_axi),
-        
-        .ev(evg_ev),
-        .trig(evg_trig)
+    gtx_emulator #(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
+    ) link_deep_0_port_1 (
+        .from(evg_gtx[1]),
+        .from_ref_clk(evg_gtx_refclk),
+        .to(evr_gtx[0][0]),
+        .to_ref_clk(evr_gtx_refclk[0])
     );
-
-    evr #(
-        .PORT_N(1)
-    ) DUT_EVR (
-        .beacon_clk(beacon_clk),
-        .gtx_if(evr_gtx),
-        .app_clk(evr_app_clk[0]),
-        .app_rst(app_rst),
-        .mmr(evr_axi),
-        
-        .ev(evr_ev[0]),
-        .trig(evr_trig[0])
+    gtx_emulator #(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_1_PORT_0)
+    ) link_deep_1_port_0 (
+        .from(fanout_gtx[0][1]),
+        .from_ref_clk(fanout_gtx_refclk[0]),
+        .to(evr_gtx[1][0]),
+        .to_ref_clk(evr_gtx_refclk[0])
     );
-
-    ev_generator evg_ev_generator(
-        .app_clk(evg_app_clk),
-        .app_rst(app_rst),
-        .ev(evg_ev)
+    gtx_stub gtx_stub_deep_0_port_2(
+        .gtx_if(evg_gtx[2])
     );
-
-    genvar j;
-    generate
-    for(j = 0; j < EVR_CNT; j ++) begin : evr_monitors
-    /*ev_monitor ev_monitor_i(
-        .tx_ev(evg_ev),
-        .tx_app_clk(evg_app_clk),
-        .target_delay(axi_monitor_i.evg_generator.time_to_delay_t(PROPAGATION_DELAY + 100ns)),
-        .rx_ev(evr_ev[j])
+    gtx_stub gtx_stub_deep_0_port_3(
+        .gtx_if(evg_gtx[3])
     );
-    trig_monitor trig_monitor_i(
-        .tx_trig(evr_trig[j]),
-        .tx_app_clk(evr_app_clk[j]),
-        .target_delay(axi_monitor_i.evg_generator.time_to_delay_t(PROPAGATION_DELAY + 100ns)),
-        .rx_trig(evg_trig)
-    );*/
-    trig_generator trig_generator_i(
-        .app_clk(evr_app_clk[j]),
-        .app_rst(app_rst),
-        .trig(evr_trig[j])
+    gtx_stub gtx_stub_deep_1_port_2(
+        .gtx_if(fanout_gtx[0][2])
     );
-    end
-    endgenerate
-
-    axi_monitor axi_monitor_i(
-        .evg_app_clk(evg_app_clk),
-        .evg_axi(evg_axi),
-        .evr_app_clk(evr_app_clk[0]),
-        .evr_axi(evr_axi)
+    gtx_stub gtx_stub_deep_1_port_3(
+        .gtx_if(fanout_gtx[0][3])
     );
 
     initial begin
         app_rst <= 1;
-        repeat (100) @(posedge evg_app_clk);
+        #(MAX_SUBTREE_DELAY);
+        repeat (100) @(posedge evg_gtx_refclk);
         app_rst <= 0;
         #10us;
-
-        $timeformat(-3, 5, " ms");
-        fork
-            begin
-                axi_monitor_i.evrDelayMeasurementTest();
-            end
-            begin
-                axi_monitor_i.evrDelayCompensationTest();
-            end
-            begin
-                axi_monitor_i.setTgtDelayAndDCEna(PROPAGATION_DELAY + 100ns);
-            end
-            begin
-                axi_monitor_i.periodicDump();
-            end
-        join
     end
 
     initial begin
@@ -157,75 +121,326 @@ module treeTB(
     end
 endmodule
 
-module axi_monitor(
-    input  logic   evg_app_clk,
-    axi4_lite_if.m evg_axi,
-    input  logic   evr_app_clk,
-    axi4_lite_if.m evr_axi
+module evg_board_emulator#(
+    parameter int  PORTS_USED [] = '{},
+    parameter time SUBTREE_DELAY = 12345.56ns
+)(
+    gtx_if.app   gtx_if[gtx::EVG_PORT_N],
+    output logic gtx_refclk,
+    input  logic app_rst
 );
-    logic evg_app_rst;
-    logic evr_app_rst;
-    virtual_clock_if evg_clk_if (evg_app_clk, evg_app_rst);
-    virtual_clock_if evr_clk_if (evr_app_clk, evr_app_rst);
-    axi_driver evg_driver;
-    axi_driver evr_driver;
-    link_csr_generator evg_generator;
-    link_csr_generator evr_generator;
-    axi_transaction_pkg::item_mailbox_t evg_req_mbx = new(), evg_resp_mbx = new();
-    axi_transaction_pkg::item_mailbox_t evr_req_mbx = new(), evr_resp_mbx = new();
+    localparam REFCLK_PHASE  = 1234;
+    logic     app_clk;
+    ev_t      ev;
+    trig_t    trig;
+    logic     beacon_clk;
+    axi4_lite_if #(.AW(32), .DW(32)) axi();
 
+    sys_clk_gen
+    #(
+        .halfcycle (2857), // 2857 ps = 175 MHz
+        .offset    (REFCLK_PHASE)
+    ) CLK_GEN (
+        .sys_clk (gtx_refclk)
+    );
+    sys_clk_gen
+    #(
+        .halfcycle (2856.5), // 2856.5 ps ~ 175_039_383  Hz
+        .offset    (0)
+    ) CLK_GEN2 (
+        .sys_clk (beacon_clk)
+    );
+
+    evg #(
+        .PORT_N(gtx::EVG_PORT_N)
+    ) DUT_EVG (
+        .beacon_clk(beacon_clk),
+        .gtx_if(gtx_if),
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .mmr(axi),
+        
+        .ev(ev),
+        .trig(trig)
+    );
+
+    ev_generator evg_ev_generator(
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .ev(ev)
+    );
+    
+    virtual_clock_if clk_if (app_clk, app_rst);
+    axi_driver driver;
+    link_csr_generator generator;
+    axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
     initial begin
-        evg_driver    = new(evg_clk_if, evg_axi, evg_req_mbx, evg_resp_mbx);
-        evg_generator = new(evg_clk_if, evg_req_mbx, evg_resp_mbx, 0);
-        evr_driver    = new(evr_clk_if, evr_axi, evr_req_mbx, evr_resp_mbx);
-        evr_generator = new(evr_clk_if, evr_req_mbx, evr_resp_mbx, 0);
+        driver    = new(clk_if, axi, req_mbx, resp_mbx);
+        generator = new(clk_if, req_mbx, resp_mbx, 0, $sformatf("Head EVG with topo id \t%x\t", 0));
     end
 
-    task evrDelayMeasurementTest();
-        evr_generator.wait_delay_status(0, evn::INITIAL, 10us);
-        $display("Get evr port 0 INITIAL state at %t\n", $realtime);
-        #1us;
-        evr_generator.dump();
+    initial begin
+        @(negedge app_rst);
 
-        evr_generator.verify_topo_id(1);
+        fork
+        generator.set_tgt_delay((generator.time_to_delay_t(SUBTREE_DELAY) 
+                                & ~((1 << evn::DELAY_FRAC_W) - 1)) // зануляем дробную часть
+                                + (10 << evn::DELAY_FRAC_W));       // + 10 тактов
+        wait_delay_statuses();
+        periodic_dump();
+        join
+    end
 
-        evr_generator.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
-        $display("Get evr port 0 ONE_CYCLE state at %t\n", $realtime);
+    task wait_delay_statuses();
+        $timeformat(-3, 5, " ms");
+        generator.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
+        $root.treeTB.display_key.get();
+        $display("Get Head EVG ports INITIAL state at %t\n", $realtime);
         #1us;
-        evr_generator.dump();
-        evr_generator.wait_delay_status(0, evn::FINE, 100ms);
-        $display("Get evr port 0 FINE state at %t\n", $realtime);
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
+        $root.treeTB.display_key.get();
+        $display("Get Head EVG ports ONE_CYCLE state at %t\n", $realtime);
         #1us;
-        evr_generator.dump();
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
+        $root.treeTB.display_key.get();
+        $display("Get Head EVG ports FINE state at %t\n", $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
     endtask
 
-    task evrDelayCompensationTest();
-        evr_generator.wait_dc_status(0, evn::INITIAL, 10us);
-        $display("Get evr port 0 compensation INITIAL state at %t\n", $realtime);
-        #1us;
-        evr_generator.dump();
-        evr_generator.wait_dc_status(0, evn::ONE_CYCLE, 1ms);
-        $display("Get evr port 0 compensation ONE_CYCLE state at %t\n", $realtime);
-        #1us;
-        evr_generator.dump();
-        evr_generator.wait_dc_status(0, evn::FINE, 100ms);
-        $display("Get evr port 0 compensation FINE state at %t\n", $realtime);
-        #1us;
-        evr_generator.dump();
-    endtask
-
-    task setTgtDelayAndDCEna(input time tgt_delay);
-        evg_generator.wait_delay_status(0, evn::INITIAL, 10us);
-        #10us;
-        evg_generator.set_tgt_delay(evg_generator.time_to_delay_t(tgt_delay));
-        evr_generator.enable_dc();
-    endtask
-
-    task periodicDump();
+    task periodic_dump();
         forever begin
-            $display("Periodic Dump");
-            evr_generator.dump();
-            evg_generator.dump();
+            $root.treeTB.display_key.get();
+            $display("Periodic Dump Head EVG");
+            generator.dump();
+            $root.treeTB.display_key.put();
+            #1ms;
+        end
+    endtask
+endmodule
+
+module fanout_board_emulator#(
+    parameter int            PORTS_USED [] = '{},
+    parameter evn::topo_id_t TOPO_ID       = 1
+)(
+    gtx_if.app   gtx_if[gtx::FANOUT_PORT_N],
+    output logic gtx_refclk,
+    input  logic app_rst
+);
+    localparam REFCLK_PHASE  = 1234;
+    logic     app_clk;
+    ev_t      ev;
+    trig_t    trig;
+    logic     beacon_clk;
+    axi4_lite_if #(.AW(32), .DW(32)) axi();
+
+    assign gtx_refclk = gtx_if[0].rx_clk;
+    sys_clk_gen
+    #(
+        .halfcycle (2856.5), // 2856.5 ps ~ 175_039_383  Hz
+        .offset    (0)
+    ) CLK_GEN2 (
+        .sys_clk (beacon_clk)
+    );
+
+    fanout #(
+        .PORT_N(gtx::FANOUT_PORT_N)
+    ) DUT_FANOUT (
+        .beacon_clk(beacon_clk),
+        .gtx_if(gtx_if),
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .mmr(axi),
+        
+        .ev(ev),
+        .trig(trig)
+    );
+    
+    virtual_clock_if clk_if (app_clk, app_rst);
+    axi_driver driver;
+    link_csr_generator generator;
+    axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
+    initial begin
+        driver    = new(clk_if, axi, req_mbx, resp_mbx);
+        generator = new(clk_if, req_mbx, resp_mbx, 0, $sformatf("FANOUT with topo id \t%x\t", TOPO_ID));
+    end
+    initial begin
+        @(negedge app_rst);
+        fork
+        wait_delay_statuses();
+        periodic_dump();
+        join
+    end
+
+    task wait_delay_statuses();
+        $timeformat(-3, 5, " ms");
+        generator.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
+        $root.treeTB.display_key.get();
+        $display("Get FANOUT with topo id %x ports INITIAL state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
+        $root.treeTB.display_key.get();
+        $display("Get FANOUT with topo id %x ONE_CYCLE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
+        $root.treeTB.display_key.get();
+        $display("Get FANOUT with topo id %x FINE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+    endtask
+
+    task periodic_dump();
+        forever begin
+            $root.treeTB.display_key.get();
+            $display("Periodic Dump FANOUT with topo id %x \t", TOPO_ID);
+            generator.dump();
+            $root.treeTB.display_key.put();
+            #1ms;
+        end
+    endtask
+endmodule
+
+module evr_board_emulator#(
+    parameter evn::topo_id_t TOPO_ID       = 1
+)(
+    gtx_if.app   gtx_if[gtx::EVR_PORT_N],
+    output logic gtx_refclk,
+    input  logic app_rst
+);
+    localparam REFCLK_PHASE  = 1234;
+    logic     app_clk;
+    ev_t      ev;
+    trig_t    trig;
+    logic     beacon_clk;
+    axi4_lite_if #(.AW(32), .DW(32)) axi();
+
+    sys_clk_gen
+    #(
+        .halfcycle (2857), // 2857 ps = 175 MHz
+        .offset    (REFCLK_PHASE)
+    ) CLK_GEN (
+        .sys_clk (gtx_refclk)
+    );
+    sys_clk_gen
+    #(
+        .halfcycle (2856.5), // 2856.5 ps ~ 175_039_383  Hz
+        .offset    (0)
+    ) CLK_GEN2 (
+        .sys_clk (beacon_clk)
+    );
+
+    evr #(
+        .PORT_N(gtx::EVR_PORT_N)
+    ) DUT_EVR (
+        .beacon_clk(beacon_clk),
+        .gtx_if(gtx_if),
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .mmr(axi),
+        
+        .ev(ev),
+        .trig(trig)
+    );
+
+    trig_generator trig_generator_i(
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        .trig(trig)
+    );
+    
+    virtual_clock_if clk_if (app_clk, app_rst);
+    axi_driver driver;
+    link_csr_generator generator;
+    axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
+    initial begin
+        driver    = new(clk_if, axi, req_mbx, resp_mbx);
+        generator = new(clk_if, req_mbx, resp_mbx, 0, $sformatf("EVR with topo id \t%x\t", TOPO_ID));
+    end
+    initial begin
+        @(negedge app_rst);
+        fork
+        wait_delay_status();
+        wait_dc_status();
+        enable_dc();
+        periodic_dump();
+        join
+    end
+
+    task wait_delay_status();
+        $timeformat(-3, 5, " ms");
+        generator.wait_delay_status(0, evn::INITIAL, 10us);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x ports INITIAL state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x ONE_CYCLE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+
+        generator.wait_delay_status(0, evn::FINE, 100ms);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x FINE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+    endtask
+
+    task wait_dc_status();
+        $timeformat(-3, 5, " ms");
+        generator.wait_dc_status(0, evn::INITIAL, 10us);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x compensation INITIAL state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+        generator.wait_dc_status(0, evn::ONE_CYCLE, 1ms);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x compensation ONE_CYCLE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+        generator.wait_dc_status(0, evn::FINE, 100ms);
+        $root.treeTB.display_key.get();
+        $display("Get EVR with topo id %x compensation FINE state at %t\n", TOPO_ID, $realtime);
+        #1us;
+        generator.dump();
+        $root.treeTB.display_key.put();
+    endtask
+
+    task enable_dc();
+        localparam POOL_DURATION = 100us;
+        evn::delay_t rd_tgt_delay;
+        do begin
+            generator.get_tgt_delay(rd_tgt_delay);
+        end while(rd_tgt_delay == 0);
+        generator.enable_dc();
+    endtask
+
+    task periodic_dump();
+        forever begin
+            $root.treeTB.display_key.get();
+            $display("Periodic Dump EVR with topo id %x", TOPO_ID);
+            generator.dump();
+            $root.treeTB.display_key.put();
             #1ms;
         end
     endtask
@@ -257,7 +472,7 @@ module trig_generator(
     always_ff @(posedge app_clk) begin
         if(trig_cnt == 0) begin
             trig     <= app_rst ? 0 : 'h123456;
-            trig_cnt <= 4;
+            trig_cnt <= 1000;
         end else begin
             trig     <= '0;
             trig_cnt <= trig_cnt - 1;

@@ -1,7 +1,3 @@
-`include "top.svh"
-`include "evn.svh"
-`include "axi4_lite_if.svh"
-
 module link_slave
 (
     input  logic            beacon_clk,

@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module gtx_emulator#(
     parameter PROPAGATION_DELAY = 12345.56ns
 )(
@@ -61,4 +63,17 @@ module gtx_emulator#(
     assign to.aligned   = to.rx_reset_done;
     assign from.aligned = from.rx_reset_done;
 
+endmodule
+
+module gtx_stub(
+    gtx_if.gtx   gtx_if
+);
+    assign gtx_if.aligned       = 0;
+    assign gtx_if.tx_clk        = 0;
+    assign gtx_if.rx_clk        = 0;
+    assign gtx_if.tx_reset_done = 0;
+    assign gtx_if.rx_reset_done = 0;
+
+    assign gtx_if.rx_data       = '0;
+    assign gtx_if.rx_is_k       = '0;
 endmodule

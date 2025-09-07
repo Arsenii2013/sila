@@ -1,6 +1,5 @@
 
 sources:
-    - src/sim/event_network/treeTB.sv
     - src/sim/xpm_fifo.sv
     - src/lib/common/sys_clk_gen.sv
     - src/lib/axi/axi_master.sv
@@ -9,3 +8,4 @@ sources:
     - src/sim/xpm_fifo.sv
     - src/sim/event_network/gtx_emulator.sv
     - src/sim/event_network/link_csr_generator.sv
+    - src/sim/event_network/treeTB.sv

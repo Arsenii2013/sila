@@ -1,8 +1,3 @@
-`include "top.svh"
-`include "evn.svh"
-`include "axi4_lite_if.svh"
-`include "system_stream_if.svh"
-
 module link_master
 (
     input  logic            beacon_clk,
@@ -30,6 +25,8 @@ module link_master
     logic ev_valid;
     assign ev_valid = ev != '0;
     
+
+    assign trig = is_trigger(gtx_if.rx_data, gtx_if.rx_is_k) ? trig_t'(gtx_if.rx_data) : '0;
 
 // Beacon
     // Во избежание неопределенности измерения задержки из-за включения приемника
@@ -210,11 +207,11 @@ module link_master
         .WRITE_DATA_WIDTH(36)
     ) tx_data_syncronizer (
         .rd_clk(gtx_if.tx_clk),
-        .rd_en(1),
+        .rd_en(gtx_if.aligned),
         .dout({gtx_if.tx_data, gtx_if.tx_is_k}),
 
         .wr_clk(app_clk),
-        .wr_en(1),
+        .wr_en(gtx_if.aligned),
         .din({tx_data_app_clk, tx_is_k_app_clk}),
 
         .rst(app_rst)
