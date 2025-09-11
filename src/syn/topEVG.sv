@@ -1,3 +1,5 @@
+`include "topEVG.svh"
+
 module topEVG(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
@@ -213,6 +215,10 @@ module topEVG(
         .ev(ev), 
         .trig()
     );
+    /*gtx_if_ila gtx_if_ila_i(
+        .gtx_if(evg_gtx_if[0]),
+        .app_clk(app_clk)
+    );*/
 
     event_generator #(
         .EV_SEQ_N(EVG_axi_params::EV_SEQ_N)
@@ -236,4 +242,23 @@ module topEVG(
     assign led[1] = evg_gtx_if[0].tx_reset_done;
     assign led[2] = evg_gtx_if[0].rx_reset_done;
     assign led[3] = event_pulse;
+endmodule
+
+module gtx_if_ila(
+    gtx_if.monitor gtx_if,
+    input  logic   app_clk 
+);
+
+    ila_0 ila(
+        .clk(app_clk),
+        .probe0(gtx_if.tx_clk),
+        .probe1(gtx_if.tx_data),
+        .probe2(gtx_if.tx_is_k),
+        .probe3(gtx_if.tx_reset_done),
+        .probe4(gtx_if.rx_clk),
+        .probe5(gtx_if.rx_data),
+        .probe6(gtx_if.rx_is_k),
+        .probe7(gtx_if.rx_reset_done),
+        .probe8(gtx_if.aligned)
+    );
 endmodule

@@ -1,5 +1,6 @@
 `ifndef _EVN_
 `define _EVN_
+`include "gtx.svh"
 
 package evn;
 // Parameters and types

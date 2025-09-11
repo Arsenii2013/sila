@@ -1,7 +1,6 @@
-`include "topEVR.svh"
-`include "gtx.svh"
+`include "topFanout.svh"
 
-module topEVR(
+module topFanout(
         //-------Processing System-------\\
     `ifdef SYNTHESIS
     inout wire [14:0]   DDR_addr,
@@ -30,17 +29,20 @@ module topEVR(
         //-------------SFP---------------\\
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
+    input  logic       REFCLK_FROM_RX_n,
+    input  logic       REFCLK_FROM_RX_p,
+    output logic       RXCLK_n,
+    output logic       RXCLK_p,
 
-    input  logic       sfp_rx_n[gtx::EVR_PORT_N],
-    input  logic       sfp_rx_p[gtx::EVR_PORT_N],
-    output logic       sfp_tx_n[gtx::EVR_PORT_N],
-    output logic       sfp_tx_p[gtx::EVR_PORT_N],
+    input  logic       sfp_rx_n[gtx::FANOUT_PORT_N],
+    input  logic       sfp_rx_p[gtx::FANOUT_PORT_N],
+    output logic       sfp_tx_n[gtx::FANOUT_PORT_N],
+    output logic       sfp_tx_p[gtx::FANOUT_PORT_N],
     output logic [1:0] sfp_tx_disable,
 
     input  logic       sysclk_n,
     input  logic       sysclk_p,
-    output logic [3:0] led,
-    output logic [15:0]out_pulse
+    output logic [3:0] led
 );
     logic app_clk;
     logic app_aresetn = 1;
@@ -59,7 +61,7 @@ module topEVR(
         .DW(axi_params::GP0_DATA_W),
         .AW(axi_params::GP0_ADDR_W)
     ) GP_0();
-
+    
     axi4_lite_if #(
         .DW(axi_params::MMR_DATA_W),
         .AW(axi_params::MMR_ADDR_W)
@@ -76,8 +78,7 @@ module topEVR(
         .s(mmr)
     );
 
-    evn::ev_t    ev;
-    evn::delay_t delay;
+    evn::ev_t ev;
     
     `ifndef SYNTHESIS
     `define GIT_VERSION_MAJOR 'h1234
@@ -85,16 +86,18 @@ module topEVR(
     `define GIT_HASH          'habcd
     `endif
     device_info #(
-        .DEVICE("EVR"),
+        .DEVICE("Fanout"),
         .FW_MAJOR(`GIT_VERSION_MAJOR),
         .FW_MINOR(`GIT_VERSION_MINOR),
         .FW_HASH(`GIT_HASH)
     ) device_info_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::DEVICE_INFO])
+        .mmr(mmr[Fanout_axi_params::DEVICE_INFO])
     );
 
+    logic [63:0] cycle_cnt;
+    logic [31:0] pulse_cnt;
 
     timestamper #(
         .CYCLE_CNT_WIDTH(64), 
@@ -102,10 +105,10 @@ module topEVR(
     ) timestamper_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
-        .cycle_start_val(delay >> 16), // ожидаю, что задержка получилась целеая
-        .cycle_cnt(),
-        .pulse_cnt(),
+        .mmr(mmr[Fanout_axi_params::TIMESTAMPER]),
+        .cycle_start_val('0),
+        .cycle_cnt(cycle_cnt),
+        .pulse_cnt(pulse_cnt),
         .ev(ev)
     );
 
@@ -113,7 +116,7 @@ module topEVR(
         .GP0_ADDR_W(axi_params::GP0_ADDR_W),
         .GP0_DATA_W(axi_params::GP0_DATA_W),
         .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
-        .SIM_DEVICE("EVR")
+        .SIM_DEVICE("Fanout")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
@@ -171,17 +174,19 @@ module topEVR(
         .led(led[0])
     );
 
-
-    localparam GTX_PORTS = gtx::EVR_PORT_N;
+    localparam GTX_PORTS = gtx::FANOUT_PORT_N;
     logic sfp_loss [GTX_PORTS];
-    gtx_if evr_gtx_if[GTX_PORTS]();
+    gtx_if fanout_gtx_if[GTX_PORTS]();
+    logic beacon_clk;
 
     gtwizard_wrapper #(
-        .DEVICE("EVR"),
+        .DEVICE("Fanout"),
         .PORT_N(GTX_PORTS)
     ) gtwizard_i (
-        .refclk_n(REFCLK_SFP_n),
-        .refclk_p(REFCLK_SFP_p),
+        .refclk_rx_n(REFCLK_SFP_n),
+        .refclk_rx_p(REFCLK_SFP_p),
+        .refclk_n(REFCLK_FROM_RX_n),
+        .refclk_p(REFCLK_FROM_RX_p),
         .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
@@ -189,70 +194,72 @@ module topEVR(
         .rx_p(sfp_rx_p),
         .tx_n(sfp_tx_n),
         .tx_p(sfp_tx_p),
-        .gtx_if(evr_gtx_if)
+        .gtx_if(fanout_gtx_if),
+        .beacon_clk(beacon_clk)
     );
     assign sfp_tx_disable = '0;
+
+    logic RXCLK;
+    ODDR RXCLK_ODDR (
+        .Q(RXCLK),
+        .C(fanout_gtx_if[0].rx_clk),
+        .CE(fanout_gtx_if[0].aligned),
+        .D1(1),
+        .D2(0)
+    );
+    OBUFDS RXCLK_OBUFDS (
+        .O(RXCLK_p),
+        .OB(RXCLK_n),
+        .I(RXCLK)
+    );
 
     sfp_control #(
         .PORT_N(GTX_PORTS)
     ) sfp_control_i(
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
+        .mmr(mmr[Fanout_axi_params::SFP_CONTROL]),
         .sfp_loss(sfp_loss)
     );
-
-    evr #(
+    
+    fanout #(
         .PORT_N(GTX_PORTS)
-    ) evr_i (
-        .beacon_clk(evr_gtx_if[0].tx_clk),
-        .gtx_if(evr_gtx_if),
+    ) fanout_i (
+        .beacon_clk(beacon_clk),
+        .gtx_if(fanout_gtx_if),
 
         //------Application signals-------
         .app_clk(app_clk),
         .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::EVR]),
-        
-        .ev(ev), 
-        .trig('0),
-
-        .delay(delay)
+        .mmr(mmr[Fanout_axi_params::FANOUT])
     );
 
-    logic set      [EVR_axi_params::SIG_GEN_N];
-    logic clear    [EVR_axi_params::SIG_GEN_N];
-    logic trigger  [EVR_axi_params::SIG_GEN_N];
-    logic cnt_reset[EVR_axi_params::SIG_GEN_N];
-    logic gen_out  [EVR_axi_params::SIG_GEN_N];
-    ev_map #(
-        .COMP_N(EVR_axi_params::EV_COMP_N),
-        .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
-    ) ev_map_i (
-        .app_clk(app_clk),
-        .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::EV_MAP]),
-        .set(set),
-        .clear(clear),
-        .trigger(trigger),
-        .cnt_reset(cnt_reset),
-        .ev(ev)
-    );
+    /*gtx_if_ila gtx_if_ila_i(
+        .gtx_if(fanout_gtx_if[0]),
+        .app_clk(app_clk)
+    );*/
 
-    signal_generator #(
-        .N(EVR_axi_params::SIG_GEN_N)
-    ) signal_generator_i (
-        .app_clk(app_clk),
-        .app_rst(app_reset),
-        .mmr(mmr[EVR_axi_params::SIG_GEN_CTRL]),
-        .set(set),
-        .clear(clear),
-        .trigger(trigger),
-        .cnt_reset(cnt_reset),
-        .gen_out(gen_out)
+    assign led[1] = fanout_gtx_if[0].tx_reset_done;
+    assign led[2] = fanout_gtx_if[0].rx_reset_done;
+    assign led[3] = 0;
+endmodule
+
+
+module gtx_if_ila(
+    gtx_if.monitor gtx_if,
+    input  logic   app_clk 
+);
+
+    ila_0 ila(
+        .clk(app_clk),
+        .probe0(gtx_if.tx_clk),
+        .probe1(gtx_if.tx_data),
+        .probe2(gtx_if.tx_is_k),
+        .probe3(gtx_if.tx_reset_done),
+        .probe4(gtx_if.rx_clk),
+        .probe5(gtx_if.rx_data),
+        .probe6(gtx_if.rx_is_k),
+        .probe7(gtx_if.rx_reset_done),
+        .probe8(gtx_if.aligned)
     );
-    assign out_pulse = {<<{gen_out}};
-    
-    assign led[1] = evr_gtx_if[0].tx_reset_done;
-    assign led[2] = evr_gtx_if[0].rx_reset_done;
-    assign led[3] = out_pulse[0];
 endmodule

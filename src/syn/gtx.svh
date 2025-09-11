@@ -57,4 +57,17 @@ modport app(
     input  rx_reset_done,
     input  aligned
 );
+
+modport monitor(
+    input  tx_clk,
+    input  tx_data,
+    input  tx_is_k,
+    input  tx_reset_done,
+
+    input  rx_clk,
+    input  rx_data,
+    input  rx_is_k,
+    input  rx_reset_done,
+    input  aligned
+);
 endinterface

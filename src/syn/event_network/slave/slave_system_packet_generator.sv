@@ -51,7 +51,7 @@ module slave_system_packet_generator(
 endmodule 
 
 
-module master_system_packet_generatorTB();
+module slave_system_packet_generatorTB();
 
     logic     app_clk;
     logic     app_rst;

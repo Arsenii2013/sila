@@ -44,6 +44,9 @@ class link_csr_generator#(
         return (delay << evn::DELAY_FRAC_W) / PRD;
     endfunction
 
+    task get_topo_id(output evn::topo_id_t topo_id);
+        this.read(TOPO_ID_ADDR, topo_id);
+    endtask
     task verify_topo_id(input evn::topo_id_t topo_id);
         this.verify(TOPO_ID_ADDR, topo_id);
     endtask

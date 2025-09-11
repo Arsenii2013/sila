@@ -17,8 +17,9 @@ module device_info #(
     assign hwif_in.cr_c.reserved.next           = 0;
     generate 
     case (DEVICE)
-    "EVG" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVG;
-    "EVR" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVR;
+    "EVG"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVG;
+    "EVR"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVR;
+    "Fanout" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__FANOUT;
     endcase
     endgenerate
     assign hwif_in.fw_version.major.next        = FW_MAJOR;

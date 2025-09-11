@@ -193,6 +193,9 @@ module link_master
     end
     assign system_stream_out.tready = !ev_valid && !beacon_valid;
 
+    logic fifo_rst_busy;
+    logic rd_rst_busy, wr_rst_busy;
+    assign fifo_rst_busy = rd_rst_busy || wr_rst_busy;
     xpm_fifo_async #(
         .CASCADE_HEIGHT(0),
         .CDC_SYNC_STAGES(2),
@@ -207,14 +210,16 @@ module link_master
         .WRITE_DATA_WIDTH(36)
     ) tx_data_syncronizer (
         .rd_clk(gtx_if.tx_clk),
-        .rd_en(gtx_if.aligned),
+        .rd_en(!fifo_rst_busy),
         .dout({gtx_if.tx_data, gtx_if.tx_is_k}),
 
         .wr_clk(app_clk),
-        .wr_en(gtx_if.aligned),
+        .wr_en(!fifo_rst_busy),
         .din({tx_data_app_clk, tx_is_k_app_clk}),
 
-        .rst(app_rst)
+        .rst(app_rst),
+        .rd_rst_busy(rd_rst_busy),
+        .wr_rst_busy(wr_rst_busy)
     );
 
 // Delay measurement

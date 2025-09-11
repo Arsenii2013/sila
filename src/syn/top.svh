@@ -2,9 +2,6 @@
 `ifndef __TOP_SVH__
 `define __TOP_SVH__
 
-//      Common
-localparam CLK_PRD         = 8;
-
 package axi_params;
 
 import rdl_axi_params_pkg::*;
