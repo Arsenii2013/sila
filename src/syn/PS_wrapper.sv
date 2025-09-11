@@ -1,5 +1,4 @@
 `include "axi4_lite_if.svh"
-`include "topEVG.svh"
 
 module PS_wrapper_sv #(
     parameter GP0_ADDR_W   = 32,
@@ -98,6 +97,7 @@ module PS_wrapper_sv #(
     `endif //SYNTHESIS 
 
     `ifndef SYNTHESIS
+    localparam CLK_PRD = 8;
     sys_clk_gen
     #(
         .halfcycle (CLK_PRD / 2 * 1000), 
@@ -147,6 +147,8 @@ module PS_wrapper_sv #(
 
     `define BASE_FROM_NUMBER(number) (GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * (number))
 
+    evn::topo_id_t topo_id = '0;
+    `define display_key $root.topTB.display_key
     genvar gen_i;
     generate 
     if(SIM_DEVICE == "EVG") begin
@@ -176,13 +178,18 @@ module PS_wrapper_sv #(
         initial begin
             driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
             generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
-            EVG_generator_i = new(clk_if, req_mbx, resp_mbx, EVG_RD_CH);
+            EVG_generator_i = new(clk_if, req_mbx, resp_mbx, EVG_RD_CH, $sformatf("Head EVG with topo id \t%x\t", topo_id));
             ev_seq_generator_i[0].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_0_RD_CH);
             ev_seq_generator_i[1].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_1_RD_CH);
             ev_seq_ctrl_generator_i = new(clk_if, req_mbx, resp_mbx, EV_SEQ_CTRL_RD_CH);
+            fork
             EVG_test();
+            periodic_dump();
+            join
         end
 
+        localparam MAX_SUBTREE_DELAY  = $root.topTB.MAX_SUBTREE_DELAY;
+        localparam int PORTS_USED [2] = '{0, 1};
         task automatic EVG_test();
             $timeformat(-3, 5, " ms");
 
@@ -210,20 +217,110 @@ module PS_wrapper_sv #(
 
             ev_seq_ctrl_generator_i.enable(0);
             ev_seq_ctrl_generator_i.sw_trig(0);
-            EVG_generator_i.set_tgt_delay(EVG_generator_i.time_to_delay_t(1234.56ns + 175ns));
+            EVG_generator_i.set_tgt_delay((EVG_generator_i.time_to_delay_t(MAX_SUBTREE_DELAY) 
+                                        & ~((1 << evn::DELAY_FRAC_W) - 1)) // зануляем дробную часть
+                                        + (10 << evn::DELAY_FRAC_W));       // + 10 тактов
 
-            EVG_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
-            $display("EVG Get INITIAL state at %t\n", $realtime);
+            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
             #10us;
+            `display_key.get();
+            $display("EVG Head Get INITIAL state at %t\n", $realtime);
             EVG_generator_i.dump();
-            EVG_generator_i.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
-            $display("EVG Get ONE_CYCLE state at %t\n", $realtime);
+            `display_key.put();
+
+            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
             #10us;
+            `display_key.get();
+            $display("EVG Head Get ONE_CYCLE state at %t\n", $realtime);
             EVG_generator_i.dump();
-            EVG_generator_i.wait_delay_status(0, evn::FINE, 100ms);
-            $display("EVG Get FINE state at %t\n", $realtime);
+            `display_key.put();
+
+            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
             #10us;
+            `display_key.get();
+            $display("EVG Head Get FINE state at %t\n", $realtime);
             EVG_generator_i.dump();
+            `display_key.put();
+        endtask
+
+        task periodic_dump();
+            forever begin
+                `display_key.get();
+                $display("Periodic Dump Head EVG");
+                EVG_generator_i.dump();
+                `display_key.put();
+                #1ms;
+            end
+        endtask
+    end
+
+
+    if(SIM_DEVICE == "Fanout") begin
+        typedef enum{
+            GENERIC_RD_CH = 0,
+            EVR_RD_CH
+        } rd_ch_enum;
+
+        link_csr_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EVR))
+        ) Fanout_generator_i;
+
+        initial begin
+            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
+            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
+
+            Fanout_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("Fanout with topo id \t%x\t", topo_id));
+            fork
+            Fanout_test();
+            periodic_dump();
+            join
+        end
+
+
+        localparam int PORTS_USED [2] = '{0, 1};
+        task automatic Fanout_test();
+            $timeformat(-3, 5, " ms");
+
+            @(posedge app_aresetn);
+            @(posedge app_aresetn);
+            #50us;
+            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'b1110);
+            Fanout_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
+            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, '0);
+
+            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
+            #10us;
+            Fanout_generator_i.get_topo_id(topo_id);
+            Fanout_generator_i.name = $sformatf("Fanout with topo id \t%x\t", topo_id);
+            #10us;
+            `display_key.get();
+            $display("Get Fanout with topo id %x INITIAL state at %t\n", topo_id, $realtime);
+            Fanout_generator_i.dump();
+            `display_key.put();
+
+            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
+            #10us;
+            `display_key.get();
+            $display("Get Fanout with topo id %x ONE_CYCLE state at %t\n", topo_id, $realtime);
+            Fanout_generator_i.dump();
+            `display_key.put();
+            
+            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
+            #10us;
+            `display_key.get();
+            $display("Get Fanout with topo id %x FINE state at %t\n", topo_id, $realtime);
+            Fanout_generator_i.dump();
+            `display_key.put();
+        endtask
+
+        task periodic_dump();
+            forever begin
+                `display_key.get();
+                $display("Periodic Dump FANOUT with topo id %x \t", topo_id);
+                Fanout_generator_i.dump();
+                `display_key.put();
+                #1ms;
+            end
         endtask
     end
 
@@ -253,10 +350,13 @@ module PS_wrapper_sv #(
             driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
             generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
 
-            EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH);
+            EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("EVR with topo id \t%x\t", topo_id));
             signal_generator_generator_i = new(clk_if, req_mbx, resp_mbx, SIG_GEN_RD_CH);
             ev_map_generator_i = new(clk_if, req_mbx, resp_mbx, EV_MAP_RD_CH);
+            fork
             EVR_test();
+            periodic_dump();
+            join
         end
 
 
@@ -288,17 +388,37 @@ module PS_wrapper_sv #(
             EVR_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
             #10us;
             EVR_generator_i.enable_dc();
+            EVR_generator_i.get_topo_id(topo_id);
+            EVR_generator_i.name = $sformatf("EVR with topo id \t%x\t", topo_id);
             #10us;
-            $display("Get EVR port 0 INITIAL state at %t\n", $realtime);
+            `display_key.get();
+            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
             EVR_generator_i.dump();
+            `display_key.put();
+
             EVR_generator_i.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
-            $display("Get EVR port 0 ONE_CYCLE state at %t\n", $realtime);
-            #1us;
+            #10us;
+            `display_key.get();
+            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
             EVR_generator_i.dump();
+            `display_key.put();
+            
             EVR_generator_i.wait_delay_status(0, evn::FINE, 100ms);
-            $display("Get EVR port 0 FINE state at %t\n", $realtime);
-            #1us;
+            #10us;
+            `display_key.get();
+            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
             EVR_generator_i.dump();
+            `display_key.put();
+        endtask
+
+        task periodic_dump();
+            forever begin
+                `display_key.get();
+                $display("Periodic Dump EVR with topo id %x", topo_id);
+                EVR_generator_i.dump();
+                `display_key.put();
+                #1ms;
+            end
         endtask
     end
     endgenerate

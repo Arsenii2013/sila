@@ -24,7 +24,7 @@ module master_system_packet_reciever(
         .src_rst(app_rst)
     );
 
-    system_stream_if #(.DW(32)) system_stream[4]();
+    system_stream_if system_stream[4]();
 
     assign in.tready = system_stream[0].tready;
     genvar i;
@@ -37,7 +37,7 @@ module master_system_packet_reciever(
     endgenerate
 
     simple_packet_rx_fsm #(
-        .DW(32),
+        .PARAM_W(DELAY_W),
         .PACKET_ID(SUB_DELAY_PACKET_ID),
         .PARAM_CNT(SUB_DELAY_PACKET_LEN)
     ) sub_delay_rx_fsm (

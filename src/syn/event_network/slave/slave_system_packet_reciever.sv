@@ -55,7 +55,7 @@ module slave_system_packet_reciever(
         .src_rst(app_rst)
     );
 
-    system_stream_if #(.DW(32)) system_stream[4]();
+    system_stream_if system_stream[4]();
 
     assign in.tready = system_stream[0].tready;
     genvar i;
@@ -68,7 +68,7 @@ module slave_system_packet_reciever(
     endgenerate
 
     simple_packet_rx_fsm #(
-        .DW(32),
+        .PARAM_W(TOPO_ID_W),
         .PACKET_ID(TOPO_ID_PACKET_ID),
         .PARAM_CNT(TOPO_ID_PACKET_LEN)
     ) topo_id_rx_fsm (
@@ -80,7 +80,7 @@ module slave_system_packet_reciever(
     );
 
     simple_packet_rx_fsm #(
-        .DW(32),
+        .PARAM_W(DELAY_W),
         .PACKET_ID(MEAS_DELAY_PACKET_ID),
         .PARAM_CNT(MEAS_DELAY_PACKET_LEN)
     ) meas_delay_rx_fsm (
@@ -92,7 +92,7 @@ module slave_system_packet_reciever(
     );
 
     simple_packet_rx_fsm #(
-        .DW(32),
+        .PARAM_W(DELAY_W),
         .PACKET_ID(TGT_DELAY_PACKET_ID),
         .PARAM_CNT(TGT_DELAY_PACKET_LEN)
     ) tgt_delay_rx_fsm (
@@ -104,7 +104,7 @@ module slave_system_packet_reciever(
     );
 
     simple_packet_rx_fsm #(
-        .DW(32),
+        .PARAM_W(DELAY_W),
         .PACKET_ID(UP_DELAY_PACKET_ID),
         .PARAM_CNT(UP_DELAY_PACKET_LEN)
     ) up_delay_rx_fsm (

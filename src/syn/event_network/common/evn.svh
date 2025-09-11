@@ -1,22 +1,26 @@
 `ifndef _EVN_
 `define _EVN_
+`include "gtx.svh"
 
 package evn;
 // Parameters and types
 localparam EVENT_COMMA     = 8'h5C;
 localparam TRIGGER_COMMA   = 8'h7C;
 localparam PACKET_COMMA    = 8'hDC;
-localparam ALIGNMENT_COMMA = 8'hBC;
 
 localparam BEACON_WORD     = {EVENT_COMMA,      EVENT_COMMA, 8'h00, 8'h00};
 localparam BEACON_IS_K     = 'hC;
 localparam BEACON_PERIOD   = 2 ** 10 - 1;
 typedef logic [$clog2(BEACON_PERIOD): 0] beacon_cnt_t;
+function logic is_beacon(gtx::data_t data, gtx::is_k_t is_k);
+    return data == BEACON_WORD && is_k == BEACON_IS_K;
+endfunction
 
-localparam ALIGNMENT_WORD   = {ALIGNMENT_COMMA,  8'h00,      8'h00, 8'h00};
-localparam ALIGNMENT_IS_K   = 'h8;
+localparam ALIGNMENT_WORD = gtx::ALIGNMENT_WORD;
+localparam ALIGNMENT_IS_K = gtx::ALIGNMENT_IS_K;
 localparam ALIGNMENT_PERIOD = 4;
 typedef logic [$clog2(ALIGNMENT_PERIOD): 0] alignment_cnt_t;
+import gtx::is_alignment;
 
 localparam DELAY_INT_W      = 16;
 localparam DELAY_FRAC_W     = 16;
@@ -30,9 +34,15 @@ typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
 
 localparam EVENT_W          = 24;
 typedef logic [EVENT_W                 -1: 0] ev_t;
+function logic is_event(gtx::data_t data, gtx::is_k_t is_k);
+    return data[31:24] == EVENT_COMMA && is_k == 'b1000;
+endfunction
 
 localparam TRIGGER_W        = 24;
 typedef logic [TRIGGER_W               -1: 0] trig_t;
+function logic is_trigger(gtx::data_t data, gtx::is_k_t is_k);
+    return data[31:24] == TRIGGER_COMMA && is_k == 'b1000;
+endfunction
 
 typedef enum {
     ZERO      = link_csr_axi_core_pkg::link_csr_axi_core__link_delay_st__ZERO,
@@ -63,6 +73,10 @@ localparam UP_DELAY_PACKET_START    = {PACKET_COMMA, UP_DELAY_PACKET_ID,   UP_DE
 localparam SUB_DELAY_PACKET_START   = {PACKET_COMMA, SUB_DELAY_PACKET_ID,  SUB_DELAY_PACKET_LEN };
 
 localparam PACKET_START_IS_K     = 4'h8;
+
+function logic is_packet(gtx::data_t data, gtx::is_k_t is_k);
+    return (data[31:24] == PACKET_COMMA && is_k == PACKET_START_IS_K) || is_k == '0;
+endfunction
 
 // User packets
 

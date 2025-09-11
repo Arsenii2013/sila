@@ -25,7 +25,6 @@ module evg#(
     trig_t  trig_iternal[PORT_N];
     delay_t sub_delay_iternal[PORT_N];
     logic   sub_delay_iternal_upd[PORT_N];
-    logic   app_clk_iternal[PORT_N];
 
     genvar i;
     generate
@@ -42,20 +41,10 @@ module evg#(
         .beacon_clk(beacon_clk),
 
         //------GTP signals-------
-        .aligned(gtx_if[i].aligned),
-
-        .tx_resetdone(gtx_if[i].tx_reset_done),
-        .tx_clk(gtx_if[i].tx_clk),
-        .tx_data(gtx_if[i].tx_data),
-        .tx_charisk(gtx_if[i].tx_is_k),
-
-        .rx_resetdone(gtx_if[i].rx_reset_done),
-        .rx_clk(gtx_if[i].rx_clk),
-        .rx_data(gtx_if[i].rx_data),
-        .rx_charisk(gtx_if[i].rx_is_k),
+        .gtx_if(gtx_if[i]),
 
         //------Application signals-------
-        .app_clk(app_clk_iternal[i]),
+        .app_clk(app_clk),
         .app_rst(app_rst),
         
         .ev(ev), 
@@ -68,7 +57,7 @@ module evg#(
     end
     endgenerate
 
-    assign app_clk = app_clk_iternal[0];  // app_clk generated only by first master
+    assign app_clk = gtx_if[0].tx_clk;
 
     assign axi_data.topo_id    = '0;
     assign axi_data.up_delay   = '0;

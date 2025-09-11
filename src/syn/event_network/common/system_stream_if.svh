@@ -1,13 +1,11 @@
 `ifndef _SYS_STREAM_
 `define _SYS_STREAM_
 
-interface system_stream_if #(
-    parameter DW = 64
-);
-    logic [DW-1  :0] tdata;
-    logic [DW/8-1:0] tisk;
-    logic            tvalid;
-    logic            tready;
+interface system_stream_if ;
+    gtx::data_t tdata;
+    gtx::is_k_t tisk;
+    logic       tvalid;
+    logic       tready;
     
     modport m(
         output tdata,

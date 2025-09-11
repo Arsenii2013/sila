@@ -2,13 +2,13 @@
 `include "system_stream_if.svh"
 
 module simple_packet_tx_fsm #(
-    parameter DW           = 32,
+    parameter PARAM_W      = 32,
     parameter PACKET_ID    = 8'h00,
     parameter PARAM_CNT    = 1
 ) (
     input  logic           app_clk,
     input  logic           app_rst,
-    input  logic [DW-1: 0] param [PARAM_CNT],
+    input  logic [PARAM_W-1: 0] param [PARAM_CNT],
     input  logic           send_packet,
     system_stream_if.m     out
 );
@@ -21,7 +21,6 @@ module simple_packet_tx_fsm #(
     localparam START_WORD  = {PACKET_COMMA, PACKET_ID, uint16_t'(PARAM_CNT)};
 
     typedef logic [$clog2(PARAM_CNT): 0] param_cnt_t;
-    typedef logic [DW -1: 0] data_t;
     typedef enum
     {
         WAIT,
@@ -32,7 +31,7 @@ module simple_packet_tx_fsm #(
 
     state_t state         = WAIT;
     logic send_packet_reg = 0;
-    data_t sum            = '0;
+    gtx::data_t sum       = '0;
     param_cnt_t param_i   = '0;
 
     always_ff @(posedge app_clk) begin
@@ -122,9 +121,7 @@ module simple_packet_tx_fsm #(
 
 endmodule 
 
-module system_stream_mux4 #(
-    parameter DW = 32
-) (
+module system_stream_mux4 (
     input  logic           app_clk,
     input  logic           app_rst,
     system_stream_if.s     in[4],
@@ -187,14 +184,14 @@ module system_stream_mux4 #(
 endmodule
 
 module simple_packet_rx_fsm #(
-    parameter DW           = 32,
+    parameter PARAM_W      = 32,
     parameter PACKET_COMMA = 8'hDC,
     parameter PACKET_ID    = 8'h00,
     parameter PARAM_CNT    = 1
 ) (
     input  logic           app_clk,
     input  logic           app_rst,
-    output logic [DW-1: 0] param [PARAM_CNT],
+    output logic [PARAM_W-1: 0] param [PARAM_CNT],
     output logic           packet_recv,
     system_stream_if.s     in
 );
@@ -207,7 +204,6 @@ module simple_packet_rx_fsm #(
     localparam START_WORD  = {PACKET_COMMA, PACKET_ID, uint16_t'(PARAM_CNT)};
 
     typedef logic [$clog2(PARAM_CNT): 0] param_cnt_t;
-    typedef logic [DW -1: 0] data_t;
     typedef enum
     {
         WAIT,
@@ -216,8 +212,8 @@ module simple_packet_rx_fsm #(
     } state_t;
 
     state_t state         = WAIT;
-    data_t sum            = '0;
-    logic [DW-1: 0] param_buf [PARAM_CNT] = '{default : {'0}};
+    gtx::data_t sum       = '0;
+    logic [PARAM_W-1: 0] param_buf [PARAM_CNT] = '{default : {'0}};
     param_cnt_t param_i   = '0;
 
     always_ff @(posedge app_clk) begin
@@ -291,15 +287,15 @@ module simple_packet_fsmTB();
     );
 
     logic connect = 1;
-    system_stream_if #(.DW(32)) in();
-    system_stream_if #(.DW(32)) out();
+    system_stream_if in();
+    system_stream_if out();
     assign in.tdata   = out.tdata;
     assign in.tisk    = out.tisk;
     assign in.tvalid  = connect ? out.tvalid : 0;
     assign out.tready = connect ? in.tready : 0;
     logic           send_packet = 0;
 
-    simple_packet_tx_fsm #(.DW(32), .PACKET_ID(8'hfd), .PARAM_CNT(4)) DUT_TX (
+    simple_packet_tx_fsm #(.PACKET_ID(8'hfd), .PARAM_CNT(4)) DUT_TX (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param('{'h12345678, 'h9abcdef0, 'h12345678, 'h9abcdef0}),
@@ -307,7 +303,7 @@ module simple_packet_fsmTB();
         .out(out)
     );
 
-    simple_packet_rx_fsm #(.DW(32), .PACKET_ID(8'hfd), .PARAM_CNT(4)) DUT_RX (
+    simple_packet_rx_fsm #(.PACKET_ID(8'hfd), .PARAM_CNT(4)) DUT_RX (
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param(),

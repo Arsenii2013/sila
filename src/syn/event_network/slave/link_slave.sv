@@ -1,23 +1,9 @@
-`include "top.svh"
-`include "evn.svh"
-`include "axi4_lite_if.svh"
-
 module link_slave
 (
     input  logic            beacon_clk,
 
     //------GTP signals-------
-    input  logic            aligned,
-
-    input  logic            tx_resetdone,
-    input  logic            tx_clk,
-    output logic [31:0]     tx_data,
-    output logic [3:0]      tx_charisk,
-
-    input  logic            rx_resetdone,
-    input  logic            rx_clk,
-    input  logic [31:0]     rx_data,
-    input  logic [3:0]      rx_charisk,
+    gtx_if.app              gtx_if,
 
     //------Application signals-------
     output logic            app_clk,
@@ -45,16 +31,16 @@ module link_slave
     pf_m #(
         .POR("OFF")
     ) pf_beacon(
-        .clk(rx_clk),
-        .in(rx_data == BEACON_WORD && rx_charisk == BEACON_IS_K),
+        .clk(gtx_if.rx_clk),
+        .in(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
         .out(beacon_pulse)
     );
     logic beacon_pulse_sync;
     xpm_cdc_pulse beacon_sunchronizer_i(
-        .dest_clk(tx_clk),
+        .dest_clk(gtx_if.tx_clk),
         .dest_pulse(beacon_pulse_sync),
         .dest_rst(app_rst),
-        .src_clk(rx_clk),
+        .src_clk(gtx_if.rx_clk),
         .src_pulse(beacon_pulse),
         .src_rst(app_rst)
     );
@@ -62,7 +48,7 @@ module link_slave
     logic beacon_valid = 0;
     logic beacon_ready = 0;
 
-    always_ff @(posedge tx_clk) begin
+    always_ff @(posedge gtx_if.tx_clk) begin
         if(app_rst) begin
             beacon_valid <= 0;
         end else begin
@@ -83,7 +69,7 @@ module link_slave
     logic alignment_ready = 0;
     alignment_cnt_t alignment_cnt = ALIGNMENT_PERIOD;
 
-    always_ff @(posedge tx_clk) begin
+    always_ff @(posedge gtx_if.tx_clk) begin
         if(app_rst) begin
             alignment_cnt   <= ALIGNMENT_PERIOD;
             alignment_valid <= 0;
@@ -103,14 +89,14 @@ module link_slave
     end
 
 // System packets
-    system_stream_if #(.DW(32)) system_stream_in();
-    system_stream_if #(.DW(32)) system_stream_out();
-    assign system_stream_in.tdata  = rx_data;
-    assign system_stream_in.tisk   = rx_charisk;
-    assign system_stream_in.tvalid = rx_charisk == 0 || (rx_data[31:24] == PACKET_COMMA && rx_charisk == PACKET_START_IS_K);
+    system_stream_if system_stream_in();
+    system_stream_if system_stream_out();
+    assign system_stream_in.tdata  = gtx_if.rx_data;
+    assign system_stream_in.tisk   = gtx_if.rx_is_k;
+    assign system_stream_in.tvalid = is_packet(gtx_if.rx_data, gtx_if.rx_is_k);
 
     slave_system_packet_reciever system_packet_reciever_i(
-        .rx_clk(rx_clk),
+        .rx_clk(gtx_if.rx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
         .topo_id(link_data.topo_id),
@@ -126,7 +112,7 @@ module link_slave
     );
 
     slave_system_packet_generator system_packet_generator_i(
-        .tx_clk(tx_clk),
+        .tx_clk(gtx_if.tx_clk),
         .app_clk(app_clk),
         .app_rst(app_rst),
         .sub_delay(link_data.sub_delay),
@@ -136,29 +122,29 @@ module link_slave
 
 
 // Mux
-    always_ff @(posedge tx_clk) begin
+    always_ff @(posedge gtx_if.tx_clk) begin
         alignment_ready <= 0;
         beacon_ready    <= 0;
-        tx_data         <= '0;
-        tx_charisk      <= '0;
+        gtx_if.tx_data  <= '0;
+        gtx_if.tx_is_k  <= '0;
 
         if(trig_valid) begin
-            tx_data         <= {TRIGGER_COMMA, trig};
-            tx_charisk      <= 'h8;
+            gtx_if.tx_data  <= {TRIGGER_COMMA, trig};
+            gtx_if.tx_is_k  <= 'h8;
         end else if(beacon_valid && ~beacon_ready) begin
-            tx_data         <= BEACON_WORD;
-            tx_charisk      <= BEACON_IS_K;
+            gtx_if.tx_data  <= BEACON_WORD;
+            gtx_if.tx_is_k  <= BEACON_IS_K;
             beacon_ready    <= 1;
         end else if(system_stream_out.tvalid) begin
-            tx_data         <= system_stream_out.tdata;
-            tx_charisk      <= system_stream_out.tisk;
+            gtx_if.tx_data  <= system_stream_out.tdata;
+            gtx_if.tx_is_k  <= system_stream_out.tisk;
         end else if(alignment_valid && ~alignment_ready) begin
-            tx_data         <= ALIGNMENT_WORD;
-            tx_charisk      <= ALIGNMENT_IS_K;
+            gtx_if.tx_data  <= ALIGNMENT_WORD;
+            gtx_if.tx_is_k  <= ALIGNMENT_IS_K;
             alignment_ready <= 1;
         end else begin
-            tx_data         <= '0;
-            tx_charisk      <= '0;
+            gtx_if.tx_data  <= '0;
+            gtx_if.tx_is_k  <= '0;
         end
     end
 
@@ -168,27 +154,22 @@ module link_slave
     logic mmcm_locked;
     logic fifo_rst_busy;
 
-    logic [31:0] fifo_in_data;
-    logic [31:0] fifo_out_data;
-    logic [ 3:0] fifo_in_isk;
-    logic [ 3:0] fifo_out_isk;
+    gtx::data_t fifo_in_data;
+    gtx::data_t fifo_out_data;
+    gtx::is_k_t fifo_in_isk;
+    gtx::is_k_t fifo_out_isk;
     logic fifo_inc, fifo_dec, pll_ph_inc, pll_ph_dec;
 
-    assign fifo_in_data = (rx_data[31:24] == EVENT_COMMA && rx_charisk == 'h8        ) ||
-                          (rx_data == BEACON_WORD        && rx_charisk == BEACON_IS_K) 
-                          ? rx_data : '0;
-    assign fifo_in_isk  = (rx_data[31:24] == EVENT_COMMA && rx_charisk == 'h8        ) ||
-                          (rx_data == BEACON_WORD        && rx_charisk == BEACON_IS_K) 
-                          ? rx_charisk : '0;
-    assign ev = (fifo_out_data[31:24] == EVENT_COMMA && fifo_out_isk == 'h8        )
-                ? fifo_out_data[23:0] : '0;
+    assign fifo_in_data = gtx_if.rx_data;
+    assign fifo_in_isk  = gtx_if.rx_is_k ;
+    assign ev = is_event(fifo_out_data, fifo_out_isk) ? ev_t'(fifo_out_data) : '0;
 
     fifo_wrapper #(
         .DEPTH(MAX_COMPENSATION)
     ) fifo_i (
         .app_rst(app_rst || !mmcm_locked),
         .app_clk(app_clk),
-        .rx_clk(rx_clk),
+        .rx_clk(gtx_if.rx_clk),
 
         .data_in(fifo_in_data),
         .isk_in(fifo_in_isk),
@@ -202,9 +183,9 @@ module link_slave
     );
 
     mmcm_wrapper mmcm_i(
-        .clk_in1(rx_clk),
+        .clk_in1(gtx_if.rx_clk),
         .clk_in2(beacon_clk),
-        .clk_in_sel(aligned),
+        .clk_in_sel(gtx_if.aligned),
         
         .clk_out1(app_clk),
 
@@ -224,9 +205,9 @@ module link_slave
         .dc_ena(link_data.delay_comp_ena),
         .fifo_rst_busy(fifo_rst_busy),
 
-        .beacon_in((fifo_in_data == BEACON_WORD) && (fifo_in_isk == BEACON_IS_K)),
-        .rx_clk(rx_clk),
-        .beacon_out((fifo_out_data == BEACON_WORD) && (fifo_out_isk == BEACON_IS_K)),
+        .beacon_in(is_beacon(fifo_in_data, fifo_in_isk)),
+        .rx_clk(gtx_if.rx_clk),
+        .beacon_out(is_beacon(fifo_out_data, fifo_out_isk)),
         .beacon_clk(beacon_clk),
 
         .fifo_inc(fifo_inc),
@@ -240,5 +221,5 @@ module link_slave
         
         .delay_comp(link_data.delay_comp)
     );
-    assign link_data.link_up = aligned;
+    assign link_data.link_up = gtx_if.aligned;
 endmodule

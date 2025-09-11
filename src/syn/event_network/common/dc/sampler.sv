@@ -42,12 +42,20 @@ module sampler #(
         .beacon_tx_sync(beacon_tx_sync)
     );
 
-    logic beacon_rst;
+    logic app_rst_pulse;
+    pf_m #(
+        .WIDTH(10)
+    ) pf_beacon_rst (
+        .clk(app_clk),
+        .in(app_rst),
+        .out(app_rst_pulse)
+    );
+
 
     xpm_cdc_async_rst beacon_rst_sunchronizer_i(
         .dest_clk(beacon_clk),
         .dest_arst(beacon_rst),
-        .src_arst(app_rst)
+        .src_arst(app_rst_pulse)
     );
 
     logic fine_sync;
@@ -70,18 +78,28 @@ module sampler #(
     xpm_cdc_pulse sample_upd_sunchronizer_i(
         .dest_clk(app_clk),
         .dest_pulse(sample_upd),
-        .dest_rst(1'b0),
+        .dest_rst(app_rst),
         .src_clk(beacon_clk),
         .src_pulse(sample_upd_sync),
-        .src_rst(1'b0)
+        .src_rst(beacon_rst)
     );
     xpm_cdc_pulse error_sunchronizer_i(
         .dest_clk(app_clk),
         .dest_pulse(error),
-        .dest_rst(1'b0),
+        .dest_rst(app_rst),
         .src_clk(beacon_clk),
         .src_pulse(error_sync),
-        .src_rst(1'b0)
+        .src_rst(beacon_rst)
+    );
+
+
+    ila_1 ila(
+        .clk(app_clk),
+        .probe0(error_sync),
+        .probe1(error),
+        .probe2(beacons_over),
+        .probe3(app_rst),
+        .probe4(beacon_rst)
     );
 
     logic       no_beacons;
@@ -97,21 +115,18 @@ module sampler #(
         end
     end
 
-    xpm_fifo_async #(
+    xpm_fifo_sync #(
         .CASCADE_HEIGHT(0),
-        .CDC_SYNC_STAGES(2),
         .DOUT_RESET_VALUE("0"),
         .FIFO_MEMORY_TYPE("block"),
         .FIFO_READ_LATENCY(1),
         .FIFO_WRITE_DEPTH(2**10),
         .READ_DATA_WIDTH(18),
         .READ_MODE("std"),
-        .RELATED_CLOCKS(0),
         .SIM_ASSERT_CHK(1),
         .WRITE_DATA_WIDTH(18),
         .PROG_FULL_THRESH(BEACON_CNT_MAX)
     ) xpm_fifo_async_inst (
-        .rd_clk(beacon_clk),
         .rd_en(beacon_rx_sync && ~no_beacons),
         .dout(sample_cnt),
 

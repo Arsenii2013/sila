@@ -4,9 +4,10 @@ addrmap device_info_axi_core{
         Блок предоставляющий общую информацию об устройстве: тип, аппаратную версию, версию прошивки, серийный номер
     ";
     enum device_type_encoding {
-        SIM = 32'h0;
-        EVG = 32'h1;
-        EVR = 32'h2;
+        SIM     = 32'h0;
+        EVG     = 32'h1;
+        EVR     = 32'h2;
+        FANOUT  = 32'h3;
     };
 
     reg {
