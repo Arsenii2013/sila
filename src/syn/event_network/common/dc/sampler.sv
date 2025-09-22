@@ -92,16 +92,6 @@ module sampler #(
         .src_rst(beacon_rst)
     );
 
-
-    ila_1 ila(
-        .clk(app_clk),
-        .probe0(error_sync),
-        .probe1(error),
-        .probe2(beacons_over),
-        .probe3(app_rst),
-        .probe4(beacon_rst)
-    );
-
     logic       no_beacons;
     logic       beacons_over;
     sample_t    current_cnt = '0;
