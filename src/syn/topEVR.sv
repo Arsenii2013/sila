@@ -1,5 +1,10 @@
 `include "topEVR.svh"
-`include "gtx.svh"
+//`include "gtx.svh"
+
+package EVR_board;
+    localparam START_N = 16;
+    localparam LED_N   = 4;
+endpackage
 
 module topEVR(
         //-------Processing System-------\\
@@ -31,23 +36,19 @@ module topEVR(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       sfp_rx_n[gtx::EVR_PORT_N],
-    input  logic       sfp_rx_p[gtx::EVR_PORT_N],
-    output logic       sfp_tx_n[gtx::EVR_PORT_N],
-    output logic       sfp_tx_p[gtx::EVR_PORT_N],
-    output logic [1:0] sfp_tx_disable,
+    input  logic       SFP_RX_N[gtx::EVR_PORT_N],
+    input  logic       SFP_RX_P[gtx::EVR_PORT_N],
+    output logic       SFP_TX_N[gtx::EVR_PORT_N],
+    output logic       SFP_TX_P[gtx::EVR_PORT_N],
+    output logic       SFP_TX_DIS,
 
-    input  logic       sysclk_n,
-    input  logic       sysclk_p,
-    output logic [3:0] led,
-    output logic [15:0]out_pulse
+    output logic [EVR_board::LED_N  -1:0] LED,
+    output logic [EVR_board::START_N-1:0] START_p,
+    output logic [EVR_board::START_N-1:0] START_n
 );
     logic app_clk;
     logic app_aresetn = 1;
     logic app_reset = 0;
-
-    logic sysclk;
-    IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
 
     BUFG clkf_buf
     (.O (clkfbout_buf),
@@ -168,7 +169,7 @@ module topEVR(
     ) blink1 (
         .reset(app_reset),
         .clk(app_clk),
-        .led(led[0])
+        .led(LED[0])
     );
 
 
@@ -185,13 +186,13 @@ module topEVR(
         .sysclk(PS_clk), 
         .soft_reset(app_reset),
         .sfp_loss(sfp_loss),
-        .rx_n(sfp_rx_n),
-        .rx_p(sfp_rx_p),
-        .tx_n(sfp_tx_n),
-        .tx_p(sfp_tx_p),
+        .rx_n(SFP_RX_N),
+        .rx_p(SFP_RX_P),
+        .tx_n(SFP_TX_N),
+        .tx_p(SFP_TX_P),
         .gtx_if(evr_gtx_if)
     );
-    assign sfp_tx_disable = '0;
+    assign SFP_TX_DIS = '0;
 
     sfp_control #(
         .PORT_N(GTX_PORTS)
@@ -238,6 +239,7 @@ module topEVR(
         .ev(ev)
     );
 
+    logic [EVR_board::START_N-1:0] start;
     signal_generator #(
         .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
@@ -250,9 +252,20 @@ module topEVR(
         .cnt_reset(cnt_reset),
         .gen_out(gen_out)
     );
-    assign out_pulse = {<<{gen_out}};
+    assign start = {<<{gen_out}};
+
+    genvar start_gen_i;
+    generate
+    for(start_gen_i = 0; start_gen_i < EVR_board::START_N; start_gen_i ++) begin
+    OBUFDS start_OBUFDS (
+        .O(START_p[start_gen_i]),
+        .OB(START_n[start_gen_i]),
+        .I(start[start_gen_i])
+    );
+    end
+    endgenerate
     
-    assign led[1] = evr_gtx_if[0].tx_reset_done;
-    assign led[2] = evr_gtx_if[0].rx_reset_done;
-    assign led[3] = out_pulse[0];
+    assign LED[1] = evr_gtx_if[0].tx_reset_done;
+    assign LED[2] = evr_gtx_if[0].rx_reset_done;
+    assign LED[3] = start[0];
 endmodule
