@@ -193,15 +193,7 @@ module EVR_board_emulator(
     output logic [15:0]out_pulse
 );
     localparam REFCLK_OFFSET = 0;
-    logic     sysclk;
     logic     REFCLK_SFP;
-    sys_clk_gen
-    #(
-        .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
-        .offset    (0)
-    ) CLK_GEN1 (
-        .sys_clk (sysclk)
-    );
     sys_clk_gen
     #(
         .halfcycle (4000), // 4000 ps = 125 MHz
@@ -211,15 +203,13 @@ module EVR_board_emulator(
     );
 
     topEVR DUT_EVR(
-        .sysclk_n(~sysclk),
-        .sysclk_p(sysclk),
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
 
-        .sfp_rx_n(sfp_rx_n),
-        .sfp_rx_p(sfp_rx_p),
-        .sfp_tx_n(sfp_tx_n),
-        .sfp_tx_p(sfp_tx_p),
-        .out_pulse(out_pulse)
+        .SFP_RX_N(sfp_rx_n),
+        .SFP_RX_P(sfp_rx_p),
+        .SFP_TX_N(sfp_tx_n),
+        .SFP_TX_P(sfp_tx_p),
+        .START_p(out_pulse)
     );
 endmodule
