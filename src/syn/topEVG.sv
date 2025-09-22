@@ -77,16 +77,8 @@ module topEVG(
 
     evn::ev_t ev;
     
-    `ifndef SYNTHESIS
-    `define GIT_VERSION_MAJOR 'h1234
-    `define GIT_VERSION_MINOR 'h5678
-    `define GIT_HASH          'habcd
-    `endif
     device_info #(
-        .DEVICE("EVG"),
-        .FW_MAJOR(`GIT_VERSION_MAJOR),
-        .FW_MINOR(`GIT_VERSION_MINOR),
-        .FW_HASH(`GIT_HASH)
+        .DEVICE("EVG")
     ) device_info_i (
         .app_clk(app_clk),
         .app_rst(app_reset),

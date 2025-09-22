@@ -2,8 +2,10 @@
 //`include "gtx.svh"
 
 package EVR_board;
-    localparam START_N = 16;
-    localparam LED_N   = 4;
+    localparam START_N                 = 16;
+    localparam START_INVERSE [START_N] = {0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1};
+
+    localparam LED_N                   = 4;
 endpackage
 
 module topEVR(
@@ -79,17 +81,9 @@ module topEVR(
 
     evn::ev_t    ev;
     evn::delay_t delay;
-    
-    `ifndef SYNTHESIS
-    `define GIT_VERSION_MAJOR 'h1234
-    `define GIT_VERSION_MINOR 'h5678
-    `define GIT_HASH          'habcd
-    `endif
+
     device_info #(
-        .DEVICE("EVR"),
-        .FW_MAJOR(`GIT_VERSION_MAJOR),
-        .FW_MINOR(`GIT_VERSION_MINOR),
-        .FW_HASH(`GIT_HASH)
+        .DEVICE("EVR")
     ) device_info_i (
         .app_clk(app_clk),
         .app_rst(app_reset),
@@ -257,11 +251,19 @@ module topEVR(
     genvar start_gen_i;
     generate
     for(start_gen_i = 0; start_gen_i < EVR_board::START_N; start_gen_i ++) begin
-    OBUFDS start_OBUFDS (
-        .O(START_p[start_gen_i]),
-        .OB(START_n[start_gen_i]),
-        .I(start[start_gen_i])
-    );
+        if(EVR_board::START_INVERSE[start_gen_i]) begin
+            OBUFDS start_OBUFDS (
+                .O(START_p[start_gen_i]),
+                .OB(START_n[start_gen_i]),
+                .I(!start[start_gen_i])
+            );
+        end else begin
+            OBUFDS start_OBUFDS (
+                .O(START_p[start_gen_i]),
+                .OB(START_n[start_gen_i]),
+                .I(start[start_gen_i])
+            );
+        end
     end
     endgenerate
     
