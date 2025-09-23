@@ -3,7 +3,9 @@
 
 package EVR_board;
     localparam START_N                 = 16;
-    localparam START_INVERSE [START_N] = {0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1};
+    localparam integer START_INVERSE [START_N] 
+                    = {0, 1, 0, 1, 1, 1, 1, 0, 
+                       1, 0, 1, 1, 1, 0, 1, 1};
 
     localparam LED_N                   = 4;
 endpackage
