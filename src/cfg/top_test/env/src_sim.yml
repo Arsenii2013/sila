@@ -57,6 +57,7 @@ sources:
     - src/syn/timestamper.sv
     - src/syn/sfp_control.sv
     - src/syn/event_comparator.sv
+    - src/syn/axi_register_slice_wrapper.sv
     - src/syn/PS_wrapper.sv
     - src/syn/topEVR.sv
     - src/syn/topEVG.sv

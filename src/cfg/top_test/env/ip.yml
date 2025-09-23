@@ -1,4 +1,5 @@
 sources:
+    - ip/axi_register_slice.yml
     - ip/EVR_gtwizard_port_0.yml
     - ip/EVG_gtwizard_port_0.yml
     - ip/EVG_gtwizard_port_1.yml

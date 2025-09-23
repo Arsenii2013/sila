@@ -38,12 +38,20 @@ module PS_wrapper_sv #(
     input  logic       app_clk,
     axi4_lite_if.m     GP_0
    );
+    axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_slice();
+
+    axi_register_slice_wrapper axi_register_slice( 
+        .aclk(app_clk),
+        .aresetn(app_aresetn),
+        .s_axi(GP_0_slice),
+        .m_axi(GP_0)
+    );
 
     localparam GP_0_BASE_ADDR = 'h4000_0000;
     logic [GP0_ADDR_W-1: 0] GP_0_araddr;
     logic [GP0_ADDR_W-1: 0] GP_0_awaddr;
-    assign GP_0.araddr = GP_0_araddr - GP_0_BASE_ADDR;
-    assign GP_0.awaddr = GP_0_awaddr - GP_0_BASE_ADDR;
+    assign GP_0_slice.araddr = GP_0_araddr - GP_0_BASE_ADDR;
+    assign GP_0_slice.awaddr = GP_0_awaddr - GP_0_BASE_ADDR;
    
     `ifdef SYNTHESIS
     PS PS_i   (
@@ -69,24 +77,24 @@ module PS_wrapper_sv #(
         .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
         .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
         .GP_0_araddr(GP_0_araddr),
-        .GP_0_arprot(GP_0.arprot),
-        .GP_0_arready(GP_0.arready),
-        .GP_0_arvalid(GP_0.arvalid),
+        .GP_0_arprot(GP_0_slice.arprot),
+        .GP_0_arready(GP_0_slice.arready),
+        .GP_0_arvalid(GP_0_slice.arvalid),
         .GP_0_awaddr(GP_0_awaddr),
-        .GP_0_awprot(GP_0.awprot),
-        .GP_0_awready(GP_0.awready),
-        .GP_0_awvalid(GP_0.awvalid),
-        .GP_0_bready(GP_0.bready),
-        .GP_0_bresp(GP_0.bresp),
-        .GP_0_bvalid(GP_0.bvalid),
-        .GP_0_rdata(GP_0.rdata),
-        .GP_0_rready(GP_0.rready),
-        .GP_0_rresp(GP_0.rresp),
-        .GP_0_rvalid(GP_0.rvalid),
-        .GP_0_wdata(GP_0.wdata),
-        .GP_0_wready(GP_0.wready),
-        .GP_0_wstrb(GP_0.wstrb),
-        .GP_0_wvalid(GP_0.wvalid),
+        .GP_0_awprot(GP_0_slice.awprot),
+        .GP_0_awready(GP_0_slice.awready),
+        .GP_0_awvalid(GP_0_slice.awvalid),
+        .GP_0_bready(GP_0_slice.bready),
+        .GP_0_bresp(GP_0_slice.bresp),
+        .GP_0_bvalid(GP_0_slice.bvalid),
+        .GP_0_rdata(GP_0_slice.rdata),
+        .GP_0_rready(GP_0_slice.rready),
+        .GP_0_rresp(GP_0_slice.rresp),
+        .GP_0_rvalid(GP_0_slice.rvalid),
+        .GP_0_wdata(GP_0_slice.wdata),
+        .GP_0_wready(GP_0_slice.wready),
+        .GP_0_wstrb(GP_0_slice.wstrb),
+        .GP_0_wvalid(GP_0_slice.wvalid),
 
         .peripheral_aresetn(peripheral_aresetn),
         .peripheral_clock(peripheral_clock),
@@ -118,24 +126,24 @@ module PS_wrapper_sv #(
 
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
     assign GP_0_awaddr = GP_0_iternal.awaddr;
-    assign GP_0.awprot = GP_0_iternal.awprot;
-    assign GP_0.awvalid = GP_0_iternal.awvalid;
-    assign GP_0_iternal.awready = GP_0.awready;
-    assign GP_0.wdata = GP_0_iternal.wdata;
-    assign GP_0.wstrb = GP_0_iternal.wstrb;
-    assign GP_0.wvalid = GP_0_iternal.wvalid;
-    assign GP_0_iternal.wready = GP_0.wready;
-    assign GP_0_iternal.bresp = GP_0.bresp;
-    assign GP_0_iternal.bvalid = GP_0.bvalid;
-    assign GP_0.bready = GP_0_iternal.bready;
+    assign GP_0_slice.awprot = GP_0_iternal.awprot;
+    assign GP_0_slice.awvalid = GP_0_iternal.awvalid;
+    assign GP_0_iternal.awready = GP_0_slice.awready;
+    assign GP_0_slice.wdata = GP_0_iternal.wdata;
+    assign GP_0_slice.wstrb = GP_0_iternal.wstrb;
+    assign GP_0_slice.wvalid = GP_0_iternal.wvalid;
+    assign GP_0_iternal.wready = GP_0_slice.wready;
+    assign GP_0_iternal.bresp = GP_0_slice.bresp;
+    assign GP_0_iternal.bvalid = GP_0_slice.bvalid;
+    assign GP_0_slice.bready = GP_0_iternal.bready;
     assign GP_0_araddr = GP_0_iternal.araddr;
-    assign GP_0.arprot = GP_0_iternal.arprot;
-    assign GP_0.arvalid = GP_0_iternal.arvalid;
-    assign GP_0_iternal.arready = GP_0.arready;
-    assign GP_0_iternal.rdata = GP_0.rdata;
-    assign GP_0_iternal.rresp = GP_0.rresp;
-    assign GP_0_iternal.rvalid = GP_0.rvalid;
-    assign GP_0.rready = GP_0_iternal.rready;
+    assign GP_0_slice.arprot = GP_0_iternal.arprot;
+    assign GP_0_slice.arvalid = GP_0_iternal.arvalid;
+    assign GP_0_iternal.arready = GP_0_slice.arready;
+    assign GP_0_iternal.rdata = GP_0_slice.rdata;
+    assign GP_0_iternal.rresp = GP_0_slice.rresp;
+    assign GP_0_iternal.rvalid = GP_0_slice.rvalid;
+    assign GP_0_slice.rready = GP_0_iternal.rready;
 
     virtual_clock_if clk_if (app_clk, peripheral_reset);
     axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
