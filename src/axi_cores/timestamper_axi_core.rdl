@@ -13,55 +13,114 @@ addrmap timestamper_axi_core{
 
     reg {
         name = "SR";
-        field {sw=r; hw=w;} cycle_overflow = 0;
-        field {sw=r; hw=w;} pulse_overflow = 0;
+        desc = "
+            Регистр статуса модуля.
+        ";
+        field {sw=r; hw=w; desc = "
+            Флаг переполнения счетчика тактов.
+        ";
+        } cycle_overflow = 0;
+        field {sw=r; hw=w; desc = "
+            Флаг переполнения счетчика импульсов.
+        ";
+        } pulse_overflow = 0;
     } sr;
 
     reg {
         name = "CR";
-        field {sw=rw; hw=rw;} clear_err = 0;
-        field {sw=rw; hw=rw;} stop = 0;
+        desc = "
+            Регистр управления модулем.
+        ";
+        field {sw=rw; hw=rw; desc = "
+            Сброс флагов ошибок. После сброса флагов сбрасывается сам.
+        ";
+        } clear_err = 0;
+        field {sw=rw; hw=rw;desc = "
+            Пристановка счетчиков. Пока stop установлен счетчики не инкрементируются.
+        ";
+        } stop = 0;
     } cr;
 
     reg {
         name = "CR_S";
-        field {sw=w; hw=rw;} clear_err = 0;
-        field {sw=w; hw=rw;} stop = 0;
+        desc = "
+            Регистр управления модулем.
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr | cr_s (ИЛИ), то есть выставляются в 1 все биты, выставленные в 1 регистре cr_s.
+        ";
+        field {sw=w; hw=rw; desc = "
+            Сброс флагов ошибок. После сброса флагов сбрасывается сам.
+        ";
+        } clear_err = 0;
+        field {sw=w; hw=rw;desc = "
+            Пристановка счетчиков. Пока stop установлен счетчики не инкрементируются.
+        ";
+        } stop = 0;
     } cr_s;
 
     reg {
         name = "CR_C";
-        field {sw=w; hw=rw;} clear_err = 0;
-        field {sw=w; hw=rw;} stop = 0;
+        desc = "
+            Регистр управления модулем.
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr & ~cr_c, то есть выставляются в 0 все биты, выставленные в 1 регистре cr_s.
+        ";
+        field {sw=w; hw=rw; desc = "
+            Сброс флагов ошибок. После сброса флагов сбрасывается сам.
+        ";
+        } clear_err = 0;
+        field {sw=w; hw=rw;desc = "
+            Пристановка счетчиков. Пока stop установлен счетчики не инкрементируются.
+        ";
+        } stop = 0;
     } cr_c;
 
     reg {
         name = "PULSE_CNT";
+        desc = "
+            Текущее значение счетчика тактов.
+        ";
         field {sw=r; hw=w;} pulse_cnt[32] = 0;
     } pulse_cnt;
 
     reg {
         name = "CYCLE_CNT_LOW";
+        desc = "
+            Текущее значение счетчика импульсов. Младшее слово.
+        ";
         field {sw=r; hw=w;} cycle_cnt_low[32] = 0;
     } cycle_cnt_low;
 
     reg {
         name = "CYCLE_CNT_HIGH";
+        desc = "
+            Текущее значение счетчика импульсов. Старшее слово.
+        ";
         field {sw=r; hw=w;} cycle_cnt_high[32] = 0;
     } cycle_cnt_high;
 
     reg {
         name = "PULSE_INC_EV";
+        desc = "
+            Событие ИНКРЕМЕНТА счетчика импульсов.
+            Для консистентности времени в системе должно быть одинаковым у всех устройств.
+        ";
         field {sw=rw; hw=r;} ev_pulse_inc[24] = 0;
     } ev_pulse_inc;
 
     reg {
         name = "TGT_PULSE";
+        desc = "
+            Новое значение счётчика имульса, которое устанавливается  по событию PULSE_SET_EV.
+        ";
         field {sw=rw; hw=r;} tgt_pulse[32] = 0;
     } tgt_pulse;
 
     reg {
         name = "PULSE_SET_EV";
+        desc = "
+            Событие, по которому установится значение TGT_PULSE.
+        ";
         field {sw=rw; hw=r;} ev_tgt_set[24] = 0;
     } ev_tgt_set;
 };

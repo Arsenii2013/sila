@@ -10,7 +10,7 @@
 addrmap EVR_reg_map {
     name = "Блок приемника событий";
     desc = "
-        Блок приемника событий, слейв сети.
+        Прошивка МОУ состоит из следующих функциональных модулей:
     ";
     default accesswidth = `MMR_BLOCK_DATA_W;
     default alignment   = 0x4;
