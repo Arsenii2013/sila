@@ -172,6 +172,45 @@ modport monitor(
     input  delay_comp_upd
 );
 
+modport monitor_tgt_delay(
+    input  link_up,
+    input  link_delay,
+    input  link_delay_st,
+    input  link_delay_upd,
+    input  topo_id,
+    input  topo_id_upd,
+    output tgt_delay,
+    output tgt_delay_upd,
+    input  up_delay,
+    input  up_delay_upd,
+    input  sub_delay,
+    input  sub_delay_upd,
+    input  delay_comp,
+    input  delay_comp_ena,
+    input  delay_comp_st,
+    input  delay_comp_upd
+);
+
+modport monitor_dc_ena(
+    input  link_up,
+    input  link_delay,
+    input  link_delay_st,
+    input  link_delay_upd,
+    input  topo_id,
+    input  topo_id_upd,
+    input  tgt_delay,
+    input  tgt_delay_upd,
+    input  up_delay,
+    input  up_delay_upd,
+    input  sub_delay,
+    input  sub_delay_upd,
+    input  delay_comp,
+    output delay_comp_ena,
+    input  delay_comp_st,
+    input  delay_comp_upd
+);
+
+
 function dump();
     $display("link dump for : %m");
     $display("link_up       : %x", link_up);

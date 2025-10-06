@@ -14,7 +14,7 @@ module slave_system_packet_reciever(
     output logic           tgt_delay_recv,
     output evn::delay_t    up_delay,
     output logic           up_delay_recv,
-    system_stream_if.m     in
+    system_stream_if.s     in
 );
     // модуль приема системных пакетов
     // сигналы *_recv - импульсы по окончанию приема соответствующего пакета

@@ -7,7 +7,7 @@ module master_system_packet_reciever(
     input  logic           app_rst,
     output evn::delay_t    sub_delay,
     output logic           sub_delay_recv,
-    system_stream_if.m     in
+    system_stream_if.s     in
 );
     // модуль приема системных пакетов
     // сигналы *_recv - импульсы по окончанию приема соответствующего пакета
