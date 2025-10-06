@@ -31,9 +31,9 @@ module dc_control
     import evn::*;
     typedef logic [INT_W            -1: 0] sample_t;
 
-    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 12)); 
+    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 9)); 
                                         // Для 125 МГц интервал 1/125e6 * 2**-10 = 7,8 пс
-    localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 11) + ((1<<FRAC_W) >> 12)); 
+    localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 9)); 
                                         // Для 125 МГц с множителем 11, F_vco = 1,375 ГГц 
                                         // шаг фазы равен 1/(56*1375) = 12,9 пс
                                         // 1/175e6 * (2**-10 + 2**-100) = 13,67 пс
