@@ -231,11 +231,11 @@ module link_master
         .app_clk(app_clk),
         .app_rst(app_rst),
         
-        .beacon_tx(is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
-        .tx_clk(gtx_if.tx_clk),
-        .beacon_rx(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
-        .rx_clk(gtx_if.rx_clk),
-        .beacon_clk(beacon_clk),
+        .start(is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
+        .start_clk(gtx_if.tx_clk),
+        .stop(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
+        .stop_clk(gtx_if.rx_clk),
+        .measure_clk(beacon_clk),
 
         .delay_upd(link_data.link_delay_upd),
         .delay(link_data.link_delay),

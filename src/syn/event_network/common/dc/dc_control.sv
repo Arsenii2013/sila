@@ -9,10 +9,10 @@ module dc_control
     input  logic                    app_clk,
     input  logic                    app_rst,
 
-    input  logic                    beacon_in,
-    input  logic                    rx_clk,
-    input  logic                    beacon_out,
-    input  logic                    beacon_clk,
+    input  logic                    start,
+    input  logic                    start_clk,
+    input  logic                    stop,
+    input  logic                    measure_clk,
 
     output logic                    fifo_inc,
     output logic                    fifo_dec,
@@ -129,11 +129,11 @@ module dc_control
         .INT_W(INT_W),
         .BEACON_PERIOD_W(BEACON_PERIOD_W)
     ) sampler_i (
-        .beacon_tx(beacon_in),
-        .tx_clk(rx_clk),
-        .beacon_rx(beacon_out),
-        .rx_clk(app_clk),
-        .beacon_clk(beacon_clk),
+        .start(start),
+        .start_clk(start_clk),
+        .stop(stop),
+        .stop_clk(app_clk),
+        .measure_clk(measure_clk),
 
         .app_clk(app_clk),
         .app_rst(app_rst || fifo_rst_busy  || state == ERROR),

@@ -205,10 +205,10 @@ module link_slave
         .dc_ena(link_data.delay_comp_ena),
         .fifo_rst_busy(fifo_rst_busy),
 
-        .beacon_in(is_beacon(fifo_in_data, fifo_in_isk)),
-        .rx_clk(gtx_if.rx_clk),
-        .beacon_out(is_beacon(fifo_out_data, fifo_out_isk)),
-        .beacon_clk(beacon_clk),
+        .start(is_beacon(fifo_in_data, fifo_in_isk)),
+        .start_clk(gtx_if.rx_clk),
+        .stop(is_beacon(fifo_out_data, fifo_out_isk)),
+        .measure_clk(beacon_clk),
 
         .fifo_inc(fifo_inc),
         .fifo_dec(fifo_dec),
