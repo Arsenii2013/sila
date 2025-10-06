@@ -141,37 +141,29 @@ module topEVR(
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
         .peripheral_reset(PS_reset),
-        .app_aresetn(app_aresetn),
+        .app_aresetn(app_aresetn[EVR_aresetn_params::COMMON]),
         .app_clk(app_clk)
     );
-
-    logic POR_reset;
-
-    pf_m #(
-        .WIDTH(1000),
-        .POR("ON")
-    ) pf_i (
-        .clk(app_clk),
-        .in(0),
-        .out(POR_reset)
-    );
-
-    always_ff @( posedge app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
-    always_ff @( posedge app_clk ) app_reset   <= PS_reset || POR_reset;
 
     blink #(
         .FREQ_HZ(125000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
-        .reset(app_reset),
+        .reset(app_reset[EVR_reset_params::COMMON]),
         .clk(app_clk),
         .led(LED[0])
     );
 
-
     localparam GTX_PORTS = gtx::EVR_PORT_N;
     logic sfp_loss [GTX_PORTS];
     gtx_if evr_gtx_if[GTX_PORTS]();
+    logic soft_reset_sync;
+
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(PS_clk),
+        .dest_arst(soft_reset_sync),
+        .src_arst(app_reset[EVR_reset_params::GTWIZARD])
+    );
 
     gtwizard_wrapper #(
         .DEVICE("EVR"),
@@ -180,7 +172,7 @@ module topEVR(
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
-        .soft_reset(app_reset),
+        .soft_reset(soft_reset_sync),
         .sfp_loss(sfp_loss),
         .rx_n(SFP_RX_N),
         .rx_p(SFP_RX_P),

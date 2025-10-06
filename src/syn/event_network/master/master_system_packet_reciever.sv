@@ -12,6 +12,12 @@ module master_system_packet_reciever(
     // модуль приема системных пакетов
     // сигналы *_recv - импульсы по окончанию приема соответствующего пакета
     import evn::*;
+    logic rx_rst;
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(rx_clk),
+        .dest_arst(rx_rst),
+        .src_arst(app_rst)
+    );
 
     logic sub_delay_recv_sync;
 
@@ -21,7 +27,7 @@ module master_system_packet_reciever(
         .dest_rst(app_rst),
         .src_clk(rx_clk),
         .src_pulse(sub_delay_recv_sync),
-        .src_rst(app_rst)
+        .src_rst(rx_rst)
     );
 
     system_stream_if system_stream[4]();
@@ -42,7 +48,7 @@ module master_system_packet_reciever(
         .PARAM_CNT(SUB_DELAY_PACKET_LEN)
     ) sub_delay_rx_fsm (
         .app_clk(rx_clk),
-        .app_rst(app_rst),
+        .app_rst(rx_rst),
         .param('{sub_delay}),
         .packet_recv(sub_delay_recv_sync),
         .in(system_stream[0])

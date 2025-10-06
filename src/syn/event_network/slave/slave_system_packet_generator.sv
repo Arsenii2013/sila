@@ -15,13 +15,19 @@ module slave_system_packet_generator(
     // импульс может приходить до окончания отправки пакета, 
     // в этом случае сразу же сгенерируется запрос на новый пакет
     import evn::*;
+    logic tx_rst;
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(tx_clk),
+        .dest_arst(tx_rst),
+        .src_arst(app_rst)
+    );
 
     logic send_sub_delay_sync;
 
     xpm_cdc_pulse send_topo_id_sunchronizer_i(
         .dest_clk(tx_clk),
         .dest_pulse(send_sub_delay_sync),
-        .dest_rst(app_rst),
+        .dest_rst(tx_rst),
         .src_clk(app_clk),
         .src_pulse(send_sub_delay),
         .src_rst(app_rst)
@@ -31,7 +37,7 @@ module slave_system_packet_generator(
 
     system_stream_mux4 packet_mux (
         .app_clk(tx_clk),
-        .app_rst(app_rst),
+        .app_rst(tx_rst),
         .in(system_stream),
         .out(out)
     );
@@ -42,7 +48,7 @@ module slave_system_packet_generator(
         .PARAM_CNT(SUB_DELAY_PACKET_LEN)
     ) sub_delay_tx_fsm (
         .app_clk(tx_clk),
-        .app_rst(app_rst),
+        .app_rst(tx_rst),
         .param('{sub_delay}),
         .send_packet(send_sub_delay_sync),
         .out(system_stream[0])

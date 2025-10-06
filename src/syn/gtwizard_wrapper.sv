@@ -30,6 +30,7 @@ module gtwizard_wrapper#(
     localparam N = PORT_N;
 
     logic wa_rst_req[N] = '{default: 0};
+    logic wa_rst_req_sync[N];
 //Resetdone logic
     logic refclk_rx;
 
@@ -134,6 +135,12 @@ module gtwizard_wrapper#(
         end
     end
 
+    xpm_cdc_async_rst reset_req_cdc_i(
+        .dest_clk(sysclk),
+        .dest_arst(wa_rst_req_sync[j]),
+        .src_arst(wa_rst_req[j])
+    );
+
     always_comb begin
         if (!gtx_if[j].rx_reset_done) begin
             next[j] = wafsmPATTERN_SEARCH;
@@ -176,7 +183,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[0] || sfp_loss[0]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[0] || sfp_loss[0]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[0]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[0]),
@@ -222,7 +229,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[0] || sfp_loss[0]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[0] || sfp_loss[0]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -261,7 +268,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[0] || sfp_loss[0]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[0] || sfp_loss[0]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[0]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[0]),
@@ -307,7 +314,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[0] || sfp_loss[0]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[0] || sfp_loss[0]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -346,7 +353,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[1] || sfp_loss[1]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[1] || sfp_loss[1]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[1]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[1]),
@@ -392,7 +399,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[1] || sfp_loss[1]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[1] || sfp_loss[1]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[1]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -431,7 +438,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[2] || sfp_loss[2]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[2] || sfp_loss[2]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[2]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[2]),
@@ -477,7 +484,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[2] || sfp_loss[2]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[2] || sfp_loss[2]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[2]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -516,7 +523,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[3] || sfp_loss[3]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[3] || sfp_loss[3]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[3]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[3]),
@@ -562,7 +569,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[3] || sfp_loss[3]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[3] || sfp_loss[3]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[3]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -613,7 +620,7 @@ module gtwizard_wrapper#(
 
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[0] || sfp_loss[0]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[0] || sfp_loss[0]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[0]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[0]),
@@ -659,7 +666,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (outclkfabric),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[0] || sfp_loss[0]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[0] || sfp_loss[0]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[0]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -698,7 +705,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[1] || sfp_loss[1]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[1] || sfp_loss[1]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[1]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[1]),
@@ -744,7 +751,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[1] || sfp_loss[1]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[1] || sfp_loss[1]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[1]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -783,7 +790,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[2] || sfp_loss[2]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[2] || sfp_loss[2]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[2]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[2]),
@@ -829,7 +836,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[2] || sfp_loss[2]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[2] || sfp_loss[2]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[2]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -868,7 +875,7 @@ module gtwizard_wrapper#(
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
-        .soft_reset_rx_in               (soft_reset || wa_rst_req[3] || sfp_loss[3]),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[3] || sfp_loss[3]),
         .dont_reset_on_data_error_in    ('0),
         .gt0_tx_fsm_reset_done_out      (txfsmresetdone[3]),
         .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[3]),
@@ -914,7 +921,7 @@ module gtwizard_wrapper#(
         .gt0_rxoutclkfabric_out         (),
         //----------- Receive Ports - RX Initialization and Reset Ports ------------
         .gt0_gtrxreset_in               ('0),
-        .gt0_rxpmareset_in              (wa_rst_req[3] || sfp_loss[3]),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[3] || sfp_loss[3]),
         //-------------------- Receive Ports - RX gearbox ports --------------------
         .gt0_rxslide_in                 (rxslide[3]),
         //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
@@ -952,7 +959,13 @@ module gtwizard_wrapper#(
     endgenerate
 
     logic commonreset;
-    assign qpllreset = gt_qpllreset[0] && gt_qpllreset[1] && gt_qpllreset[2] && gt_qpllreset[3];
+
+    always_comb begin
+        qpllreset = 1;
+        for(int qpllreset_ind = 0; qpllreset_ind < PORT_N; qpllreset_ind++) begin
+            qpllreset = qpllreset && gt_qpllreset[qpllreset_ind];
+        end
+    end
 
     //IBUFDS_GTE2
     logic refclk;

@@ -19,6 +19,12 @@ module slave_system_packet_reciever(
     // модуль приема системных пакетов
     // сигналы *_recv - импульсы по окончанию приема соответствующего пакета
     import evn::*;
+    logic rx_rst;
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(rx_clk),
+        .dest_arst(rx_rst),
+        .src_arst(app_rst)
+    );
 
     logic topo_id_recv_sync, meas_delay_recv_sync, tgt_delay_recv_sync, up_delay_recv_sync;
 
@@ -28,7 +34,7 @@ module slave_system_packet_reciever(
         .dest_rst(app_rst),
         .src_clk(rx_clk),
         .src_pulse(topo_id_recv_sync),
-        .src_rst(app_rst)
+        .src_rst(rx_rst)
     );
     xpm_cdc_pulse send_meas_sunchronizer_i(
         .dest_clk(app_clk),
@@ -36,7 +42,7 @@ module slave_system_packet_reciever(
         .dest_rst(app_rst),
         .src_clk(rx_clk),
         .src_pulse(meas_delay_recv_sync),
-        .src_rst(app_rst)
+        .src_rst(rx_rst)
     );
     xpm_cdc_pulse send_tgt_delay_sunchronizer_i(
         .dest_clk(app_clk),
@@ -44,7 +50,7 @@ module slave_system_packet_reciever(
         .dest_rst(app_rst),
         .src_clk(rx_clk),
         .src_pulse(tgt_delay_recv_sync),
-        .src_rst(app_rst)
+        .src_rst(rx_rst)
     );
     xpm_cdc_pulse send_up_delay_sunchronizer_i(
         .dest_clk(app_clk),
@@ -52,7 +58,7 @@ module slave_system_packet_reciever(
         .dest_rst(app_rst),
         .src_clk(rx_clk),
         .src_pulse(up_delay_recv_sync),
-        .src_rst(app_rst)
+        .src_rst(rx_rst)
     );
 
     system_stream_if system_stream[4]();
@@ -73,7 +79,7 @@ module slave_system_packet_reciever(
         .PARAM_CNT(TOPO_ID_PACKET_LEN)
     ) topo_id_rx_fsm (
         .app_clk(rx_clk),
-        .app_rst(app_rst),
+        .app_rst(rx_rst),
         .param('{topo_id}),
         .packet_recv(topo_id_recv_sync),
         .in(system_stream[0])
@@ -85,7 +91,7 @@ module slave_system_packet_reciever(
         .PARAM_CNT(MEAS_DELAY_PACKET_LEN)
     ) meas_delay_rx_fsm (
         .app_clk(rx_clk),
-        .app_rst(app_rst),
+        .app_rst(rx_rst),
         .param('{meas_delay, meas_delay_st}),
         .packet_recv(meas_delay_recv_sync),
         .in(system_stream[1])
@@ -97,7 +103,7 @@ module slave_system_packet_reciever(
         .PARAM_CNT(TGT_DELAY_PACKET_LEN)
     ) tgt_delay_rx_fsm (
         .app_clk(rx_clk),
-        .app_rst(app_rst),
+        .app_rst(rx_rst),
         .param('{tgt_delay}),
         .packet_recv(tgt_delay_recv_sync),
         .in(system_stream[2])
@@ -109,7 +115,7 @@ module slave_system_packet_reciever(
         .PARAM_CNT(UP_DELAY_PACKET_LEN)
     ) up_delay_rx_fsm (
         .app_clk(rx_clk),
-        .app_rst(app_rst),
+        .app_rst(rx_rst),
         .param('{up_delay}),
         .packet_recv(up_delay_recv_sync),
         .in(system_stream[3])

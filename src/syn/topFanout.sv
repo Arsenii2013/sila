@@ -171,6 +171,13 @@ module topFanout(
     gtx_if fanout_gtx_if[GTX_PORTS]();
     logic beacon_clk;
 
+    logic soft_reset_sync;
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(PS_clk),
+        .dest_arst(soft_reset_sync),
+        .src_arst(app_reset[Fanout_reset_params::GTWIZARD])
+    );
+
     gtwizard_wrapper #(
         .DEVICE("Fanout"),
         .PORT_N(GTX_PORTS)
@@ -180,7 +187,7 @@ module topFanout(
         .refclk_n(REFCLK_FROM_RX_n),
         .refclk_p(REFCLK_FROM_RX_p),
         .sysclk(PS_clk), 
-        .soft_reset(app_reset),
+        .soft_reset(soft_reset_sync),
         .sfp_loss(sfp_loss),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),

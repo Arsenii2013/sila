@@ -166,6 +166,13 @@ module topEVG(
     localparam GTX_PORTS = gtx::EVG_PORT_N;
     logic sfp_loss [GTX_PORTS];
     gtx_if evg_gtx_if[GTX_PORTS]();
+    logic soft_reset_sync;
+
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(PS_clk),
+        .dest_arst(soft_reset_sync),
+        .src_arst(app_reset[EVG_reset_params::GTWIZARD])
+    );
 
     gtwizard_wrapper #(
         .DEVICE("EVG"),
@@ -174,7 +181,7 @@ module topEVG(
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
-        .soft_reset(app_reset),
+        .soft_reset(soft_reset_sync),
         .sfp_loss(sfp_loss),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),
