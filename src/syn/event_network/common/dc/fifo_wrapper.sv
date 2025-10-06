@@ -87,7 +87,7 @@ module fifo_wrapper
         .dout({data_out, isk_out}),
 
         .wr_clk(rx_clk),
-        .wr_en(!wr_dis && !rd_dis_by_dec),
+        .wr_en(!wr_dis && !wr_dis_by_inc),
         .din({data_in, isk_in}),
 
         .almost_empty(almost_empty),
