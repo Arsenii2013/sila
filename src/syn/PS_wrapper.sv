@@ -190,6 +190,9 @@ module PS_wrapper_sv #(
             ev_seq_generator_i[0].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_0_RD_CH);
             ev_seq_generator_i[1].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_1_RD_CH);
             ev_seq_ctrl_generator_i = new(clk_if, req_mbx, resp_mbx, EV_SEQ_CTRL_RD_CH);
+
+            wait(app_aresetn === 1);
+            #50us;
             fork
             EVG_test();
             periodic_dump();
@@ -201,9 +204,6 @@ module PS_wrapper_sv #(
         task automatic EVG_test();
             $timeformat(-3, 5, " ms");
 
-            @(posedge app_aresetn);
-            @(posedge app_aresetn);
-            #50us;
             generic_generator.write(`BASE_FROM_NUMBER(EVG_axi_params::SFP_CONTROL) + 'h10, 'h0);
             ev_seq_generator_i[0].inst.write_seq('{
                 '{0,    'h1},
@@ -278,6 +278,9 @@ module PS_wrapper_sv #(
             generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
 
             Fanout_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("Fanout with topo id \t%x\t", topo_id));
+
+            wait(app_aresetn === 1);
+            #50us;
             fork
             Fanout_test();
             periodic_dump();
@@ -289,9 +292,6 @@ module PS_wrapper_sv #(
         task automatic Fanout_test();
             $timeformat(-3, 5, " ms");
 
-            @(posedge app_aresetn);
-            @(posedge app_aresetn);
-            #50us;
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'b1110);
             Fanout_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, '0);
@@ -361,6 +361,9 @@ module PS_wrapper_sv #(
             EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("EVR with topo id \t%x\t", topo_id));
             signal_generator_generator_i = new(clk_if, req_mbx, resp_mbx, SIG_GEN_RD_CH);
             ev_map_generator_i = new(clk_if, req_mbx, resp_mbx, EV_MAP_RD_CH);
+
+            wait(app_aresetn === 1);
+            #50us;
             fork
             EVR_test();
             periodic_dump();
@@ -371,9 +374,6 @@ module PS_wrapper_sv #(
         task automatic EVR_test();
             $timeformat(-3, 5, " ms");
 
-            @(posedge app_aresetn);
-            @(posedge app_aresetn);
-            #50us;
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
 
             signal_generator_generator_i.set_cfg(0, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});

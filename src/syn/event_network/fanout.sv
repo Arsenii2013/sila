@@ -16,6 +16,14 @@ module fanout#(
 );
     import evn::*;
 
+    localparam LOCAL_RESET_CNT = PORT_N + 2;
+    logic local_app_rst [LOCAL_RESET_CNT];
+    reset_fanout #(LOCAL_RESET_CNT) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(app_rst),
+        .reset_out(local_app_rst)
+    );
+
     axi_stream_if #(.DW(32)) slave_in_packet();
     axi_stream_if #(.DW(32)) slave_out_packet();
 
@@ -38,7 +46,7 @@ module fanout#(
 
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[0]),
 
         .ev(ev), 
         .trig(trig),
@@ -50,7 +58,7 @@ module fanout#(
 
     genvar i;
     generate
-    for(i = 0; i < PORT_N - 1; i++) begin
+    for(i = 0; i < PORT_N - 1; i++) begin : link_master_inst
     assign downstream_data[i].topo_id        = (upstream_data.topo_id << 4) + i + 2;
     assign downstream_data[i].topo_id_upd    = upstream_data.topo_id_upd;
     assign downstream_data[i].tgt_delay      = upstream_data.tgt_delay;
@@ -67,7 +75,7 @@ module fanout#(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[i+1]),
         
         .ev(ev), 
         .trig(trig_iternal[i]),
@@ -90,7 +98,7 @@ module fanout#(
         .N(PORT_N-1)
     ) sub_delay_max (
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[PORT_N]),
 
         .in(sub_delay_iternal),
         .in_upd(sub_delay_iternal_upd),
@@ -102,7 +110,7 @@ module fanout#(
         .PORT_N(PORT_N)
     ) fanout_axi_core_i(
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[PORT_N+1]),
         .mmr(mmr),
         .upstream(upstream_data),
         .downstream(downstream_data)

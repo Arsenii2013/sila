@@ -50,15 +50,12 @@ module topEVR(
     output logic [EVR_board::START_N-1:0] START_p,
     output logic [EVR_board::START_N-1:0] START_n
 );
-    logic app_clk;
-    logic app_aresetn = 1;
-    logic app_reset = 0;
-
-    BUFG clkf_buf
-    (.O (clkfbout_buf),
-        .I (clkfbout));
-
+    logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
+
+    logic app_clk;
+    logic app_aresetn[EVR_aresetn_params::DEV_CNT];
+    logic app_reset[EVR_reset_params::DEV_CNT];
 
     axi4_lite_if #(
         .DW(axi_params::GP0_DATA_W),
@@ -70,13 +67,38 @@ module topEVR(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    reset_fanout #(
+        .N(EVR_reset_params::DEV_CNT)
+    ) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset),
+        .reset_out(app_reset)
+    );
+
+    reset_fanout #(
+        .N(EVR_aresetn_params::DEV_CNT)
+    ) aresetn_fanout_i(
+        .clk(app_clk),
+        .reset_in(~POR_reset && PS_aresetn),
+        .reset_out(app_aresetn)
+    );
+
     axi_crossbar #(
         .N(axi_params::MMR_DEV_CNT2),
         .AW(axi_params::GP0_ADDR_W),
         .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
-        .aresetn(app_aresetn),
+        .aresetn(app_aresetn[EVR_aresetn_params::COMMON]),
         .m(GP_0),
         .s(mmr)
     );
@@ -88,7 +110,7 @@ module topEVR(
         .DEVICE("EVR")
     ) device_info_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::DEVICE_INFO]),
         .mmr(mmr[EVR_axi_params::DEVICE_INFO])
     );
 
@@ -98,7 +120,7 @@ module topEVR(
         .PULSE_CNT_WIDTH(32)
     ) timestamper_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::TIMESTAMPER]),
         .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
         .cycle_start_val(delay >> 16), // ожидаю, что задержка получилась целеая
         .cycle_cnt(),
@@ -186,9 +208,10 @@ module topEVR(
         .PORT_N(GTX_PORTS)
     ) sfp_control_i(
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::COMMON]),
         .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
-        .sfp_loss(sfp_loss)
+        .sfp_loss(sfp_loss),
+        .sfp_loss_clk(PS_clk)
     );
 
     evr #(
@@ -199,7 +222,7 @@ module topEVR(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::EVR]),
         .mmr(mmr[EVR_axi_params::EVR]),
         
         .ev(ev), 
@@ -218,7 +241,7 @@ module topEVR(
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
     ) ev_map_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::EV_MAP]),
         .mmr(mmr[EVR_axi_params::EV_MAP]),
         .set(set),
         .clear(clear),
@@ -232,7 +255,7 @@ module topEVR(
         .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::SIG_GEN_CTRL]),
         .mmr(mmr[EVR_axi_params::SIG_GEN_CTRL]),
         .set(set),
         .clear(clear),

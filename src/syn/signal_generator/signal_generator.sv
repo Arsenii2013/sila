@@ -62,12 +62,20 @@ module signal_generator #(
     logic           trigger_ena[N];
     logic           cnt_reset_ena[N];
 
+    localparam LOCAL_RESET_CNT = N + 1;
+    logic local_app_rst [LOCAL_RESET_CNT];
+    reset_fanout #(LOCAL_RESET_CNT) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(app_rst),
+        .reset_out(local_app_rst)
+    );
+
     genvar i;
     generate
     for(i = 0; i < N; i++) begin
     signal_gen_channel signal_gen_channel_i (
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[i]),
         .set(set[i] && set_ena[i]),
         .clear(clear[i] && clear_ena[i]),
         .trigger(trigger[i] && trigger_ena[i]),
@@ -150,7 +158,7 @@ module signal_generator #(
     
     signal_gen_ctrl_axi_core signal_gen_ctrl_axi_core_i(
         .clk(app_clk),
-        .rst(app_rst),
+        .rst(local_app_rst[N]),
 
         .s_axil(mmr),
 

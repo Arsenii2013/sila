@@ -16,6 +16,14 @@ module evg#(
 );
     import evn::*;
 
+    localparam LOCAL_RESET_CNT = PORT_N + 2;
+    logic local_app_rst [LOCAL_RESET_CNT];
+    reset_fanout #(LOCAL_RESET_CNT) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(app_rst),
+        .reset_out(local_app_rst)
+    );
+
     axi_stream_if #(.DW(32)) slave_in_packet[PORT_N]();
     axi_stream_if #(.DW(32)) slave_out_packet[PORT_N]();
 
@@ -28,7 +36,7 @@ module evg#(
 
     genvar i;
     generate
-    for(i = 0; i < PORT_N; i++) begin
+    for(i = 0; i < PORT_N; i++) begin : link_master_inst
     assign ports_data[i].topo_id        = i+1;
     assign ports_data[i].topo_id_upd    = 0;
     assign ports_data[i].tgt_delay      = axi_data.tgt_delay;
@@ -45,7 +53,7 @@ module evg#(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[i]),
         
         .ev(ev), 
         .trig(trig_iternal[i]),
@@ -68,7 +76,7 @@ module evg#(
         .N(PORT_N)
     ) sub_delay_max (
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[PORT_N]),
 
         .in(sub_delay_iternal),
         .in_upd(sub_delay_iternal_upd),
@@ -85,7 +93,7 @@ module evg#(
         .PORT_N(PORT_N)
     ) evg_axi_core_i(
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[PORT_N+1]),
         .mmr(mmr),
         .link_data(axi_data),
         .ports_data(ports_data)
@@ -99,7 +107,7 @@ module evg_axi_core#(
     input  logic                app_rst,
 
     axi4_lite_if.s              mmr,
-    link_data                   link_data,
+    link_data.monitor_tgt_delay link_data,
     link_data.monitor           ports_data[PORT_N]
 );
     link_csr_axi_core_pkg::link_csr_axi_core__in_t  hwif_in;

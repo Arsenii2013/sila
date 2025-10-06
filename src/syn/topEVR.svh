@@ -28,4 +28,25 @@ localparam EV_COMPARATOR  = unsigned'(EV_COMAPATOR_EVAL);
 
 endpackage
 
+package EVR_reset_params;
+
+localparam COMMON       = 0;
+localparam DEVICE_INFO  = COMMON      + 1;
+localparam TIMESTAMPER  = DEVICE_INFO + 1;
+localparam GTWIZARD     = TIMESTAMPER + 1;
+localparam EVR          = GTWIZARD    + 1;
+localparam EV_MAP       = EVR         + 1;
+localparam SIG_GEN_CTRL = EV_MAP      + 1;
+localparam DEV_CNT      = SIG_GEN_CTRL+ 1;
+
+
+endpackage
+
+package EVR_aresetn_params;
+
+localparam COMMON   = 0;
+localparam DEV_CNT  = COMMON  + 1;
+
+endpackage
+
 `endif //__TOP_EVR__

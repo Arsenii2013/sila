@@ -26,4 +26,23 @@ localparam EV_COMPARATOR  = unsigned'(EV_COMAPATOR_EVAL);
 
 endpackage
 
+
+package EVG_reset_params;
+
+localparam COMMON       = 0;
+localparam DEVICE_INFO  = COMMON      + 1;
+localparam TIMESTAMPER  = DEVICE_INFO + 1;
+localparam GTWIZARD     = TIMESTAMPER + 1;
+localparam EVG          = GTWIZARD    + 1;
+localparam EV_SEQ_CTRL  = EVG         + 1;
+localparam DEV_CNT      = EV_SEQ_CTRL + 1;
+
+endpackage
+
+package EVG_aresetn_params;
+
+localparam COMMON   = 0;
+localparam DEV_CNT  = COMMON  + 1;
+
+endpackage
 `endif //__TOP_EVG__
