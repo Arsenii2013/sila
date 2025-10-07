@@ -9,10 +9,10 @@ module dc_control
     input  logic                    app_clk,
     input  logic                    app_rst,
 
-    input  logic                    beacon_in,
-    input  logic                    rx_clk,
-    input  logic                    beacon_out,
-    input  logic                    beacon_clk,
+    input  logic                    start,
+    input  logic                    start_clk,
+    input  logic                    stop,
+    input  logic                    measure_clk,
 
     output logic                    fifo_inc,
     output logic                    fifo_dec,
@@ -31,9 +31,9 @@ module dc_control
     import evn::*;
     typedef logic [INT_W            -1: 0] sample_t;
 
-    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 12)); 
+    localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 9)); 
                                         // Для 125 МГц интервал 1/125e6 * 2**-10 = 7,8 пс
-    localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 10) + ((1<<FRAC_W) >> 11) + ((1<<FRAC_W) >> 12)); 
+    localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 9)); 
                                         // Для 125 МГц с множителем 11, F_vco = 1,375 ГГц 
                                         // шаг фазы равен 1/(56*1375) = 12,9 пс
                                         // 1/175e6 * (2**-10 + 2**-100) = 13,67 пс
@@ -129,11 +129,11 @@ module dc_control
         .INT_W(INT_W),
         .BEACON_PERIOD_W(BEACON_PERIOD_W)
     ) sampler_i (
-        .beacon_tx(beacon_in),
-        .tx_clk(rx_clk),
-        .beacon_rx(beacon_out),
-        .rx_clk(app_clk),
-        .beacon_clk(beacon_clk),
+        .start(start),
+        .start_clk(start_clk),
+        .stop(stop),
+        .stop_clk(app_clk),
+        .measure_clk(measure_clk),
 
         .app_clk(app_clk),
         .app_rst(app_rst || fifo_rst_busy  || state == ERROR),

@@ -223,23 +223,45 @@ module link_master
     );
 
 // Delay measurement
+    delay_t fifo_delay, link_delay;
+    link_delay_st_t fifo_delay_st, link_delay_st;
+
     delay_measure #(
         .INT_W(DELAY_INT_W),
         .FRAC_W(DELAY_FRAC_W)
-    )
-    measure_i(
+    ) sync_measure_i (
         .app_clk(app_clk),
         .app_rst(app_rst),
         
-        .beacon_tx(is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
-        .tx_clk(gtx_if.tx_clk),
-        .beacon_rx(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
-        .rx_clk(gtx_if.rx_clk),
-        .beacon_clk(beacon_clk),
+        .start(!fifo_rst_busy && is_beacon(tx_data_app_clk, tx_is_k_app_clk)),
+        .start_clk(app_clk),
+        .stop(!fifo_rst_busy && is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
+        .stop_clk(gtx_if.tx_clk),
+        .measure_clk(beacon_clk),
+
+        .delay_upd(),
+        .delay(fifo_delay),
+        .delay_status(fifo_delay_st)
+    );
+
+    delay_measure #(
+        .INT_W(DELAY_INT_W),
+        .FRAC_W(DELAY_FRAC_W)
+    ) measure_i(
+        .app_clk(app_clk),
+        .app_rst(app_rst),
+        
+        .start(is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
+        .start_clk(gtx_if.tx_clk),
+        .stop(is_beacon(gtx_if.rx_data, gtx_if.rx_is_k)),
+        .stop_clk(gtx_if.rx_clk),
+        .measure_clk(beacon_clk),
 
         .delay_upd(link_data.link_delay_upd),
-        .delay(link_data.link_delay),
-        .delay_status(link_data.link_delay_st)
+        .delay(link_delay),
+        .delay_status(link_delay_st)
     );
     assign link_data.link_up = gtx_if.aligned;
+    assign link_data.link_delay = link_delay + (fifo_delay << 1) + (1 << DELAY_FRAC_W);
+    assign link_data.link_delay_st = fifo_delay_st < link_delay_st ? fifo_delay_st : link_delay_st;
 endmodule

@@ -44,18 +44,12 @@ module topFanout(
     input  logic       sysclk_p,
     output logic [3:0] led
 );
-    logic app_clk;
-    logic app_aresetn = 1;
-    logic app_reset = 0;
-
-    logic sysclk;
-    IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
-
-    BUFG clkf_buf
-    (.O (clkfbout_buf),
-        .I (clkfbout));
-
+    logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
+
+    logic app_clk;
+    logic app_aresetn[Fanout_aresetn_params::DEV_CNT];
+    logic app_reset[Fanout_reset_params::DEV_CNT];
 
     axi4_lite_if #(
         .DW(axi_params::GP0_DATA_W),
@@ -67,32 +61,52 @@ module topFanout(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    logic sysclk;
+    IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
+
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    reset_fanout #(
+        .N(Fanout_reset_params::DEV_CNT)
+    ) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset),
+        .reset_out(app_reset)
+    );
+
+    reset_fanout #(
+        .N(Fanout_aresetn_params::DEV_CNT)
+    ) aresetn_fanout_i(
+        .clk(app_clk),
+        .reset_in(~POR_reset && PS_aresetn),
+        .reset_out(app_aresetn)
+    );
+
     axi_crossbar #(
         .N(axi_params::MMR_DEV_CNT2),
         .AW(axi_params::GP0_ADDR_W),
         .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
-        .aresetn(app_aresetn),
+        .aresetn(app_aresetn[Fanout_aresetn_params::COMMON]),
         .m(GP_0),
         .s(mmr)
     );
 
     evn::ev_t ev;
     
-    `ifndef SYNTHESIS
-    `define GIT_VERSION_MAJOR 'h1234
-    `define GIT_VERSION_MINOR 'h5678
-    `define GIT_HASH          'habcd
-    `endif
     device_info #(
-        .DEVICE("Fanout"),
-        .FW_MAJOR(`GIT_VERSION_MAJOR),
-        .FW_MINOR(`GIT_VERSION_MINOR),
-        .FW_HASH(`GIT_HASH)
+        .DEVICE("Fanout")
     ) device_info_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[Fanout_reset_params::DEVICE_INFO]),
         .mmr(mmr[Fanout_axi_params::DEVICE_INFO])
     );
 
@@ -104,7 +118,7 @@ module topFanout(
         .PULSE_CNT_WIDTH(32)
     ) timestamper_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[Fanout_reset_params::TIMESTAMPER]),
         .mmr(mmr[Fanout_axi_params::TIMESTAMPER]),
         .cycle_start_val('0),
         .cycle_cnt(cycle_cnt),
@@ -147,29 +161,15 @@ module topFanout(
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
         .peripheral_reset(PS_reset),
-        .app_aresetn(app_aresetn),
+        .app_aresetn(app_aresetn[Fanout_aresetn_params::COMMON]),
         .app_clk(app_clk)
     );
-
-    logic POR_reset;
-
-    pf_m #(
-        .WIDTH(1000),
-        .POR("ON")
-    ) pf_i (
-        .clk(app_clk),
-        .in(0),
-        .out(POR_reset)
-    );
-
-    always_ff @( posedge app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
-    always_ff @( posedge app_clk ) app_reset   <= PS_reset || POR_reset;
 
     blink #(
         .FREQ_HZ(125000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
-        .reset(app_reset),
+        .reset(app_reset[Fanout_reset_params::COMMON]),
         .clk(app_clk),
         .led(led[0])
     );
@@ -178,6 +178,13 @@ module topFanout(
     logic sfp_loss [GTX_PORTS];
     gtx_if fanout_gtx_if[GTX_PORTS]();
     logic beacon_clk;
+
+    logic soft_reset_sync;
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(PS_clk),
+        .dest_arst(soft_reset_sync),
+        .src_arst(app_reset[Fanout_reset_params::GTWIZARD])
+    );
 
     gtwizard_wrapper #(
         .DEVICE("Fanout"),
@@ -188,7 +195,7 @@ module topFanout(
         .refclk_n(REFCLK_FROM_RX_n),
         .refclk_p(REFCLK_FROM_RX_p),
         .sysclk(PS_clk), 
-        .soft_reset(app_reset),
+        .soft_reset(soft_reset_sync),
         .sfp_loss(sfp_loss),
         .rx_n(sfp_rx_n),
         .rx_p(sfp_rx_p),
@@ -217,9 +224,10 @@ module topFanout(
         .PORT_N(GTX_PORTS)
     ) sfp_control_i(
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[Fanout_reset_params::COMMON]),
         .mmr(mmr[Fanout_axi_params::SFP_CONTROL]),
-        .sfp_loss(sfp_loss)
+        .sfp_loss(sfp_loss),
+        .sfp_loss_clk(PS_clk)
     );
     
     fanout #(
@@ -230,7 +238,7 @@ module topFanout(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[Fanout_reset_params::FANOUT]),
         .mmr(mmr[Fanout_axi_params::FANOUT])
     );
 

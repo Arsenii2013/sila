@@ -21,6 +21,14 @@ module fifo_wrapper
     output logic         rst_busy
 );
     import evn::*;
+
+    logic wr_rst;
+    xpm_cdc_async_rst _reset_cdc_i(
+        .dest_clk(rx_clk),
+        .dest_arst(wr_rst),
+        .src_arst(app_rst)
+    );
+
     logic rd_rst_busy, wr_rst_busy;
     logic almost_empty, almost_full;
     logic fifo_inc_sync, fifo_dec_sync;
@@ -28,7 +36,7 @@ module fifo_wrapper
     xpm_cdc_pulse fifo_dec_sunchronizer_i(
         .dest_clk(rx_clk),
         .dest_pulse(fifo_dec_sync),
-        .dest_rst(app_rst),
+        .dest_rst(wr_rst),
         .src_clk(app_clk),
         .src_pulse(fifo_dec),
         .src_rst(app_rst)
@@ -36,7 +44,29 @@ module fifo_wrapper
 
     assign fifo_inc_sync = fifo_inc;
 
-    assign rst_busy = rd_rst_busy || wr_rst_busy;
+    logic rd_rst_busy_app_clk;
+    xpm_cdc_async_rst rd_rst_busy_cdc_i(
+        .dest_clk(app_clk),
+        .dest_arst(rd_rst_busy_app_clk),
+        .src_arst(rd_rst_busy)
+    );
+    logic wr_rst_busy_app_clk;
+    xpm_cdc_async_rst wr_rst_busy_cdc_i(
+        .dest_clk(app_clk),
+        .dest_arst(wr_rst_busy_app_clk),
+        .src_arst(wr_rst_busy)
+    );
+    assign rst_busy = rd_rst_busy_app_clk || wr_rst_busy_app_clk;
+
+    logic rd_dis;
+    assign rd_dis = rd_rst_busy || almost_empty;
+    logic wr_dis;
+    assign wr_dis = wr_rst_busy || almost_full;
+
+    logic rd_dis_by_dec;
+    assign rd_dis_by_dec = fifo_inc_sync && !is_beacon(data_out, isk_out);
+    logic wr_dis_by_inc;
+    assign wr_dis_by_inc = fifo_dec_sync && !is_beacon(data_in, isk_in);
 
     xpm_fifo_async #(
         .CASCADE_HEIGHT(0),
@@ -53,18 +83,16 @@ module fifo_wrapper
         .WRITE_DATA_WIDTH(36)
     ) xpm_fifo_async_inst (
         .rd_clk(app_clk),
-        .rd_en(!(fifo_inc_sync && !almost_full && !((data_out == BEACON_WORD) && (isk_out == BEACON_IS_K)))),
+        .rd_en(!rd_dis && !rd_dis_by_dec),
         .dout({data_out, isk_out}),
 
         .wr_clk(rx_clk),
-        .wr_en(!(fifo_dec_sync && !almost_empty && !((data_in == BEACON_WORD) && (isk_in == BEACON_IS_K)))),
+        .wr_en(!wr_dis && !wr_dis_by_inc),
         .din({data_in, isk_in}),
 
-        .empty(empty),
-        .full(full),
         .almost_empty(almost_empty),
         .almost_full(almost_full),
-        .rst(app_rst),
+        .rst(wr_rst),
         .rd_rst_busy(rd_rst_busy),
         .wr_rst_busy(wr_rst_busy)
     );

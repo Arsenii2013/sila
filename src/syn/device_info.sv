@@ -1,8 +1,23 @@
+package device_info_pkg;
+`ifdef GIT_VERSION_MAJOR
+localparam FW_MAJOR = `GIT_VERSION_MAJOR;
+`else
+localparam FW_MAJOR = '0;
+`endif
+`ifdef GIT_VERSION_MINOR
+localparam FW_MINOR = `GIT_VERSION_MINOR;
+`else
+localparam FW_MINOR = '0;
+`endif
+`ifdef GIT_HASH
+localparam FW_HASH  = `GIT_HASH;
+`else
+localparam FW_HASH  = '0;
+`endif
+endpackage
+
 module device_info #(
-    parameter DEVICE      = "EVG",
-    parameter FW_MAJOR    = 0,
-    parameter FW_MINOR    = 0,
-    parameter FW_HASH     = 0
+    parameter DEVICE      = "EVG"
 )(
     input  logic                                 app_clk,
     input  logic                                 app_rst,
@@ -22,9 +37,9 @@ module device_info #(
     "Fanout" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__FANOUT;
     endcase
     endgenerate
-    assign hwif_in.fw_version.major.next        = FW_MAJOR;
-    assign hwif_in.fw_version.minor.next        = FW_MINOR;
-    assign hwif_in.fw_hash.fw_hash.next         = FW_HASH;
+    assign hwif_in.fw_version.major.next        = device_info_pkg::FW_MAJOR;
+    assign hwif_in.fw_version.minor.next        = device_info_pkg::FW_MINOR;
+    assign hwif_in.fw_hash.fw_hash.next         = device_info_pkg::FW_HASH;
 
     device_info_axi_core device_info_axi_core_i(
         .clk(app_clk),

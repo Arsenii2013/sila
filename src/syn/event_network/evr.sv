@@ -18,6 +18,14 @@ module evr#(
 );
     import evn::*;
 
+    localparam LOCAL_RESET_CNT = PORT_N + 2;
+    logic local_app_rst [LOCAL_RESET_CNT];
+    reset_fanout #(LOCAL_RESET_CNT) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(app_rst),
+        .reset_out(local_app_rst)
+    );
+
     axi_stream_if #(.DW(32)) slave_in_packet();
     axi_stream_if #(.DW(32)) slave_out_packet();
 
@@ -34,7 +42,7 @@ module evr#(
 
         //------Application signals-------
         .app_clk(app_clk), // app_clk generated only by first evg
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[0]),
 
         .ev(ev), 
         .trig(trig),
@@ -49,7 +57,7 @@ module evr#(
         .PORT_N(PORT_N)
     ) evg_axi_core_i(
         .app_clk(app_clk),
-        .app_rst(app_rst),
+        .app_rst(local_app_rst[1]),
         .mmr(mmr),
         .link_data(ports_data[0])
     );
@@ -62,7 +70,7 @@ module evr_axi_core#(
     input  logic                app_rst,
 
     axi4_lite_if.s              mmr,
-    link_data                   link_data
+    link_data.monitor_dc_ena    link_data
 );
     link_csr_axi_core_pkg::link_csr_axi_core__in_t  hwif_in;
     link_csr_axi_core_pkg::link_csr_axi_core__out_t hwif_out;

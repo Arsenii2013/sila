@@ -32,3 +32,5 @@ set_property PACKAGE_PIN AA6 [get_ports {REFCLK_SFP_p}]
 set_property PACKAGE_PIN AA5 [get_ports {REFCLK_SFP_n}]
 create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { REFCLK_SFP_p }];
 set_property LOC GTXE2_COMMON_X0Y2 [get_cells gtwizard_i/common0_i/gtxe2_common_i]
+
+set_clock_groups -name exclusive_clk0_clk1 -physically_exclusive -group clk_out1_clk_wiz -group clk_out1_clk_wiz_1

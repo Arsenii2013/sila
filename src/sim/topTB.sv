@@ -6,7 +6,7 @@ module topTB(
     );
     localparam time PROPAGATION_DELAY_DEEP_0_PORT_0 = 1231.56ns;
     localparam time PROPAGATION_DELAY_DEEP_0_PORT_1 = 560.12ns;
-    localparam time PROPAGATION_DELAY_DEEP_1_PORT_0 = 334ns;
+    localparam time PROPAGATION_DELAY_DEEP_1_PORT_0 = 337ns;
     localparam time ENDPOINT_DELAY_ARR [2]     = '{
                                                  PROPAGATION_DELAY_DEEP_0_PORT_0, 
                                                  PROPAGATION_DELAY_DEEP_0_PORT_1 + PROPAGATION_DELAY_DEEP_1_PORT_0
@@ -208,8 +208,8 @@ module EVR_board_emulator(
 
         .SFP_RX_N(sfp_rx_n),
         .SFP_RX_P(sfp_rx_p),
-        .SFP_TX_N(sfp_tx_n),
-        .SFP_TX_P(sfp_tx_p),
+        .SFP_TX_N(sfp_tx_p),
+        .SFP_TX_P(sfp_tx_n),
         .START_p(out_pulse)
     );
 endmodule

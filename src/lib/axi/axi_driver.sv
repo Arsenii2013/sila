@@ -42,6 +42,7 @@ class axi_driver #(
     virtual virtual_clock_if            clk_if;
     axi_transaction_pkg::item_mailbox_t req_mailbox;
     axi_transaction_pkg::item_mailbox_t resp_mailbox;
+    bit                                 verbose;
 
     function new (
         virtual virtual_clock_if clk_if, 
@@ -53,9 +54,15 @@ class axi_driver #(
         this.axi          = axi;
         this.req_mailbox  = req_mailbox;
         this.resp_mailbox = resp_mailbox;
+        this.verbose      = 0;
+        zero();
         fork
             serve_mailboxes();
         join_none
+    endfunction
+
+    function set_verbose();
+        verbose = 1;
     endfunction
 
     task automatic serve_mailboxes();
@@ -64,6 +71,9 @@ class axi_driver #(
         axi_transaction_pkg::data_t rd_data;
         forever begin
             this.req_mailbox.get(req_item);
+            if(verbose) begin
+                axi_transaction_pkg::display_item(req_item);
+            end
             case (req_item.item_type)
             axi_transaction_pkg::READ  : begin
                 this.read(req_item.addr, rd_data);
@@ -81,7 +91,21 @@ class axi_driver #(
     endtask
 
     task sync();
-    forever @(posedge clk_if.clk) if(req_mailbox.num() == 0) return;
+        forever @(posedge clk_if.clk) if(req_mailbox.num() == 0) return;
+    endtask
+
+    task zero();
+        this.axi.awaddr  <= '0;
+        this.axi.awprot  <= '0;
+        this.axi.awvalid <= '0;
+        this.axi.wdata   <= '0;
+        this.axi.wstrb   <= '0;
+        this.axi.wvalid  <= 0;
+        this.axi.bready  <= '0;
+        this.axi.araddr  <= '0;
+        this.axi.arprot  <= '0;
+        this.axi.arvalid <= 0;
+        this.axi.rready  <= 0;
     endtask
 
     task automatic read(input axi_transaction_pkg::addr_t addr, output axi_transaction_pkg::data_t data);
@@ -133,10 +157,11 @@ class axi_driver #(
         @(posedge this.clk_if.clk)
         this.axi.awaddr  <= addr;
         this.axi.wdata   <= data;
+        this.axi.wstrb   <= 'hFFFF;
+        @(posedge this.clk_if.clk)
+        this.axi.bready  <= 1;
         this.axi.awvalid <= 1;
         this.axi.wvalid  <= 1;
-        this.axi.wstrb   <= 'hFFFF;
-        this.axi.bready  <= 1;
         this.axi.rready  <= 0;
 
         for(;;) begin

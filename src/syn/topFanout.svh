@@ -18,4 +18,22 @@ localparam SFP_CONTROL    = unsigned'(SFP_CONTROL_EVAL);
 
 endpackage
 
+package Fanout_reset_params;
+
+localparam COMMON       = 0;
+localparam DEVICE_INFO  = COMMON      + 1;
+localparam TIMESTAMPER  = DEVICE_INFO + 1;
+localparam GTWIZARD     = TIMESTAMPER + 1;
+localparam FANOUT       = GTWIZARD    + 1;
+localparam DEV_CNT      = FANOUT      + 1;
+
+endpackage
+
+package Fanout_aresetn_params;
+
+localparam COMMON   = 0;
+localparam DEV_CNT  = COMMON  + 1;
+
+endpackage
+
 `endif //__TOP_FANOUT__

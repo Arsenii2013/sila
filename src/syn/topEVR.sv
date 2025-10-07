@@ -2,8 +2,12 @@
 //`include "gtx.svh"
 
 package EVR_board;
-    localparam START_N = 16;
-    localparam LED_N   = 4;
+    localparam START_N                 = 16;
+    localparam integer START_INVERSE [START_N] 
+                    = {0, 1, 0, 1, 1, 1, 1, 0, 
+                       1, 0, 1, 1, 1, 0, 1, 1};
+
+    localparam LED_N                   = 4;
 endpackage
 
 module topEVR(
@@ -46,15 +50,12 @@ module topEVR(
     output logic [EVR_board::START_N-1:0] START_p,
     output logic [EVR_board::START_N-1:0] START_n
 );
-    logic app_clk;
-    logic app_aresetn = 1;
-    logic app_reset = 0;
-
-    BUFG clkf_buf
-    (.O (clkfbout_buf),
-        .I (clkfbout));
-
+    logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
+
+    logic app_clk;
+    logic app_aresetn[EVR_aresetn_params::DEV_CNT];
+    logic app_reset[EVR_reset_params::DEV_CNT];
 
     axi4_lite_if #(
         .DW(axi_params::GP0_DATA_W),
@@ -66,33 +67,50 @@ module topEVR(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    reset_fanout #(
+        .N(EVR_reset_params::DEV_CNT)
+    ) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset),
+        .reset_out(app_reset)
+    );
+
+    reset_fanout #(
+        .N(EVR_aresetn_params::DEV_CNT)
+    ) aresetn_fanout_i(
+        .clk(app_clk),
+        .reset_in(~POR_reset && PS_aresetn),
+        .reset_out(app_aresetn)
+    );
+
     axi_crossbar #(
         .N(axi_params::MMR_DEV_CNT2),
         .AW(axi_params::GP0_ADDR_W),
         .DW(axi_params::GP0_DATA_W)
     ) axi_crossbar_i (
         .aclk(app_clk),
-        .aresetn(app_aresetn),
+        .aresetn(app_aresetn[EVR_aresetn_params::COMMON]),
         .m(GP_0),
         .s(mmr)
     );
 
     evn::ev_t    ev;
     evn::delay_t delay;
-    
-    `ifndef SYNTHESIS
-    `define GIT_VERSION_MAJOR 'h1234
-    `define GIT_VERSION_MINOR 'h5678
-    `define GIT_HASH          'habcd
-    `endif
+
     device_info #(
-        .DEVICE("EVR"),
-        .FW_MAJOR(`GIT_VERSION_MAJOR),
-        .FW_MINOR(`GIT_VERSION_MINOR),
-        .FW_HASH(`GIT_HASH)
+        .DEVICE("EVR")
     ) device_info_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::DEVICE_INFO]),
         .mmr(mmr[EVR_axi_params::DEVICE_INFO])
     );
 
@@ -102,7 +120,7 @@ module topEVR(
         .PULSE_CNT_WIDTH(32)
     ) timestamper_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::TIMESTAMPER]),
         .mmr(mmr[EVR_axi_params::TIMESTAMPER]),
         .cycle_start_val(delay >> 16), // ожидаю, что задержка получилась целеая
         .cycle_cnt(),
@@ -145,37 +163,29 @@ module topEVR(
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
         .peripheral_reset(PS_reset),
-        .app_aresetn(app_aresetn),
+        .app_aresetn(app_aresetn[EVR_aresetn_params::COMMON]),
         .app_clk(app_clk)
     );
-
-    logic POR_reset;
-
-    pf_m #(
-        .WIDTH(1000),
-        .POR("ON")
-    ) pf_i (
-        .clk(app_clk),
-        .in(0),
-        .out(POR_reset)
-    );
-
-    always_ff @( posedge app_clk ) app_aresetn <= PS_aresetn && ~POR_reset;
-    always_ff @( posedge app_clk ) app_reset   <= PS_reset || POR_reset;
 
     blink #(
         .FREQ_HZ(125000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
-        .reset(app_reset),
+        .reset(app_reset[EVR_reset_params::COMMON]),
         .clk(app_clk),
         .led(LED[0])
     );
 
-
     localparam GTX_PORTS = gtx::EVR_PORT_N;
     logic sfp_loss [GTX_PORTS];
     gtx_if evr_gtx_if[GTX_PORTS]();
+    logic soft_reset_sync;
+
+    xpm_cdc_async_rst sofr_reset_cdc_i(
+        .dest_clk(PS_clk),
+        .dest_arst(soft_reset_sync),
+        .src_arst(app_reset[EVR_reset_params::GTWIZARD])
+    );
 
     gtwizard_wrapper #(
         .DEVICE("EVR"),
@@ -184,7 +194,7 @@ module topEVR(
         .refclk_n(REFCLK_SFP_n),
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
-        .soft_reset(app_reset),
+        .soft_reset(soft_reset_sync),
         .sfp_loss(sfp_loss),
         .rx_n(SFP_RX_N),
         .rx_p(SFP_RX_P),
@@ -198,9 +208,10 @@ module topEVR(
         .PORT_N(GTX_PORTS)
     ) sfp_control_i(
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::COMMON]),
         .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
-        .sfp_loss(sfp_loss)
+        .sfp_loss(sfp_loss),
+        .sfp_loss_clk(PS_clk)
     );
 
     evr #(
@@ -211,7 +222,7 @@ module topEVR(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::EVR]),
         .mmr(mmr[EVR_axi_params::EVR]),
         
         .ev(ev), 
@@ -230,7 +241,7 @@ module topEVR(
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
     ) ev_map_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::EV_MAP]),
         .mmr(mmr[EVR_axi_params::EV_MAP]),
         .set(set),
         .clear(clear),
@@ -244,7 +255,7 @@ module topEVR(
         .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
         .app_clk(app_clk),
-        .app_rst(app_reset),
+        .app_rst(app_reset[EVR_reset_params::SIG_GEN_CTRL]),
         .mmr(mmr[EVR_axi_params::SIG_GEN_CTRL]),
         .set(set),
         .clear(clear),
@@ -257,11 +268,19 @@ module topEVR(
     genvar start_gen_i;
     generate
     for(start_gen_i = 0; start_gen_i < EVR_board::START_N; start_gen_i ++) begin
-    OBUFDS start_OBUFDS (
-        .O(START_p[start_gen_i]),
-        .OB(START_n[start_gen_i]),
-        .I(start[start_gen_i])
-    );
+        if(EVR_board::START_INVERSE[start_gen_i]) begin
+            OBUFDS start_OBUFDS (
+                .O(START_p[start_gen_i]),
+                .OB(START_n[start_gen_i]),
+                .I(!start[start_gen_i])
+            );
+        end else begin
+            OBUFDS start_OBUFDS (
+                .O(START_p[start_gen_i]),
+                .OB(START_n[start_gen_i]),
+                .I(start[start_gen_i])
+            );
+        end
     end
     endgenerate
     

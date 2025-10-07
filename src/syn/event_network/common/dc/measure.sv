@@ -9,11 +9,11 @@ module delay_measure #(
     input  logic                     app_clk,
     input  logic                     app_rst,
     
-    input  logic                     beacon_tx,
-    input  logic                     tx_clk,
-    input  logic                     beacon_rx,
-    input  logic                     rx_clk,
-    input  logic                     beacon_clk,
+    input  logic                     start,
+    input  logic                     start_clk,
+    input  logic                     stop,
+    input  logic                     stop_clk,
+    input  logic                     measure_clk,
 
     output logic                     delay_upd,
     output evn::delay_t              delay,
@@ -114,11 +114,11 @@ module delay_measure #(
         .INT_W(INT_W),
         .BEACON_PERIOD_W(BEACON_PERIOD_W)
     ) sampler_i (
-        .beacon_tx(beacon_tx),
-        .tx_clk(tx_clk),
-        .beacon_rx(beacon_rx),
-        .rx_clk(rx_clk),
-        .beacon_clk(beacon_clk),
+        .start(start),
+        .start_clk(start_clk),
+        .stop(stop),
+        .stop_clk(stop_clk),
+        .measure_clk(measure_clk),
 
         .app_clk(app_clk),
         .app_rst(app_rst || lock_lost),

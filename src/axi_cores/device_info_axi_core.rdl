@@ -1,7 +1,7 @@
 addrmap device_info_axi_core{
-    name = "Блок общей информации";
+    name = "Модуль общей информации";
     desc = "
-        Блок предоставляющий общую информацию об устройстве: тип, аппаратную версию, версию прошивки, серийный номер
+        Модуль предоставляющий общую информацию об устройстве: тип, аппаратную версию, версию прошивки, серийный номер
     ";
     enum device_type_encoding {
         SIM     = 32'h0;
@@ -13,6 +13,7 @@ addrmap device_info_axi_core{
     reg {
         name = "SR";
         desc = "
+            Регистр статуса модуля, в настоящее время не реализован.
         ";
         field {sw=r; hw=w;} reserved[32] = 0;
     } sr;
@@ -20,6 +21,7 @@ addrmap device_info_axi_core{
     reg {
         name = "CR";
         desc = "
+            Регистр управления модулем, в настоящее время не реализован.
         ";
         field {sw=rw; hw=rw;} reserved[32] = 0;
     } cr;
@@ -27,6 +29,9 @@ addrmap device_info_axi_core{
     reg {
         name = "CR_S";
         desc = "
+            Регистр установки бит (SET) в регистре управления модулем, в настоящее время не реализован. 
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr | cr_s (ИЛИ), то есть выставляются в 1 все биты, выставленные в 1 регистре cr_s.
         ";
         field {sw=w; hw=rw;} reserved[32] = 0;
     } cr_s;
@@ -34,6 +39,9 @@ addrmap device_info_axi_core{
     reg {
         name = "CR_C";
         desc = "
+            Регистр сброса бит (CLEAR) в регистре управления модулем, в настоящее время не реализован.
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr & ~cr_c, то есть выставляются в 0 все биты, выставленные в 1 регистре cr_s.
         ";
         field {sw=w; hw=rw;} reserved[32] = 0;
     } cr_c;
@@ -41,7 +49,7 @@ addrmap device_info_axi_core{
     reg {
         name = "DEVICE_TYPE";
         desc = "
-            Идентификатор типа устройства
+            Идентификатор типа устройства.
         ";
         field {sw=r; hw=w; encode = device_type_encoding; } device_type[32] = device_type_encoding::EVG;
     } device_type;
@@ -49,7 +57,7 @@ addrmap device_info_axi_core{
     reg {
         name = "HW_VERSION";
         desc = "
-            Аппаратная версия
+            Аппаратная версия.
         ";
         field {sw=rw; hw=na; } hw_version[32] = 0;
     } hw_version;
@@ -57,7 +65,7 @@ addrmap device_info_axi_core{
     reg {
         name = "FW_VERSION";
         desc = "
-            Версия прошивки старшее слово
+            Версия прошивки старшее слово.
         ";
         field {sw=r; hw=w; } minor[16] = 0;
         field {sw=r; hw=w; } major[16] = 0;
@@ -66,7 +74,7 @@ addrmap device_info_axi_core{
     reg {
         name = "FW_HASH";
         desc = "
-            Версия прошивки младшее слово (hash коммита)
+            Версия прошивки младшее слово (hash коммита).
         ";
         field {sw=r; hw=w; } fw_hash[32] = 0;
     } fw_hash;
@@ -74,7 +82,7 @@ addrmap device_info_axi_core{
     reg {
         name = "SERIAL";
         desc = "
-            Серийный номер
+            Серийный номер. В настоящее время не реализован.
         ";
         field {sw=rw; hw=na; } serial_number[32] = 0;
     } serial_number;

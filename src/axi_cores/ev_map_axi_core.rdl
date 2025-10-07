@@ -1,25 +1,48 @@
 addrmap ev_map_axi_core{
     name = "Таблица маппинга событий";
     desc = "
-        Таблица соответствия событий set/clear/trigger/cnt_reset генераторов
+        Всего есть 64 компараторов событий и до 24 генераторов сигналов, каждому компаратору соответствует одна запись в таблице.
+        В записи задается: событие, по которому будет срабатывать компаратор и биты, которые показывают, будет ли компаратор 
+        активировать set/clear/trigger/cnt_reset генератора сигналов. Подробнее про генераторы можно прочитать в их карте регистров. 
+        Биты идут по порядку, то есть сперва 4 бита коммутации для нулевого генератора, потому 4 бита для первого, и так далее.
+        На входах генераторов сигналов сигналы со всех компараторов объединяются по ИЛИ.
     ";
     `define SIGNAL_GEN_N 16
-    <% $SIGNAL_GEN_N_PERL = 16; %> // должно быть равно дефайну!!!
+    <% $SIGNAL_GEN_N_PERL = 24; %>
     `define EV_COMP_N    64
 
     /*reg {
-        name = "mem entry example";
+        name = "Формат записей в таблице";
         regwidth = 128;
-        field {sw=rw; hw=r;}   event[24]             = 0;
+        field {sw=rw; hw=r;
+        desc = "
+            Событие компаратора.
+        ";
+        }   event[24]             = 0;
         field {sw=rw; hw=na;}  reserved[8]           = 0;
         <% for( $i = 0; $i < $SIGNAL_GEN_N_PERL; $i += 1 ) { %>
-        field {sw=rw; hw=r;}   set_ena_<%=$i%>       = 0;
-        field {sw=rw; hw=r;}   clear_ena_<%=$i%>     = 0;
-        field {sw=rw; hw=r;}   trigger_ena_<%=$i%>   = 0;
-        field {sw=rw; hw=r;}   cnt_reset_ena_<%=$i%> = 0;
+        field {sw=rw; hw=r;
+        desc = "
+            Бит разрешения установки set генератору.
+        ";
+        }   set_ena_<%=$i%>       = 0;
+        field {sw=rw; hw=r;
+        desc = "
+            Бит разрешения установки clear генератору.
+        ";
+        }   clear_ena_<%=$i%>     = 0;
+        field {sw=rw; hw=r;
+        desc = "
+            Бит разрешения установки trigger генератору.
+        ";
+        }   trigger_ena_<%=$i%>   = 0;
+        field {sw=rw; hw=r;
+        desc = "
+            Бит разрешения установки cnt_reset генератору.
+        ";
+        }   cnt_reset_ena_<%=$i%> = 0;
         <% } %>
-        field {sw=rw; hw=na;}  reserved[32]          = 0;
-    } mem_entry_example;*/
+    } mem_entry;*/
 
     external mem {
         mementries = `EV_COMP_N * `SIGNAL_GEN_N * 4 / 32;
