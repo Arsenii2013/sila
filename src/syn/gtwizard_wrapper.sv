@@ -255,6 +255,8 @@ module gtwizard_wrapper#(
         .gt0_txcharisk_in               (gtx_if[0].tx_is_k),
         //----------- Transmit Ports - TX Initialization and Reset Ports -----------
         .gt0_txresetdone_out            (txresetdone[0]),
+    //--------------- Transmit Ports - TX Polarity Control Ports ---------------
+        .gt0_txpolarity_in              (1),
 
    
         .gt0_qplllock_in(qplllock),
