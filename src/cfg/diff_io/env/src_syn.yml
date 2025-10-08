@@ -1,0 +1,5 @@
+import : main
+
+sources:
+    - src/syn/diff_io/diff_io.svh
+    - src/syn/diff_io/single_output.sv

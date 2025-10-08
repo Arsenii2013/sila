@@ -1,0 +1,4 @@
+
+sources:
+    - src/lib/common/sys_clk_gen.sv
+    - src/sim/diff_io/single_outputTB.sv
