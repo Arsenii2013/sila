@@ -46,4 +46,9 @@ endfunction
 
 typedef logic [4:0] odelay_taps_t;
 
+typedef enum{
+    COMMON = 0,
+    PRECISE = 1
+} delay_adj_t;
+
 endpackage
