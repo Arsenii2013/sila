@@ -7,3 +7,5 @@ sources:
     - src/sim/diff_io/single_outputTB.sv
     - src/sim/diff_io/diff_ioTB.sv
     - src/sim/diff_io/diff_io_generator.sv
+    - src/sim/diff_io/gen_mapTB.sv
+    - src/sim/diff_io/gen_map_generator.sv

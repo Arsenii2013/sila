@@ -1,6 +1,9 @@
 import : main
 
 sources:
+    - src/syn/top.svh
     - src/syn/diff_io/diff_io.svh
     - src/syn/diff_io/single_output.sv
     - src/syn/diff_io/diff_io.sv
+    - src/lib/common/signal_interconnect.sv
+    - src/syn/diff_io/gen_map.sv
