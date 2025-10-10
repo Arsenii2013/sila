@@ -2,6 +2,8 @@ set_property -dict { PACKAGE_PIN AF12   IOSTANDARD LVCMOS33 } [get_ports { LED[0
 set_property -dict { PACKAGE_PIN AE12   IOSTANDARD LVCMOS33 } [get_ports { LED[1] }];
 set_property -dict { PACKAGE_PIN AB17   IOSTANDARD LVCMOS33 } [get_ports { LED[2] }];
 set_property -dict { PACKAGE_PIN AB16   IOSTANDARD LVCMOS33 } [get_ports { LED[3] }];
+set_property -dict { PACKAGE_PIN AC17   IOSTANDARD LVCMOS33 } [get_ports { SFP_LED_LINK }];
+set_property -dict { PACKAGE_PIN AC16   IOSTANDARD LVCMOS33 } [get_ports { SFP_LED_ACT }];
 set_property -dict { PACKAGE_PIN G14    IOSTANDARD LVDS } [get_ports { START_p[0] }];
 set_property -dict { PACKAGE_PIN E10    IOSTANDARD LVDS } [get_ports { START_p[1] }];
 set_property -dict { PACKAGE_PIN A15    IOSTANDARD LVDS } [get_ports { START_p[2] }];
