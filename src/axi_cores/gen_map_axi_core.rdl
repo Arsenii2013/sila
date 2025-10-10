@@ -29,7 +29,7 @@ addrmap gen_map_axi_core{
     } mem_entry;*/
 
     external mem {
-        mementries = `SIGNAL_GEN_N * `DIFF_IO_N / 32;
+        mementries = `SIGNAL_GEN_N * `DIFF_IO_N * 2 / 32;
         memwidth = 32;
     } map_mem;
 };

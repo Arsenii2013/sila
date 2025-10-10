@@ -55,9 +55,9 @@ class diff_io_generator#(
         data_t wr_word;
 
         if(cfg.polarity == diff_io_pkg::POSITIVE)
-            wr_word = 1;
-        else
             wr_word = 0;
+        else
+            wr_word = 1;
         wr_word |= cfg.mode << 1;
 
         write(BASE + reg_by_offs(out_n, OUT_CR_C_OFFS), mask);

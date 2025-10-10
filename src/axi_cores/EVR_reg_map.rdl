@@ -4,6 +4,8 @@
 `include "timestamper_axi_core.rdl"
 `include "ev_map_axi_core.rdl"
 `include "signal_gen_ctrl_axi_core.rdl"
+`include "gen_map_axi_core.rdl"
+`include "diff_io_axi_core.rdl"
 `include "sfp_control_axi_core.rdl"
 `include "rdl_axi_params.rdl"
 
@@ -16,11 +18,14 @@ addrmap EVR_reg_map {
     default alignment   = 0x4;
     alignment   = `MMR_BLOCK_SIZE;
 
-    enum signal_gen_params{
-        SIGNAL_GEN_N      = `SIGNAL_GEN_N;
-    };
     enum ev_comp_params{
         EV_COMP_N      = `EV_COMP_N;
+    };
+    enum signal_gen_params{
+        SIGNAL_GEN_N   = `SIGNAL_GEN_N;
+    };
+    enum diff_io_params{
+        DIFF_IO_N      = `DIFF_IO_N;
     };
 
     enum device_numbers{
@@ -29,6 +34,8 @@ addrmap EVR_reg_map {
         TIMESTAMPER;
         EV_MAP;
         SIG_GEN_CTRL;
+        SIG_GEN_MAP;
+        DIFF_IO;
         SFP_CONTROL = `DEBUG_DEVICE;
         EVENT_COMPARATOR;
         MAX_DEVICE  = `MAX_DEVICE;
@@ -39,6 +46,8 @@ addrmap EVR_reg_map {
     timestamper_axi_core     timestamper     @ device_numbers::TIMESTAMPER  * `MMR_BLOCK_SIZE;
     ev_map_axi_core          ev_map          @ device_numbers::EV_MAP       * `MMR_BLOCK_SIZE;
     signal_gen_ctrl_axi_core signal_gen_ctrl @ device_numbers::SIG_GEN_CTRL * `MMR_BLOCK_SIZE;
+    gen_map_axi_core         signal_gen_map  @ device_numbers::SIG_GEN_MAP  * `MMR_BLOCK_SIZE;
+    diff_io_axi_core         diff_io_ctrl    @ device_numbers::DIFF_IO      * `MMR_BLOCK_SIZE;
     sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
 
 
@@ -53,10 +62,13 @@ addrmap EVR_reg_map {
             field {encode = device_numbers;} mmr_device_numbers[32];
         } mmr_device_numbers;
         reg {
+            field {encode = ev_comp_params;} ev_comp_params[32];
+        } ev_comp_params;
+        reg {
             field {encode = signal_gen_params;} signal_gen_params[32];
         } signal_gen_params;
         reg {
-            field {encode = ev_comp_params;} ev_comp_params[32];
-        } ev_comp_params;
+            field {encode = diff_io_params;} diff_io_params[32];
+        } diff_io_params;
     } fake_regfile @ device_numbers::MAX_DEVICE * `MMR_BLOCK_SIZE;
 };

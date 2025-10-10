@@ -3,7 +3,7 @@ addrmap diff_io_axi_core{
     desc = "
     ";
 
-    `define OUTPUT_N 16
+    `define DIFF_IO_N 16
 
     enum polarity_t {
         POSITIVE = 0;
@@ -30,7 +30,7 @@ addrmap diff_io_axi_core{
         desc = "
             Значение на соответствующем выходе.
         ";
-        }   value[`OUTPUT_N] = 0;
+        }   value[`DIFF_IO_N] = 0;
     } sr;
 
     reg {
@@ -149,5 +149,5 @@ addrmap diff_io_axi_core{
             ";
             } mode[8] = mode_t::TRI;
         } out_cr_c;
-    } out_regs [`OUTPUT_N];
+    } out_regs [`DIFF_IO_N];
 };

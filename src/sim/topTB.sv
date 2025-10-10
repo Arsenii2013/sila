@@ -190,10 +190,16 @@ module EVR_board_emulator(
     input  logic       sfp_rx_p[gtx::EVR_PORT_N],
     output logic       sfp_tx_n[gtx::EVR_PORT_N],
     output logic       sfp_tx_p[gtx::EVR_PORT_N],
-    output logic [15:0]out_pulse
+    inout  logic       START[EVR_board_pkg::START_N]
 );
+    import EVR_board_pkg::START_N;
+    import EVR_board_pkg::START_POLARITY;
+    import EVR_board_pkg::polarity_t;
+    import EVR_board_pkg::POSITIVE;
+    import EVR_board_pkg::NEGATIVE;
+    
     localparam REFCLK_OFFSET = 0;
-    logic     REFCLK_SFP;
+    logic      REFCLK_SFP;
     sys_clk_gen
     #(
         .halfcycle (4000), // 4000 ps = 125 MHz
@@ -201,15 +207,37 @@ module EVR_board_emulator(
     ) REFCLK_SFP_gen1 (
         .sys_clk (REFCLK_SFP)
     );
+    logic     SYS_CLK;
+    sys_clk_gen
+    #(
+        .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
+        .offset    (0)
+    ) CLK_GEN1 (
+        .sys_clk (SYS_CLK)
+    );
+
+    wire START_p[START_N];
+    wire START_n[START_N];
 
     topEVR DUT_EVR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
 
+        .SYS_CLK_n(~SYS_CLK),
+        .SYS_CLK_p(SYS_CLK),
+
         .SFP_RX_N(sfp_rx_n),
         .SFP_RX_P(sfp_rx_p),
         .SFP_TX_N(sfp_tx_p),
         .SFP_TX_P(sfp_tx_n),
-        .START_p(out_pulse)
+        .START_p(START_p),
+        .START_n(START_n)
     );
+
+    genvar START_i;
+    generate
+        for(START_i = 0; START_i < START_N; START_i ++) begin
+            assign START[START_i] = START_POLARITY[START_i] == POSITIVE ? START_p[START_i] : START_n[START_i];
+        end
+    endgenerate
 endmodule

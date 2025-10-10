@@ -11,6 +11,7 @@ module diff_io #(
 
     input  logic    o1[OUTPUT_N],
     input  logic    o2[OUTPUT_N],
+    output logic    i_logic[OUTPUT_N],
 
     inout  logic    IO_P[OUTPUT_N],
     inout  logic    IO_N[OUTPUT_N]
@@ -22,7 +23,7 @@ module diff_io #(
     (* IODELAY_GROUP = ODELAY_GROUP *) 
     IDELAYCTRL IDELAYCTRL_inst (
         .RDY(),
-        .REFCLK(idelayctrl_refclk),
+        .REFCLK(iodelayctrl_refclk),
         .RST(app_rst)
     );
 
@@ -51,6 +52,7 @@ module diff_io #(
             .IO_P(IO_P[output_i]),
             .IO_N(IO_N[output_i])
         );
+        assign i_logic[output_i] = STATIC_POLARITY[output_i] == POSITIVE ? inputs[output_i] : !inputs[output_i];
     end
     endgenerate
 

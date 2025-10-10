@@ -1,11 +1,28 @@
 `include "topEVR.svh"
 //`include "gtx.svh"
 
-package EVR_board;
+package EVR_board_pkg;
+    import diff_io_pkg::polarity_t;
+    import diff_io_pkg::POSITIVE;
+    import diff_io_pkg::NEGATIVE;
+
+    import diff_io_pkg::delay_adj_t;
+    import diff_io_pkg::PRECISE;
+    import diff_io_pkg::COMMON;
+
     localparam START_N                 = 16;
-    localparam integer START_INVERSE [START_N] 
-                    = {0, 1, 0, 1, 1, 1, 1, 0, 
-                       1, 0, 1, 1, 1, 0, 1, 1};
+
+    localparam polarity_t START_POLARITY [START_N] = 
+        '{POSITIVE, NEGATIVE, POSITIVE, NEGATIVE, 
+          NEGATIVE, NEGATIVE, NEGATIVE, POSITIVE, 
+          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE, 
+          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE};
+
+    localparam delay_adj_t START_DELAY_ADJ [START_N] = 
+        '{PRECISE, PRECISE, PRECISE, PRECISE, 
+          PRECISE, PRECISE, PRECISE, PRECISE, 
+          COMMON,  COMMON,  COMMON,  COMMON, 
+          COMMON,  COMMON,  COMMON,  COMMON};
 
     localparam LED_N                   = 4;
 endpackage
@@ -66,6 +83,9 @@ module topEVR(
         .DW(axi_params::MMR_DATA_W),
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
+
+    logic sysclk;
+    IBUFDS sysclk_ibufds_inst (.O(sysclk), .I(SYS_CLK_p), .IB(SYS_CLK_n));
 
     pf_m #(
         .WIDTH(1000),
@@ -235,7 +255,6 @@ module topEVR(
     logic clear    [EVR_axi_params::SIG_GEN_N];
     logic trigger  [EVR_axi_params::SIG_GEN_N];
     logic cnt_reset[EVR_axi_params::SIG_GEN_N];
-    logic gen_out  [EVR_axi_params::SIG_GEN_N];
     ev_map #(
         .COMP_N(EVR_axi_params::EV_COMP_N),
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
@@ -250,7 +269,7 @@ module topEVR(
         .ev(ev)
     );
 
-    logic [EVR_board::START_N-1:0] start;
+    logic gen_out  [EVR_axi_params::SIG_GEN_N];
     signal_generator #(
         .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (

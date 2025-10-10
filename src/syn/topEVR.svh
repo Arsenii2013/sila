@@ -13,6 +13,9 @@ localparam EVR_reg_map__device_numbers_e    EV_MAP_EVAL       = EVR_reg_map__dev
 localparam EVR_reg_map__ev_comp_params_e    EV_COMP_N_EVAL    = EVR_reg_map__ev_comp_params__EV_COMP_N;
 localparam EVR_reg_map__device_numbers_e    SIG_GEN_CTRL_EVAL = EVR_reg_map__device_numbers__SIG_GEN_CTRL;
 localparam EVR_reg_map__signal_gen_params_e SIG_GEN_N_EVAL    = EVR_reg_map__signal_gen_params__SIGNAL_GEN_N;
+localparam EVR_reg_map__device_numbers_e    SIG_GEN_MAP_EVAL  = EVR_reg_map__device_numbers__SIG_GEN_MAP;
+localparam EVR_reg_map__device_numbers_e    DIFF_IO_EVAL      = EVR_reg_map__device_numbers__DIFF_IO;
+localparam EVR_reg_map__diff_io_params_e    DIFF_IO_N_EVAL    = EVR_reg_map__diff_io_params__DIFF_IO_N;
 localparam EVR_reg_map__device_numbers_e    SFP_CONTROL_EVAL  = EVR_reg_map__device_numbers__SFP_CONTROL;
 localparam EVR_reg_map__device_numbers_e    EV_COMAPATOR_EVAL = EVR_reg_map__device_numbers__EVENT_COMPARATOR;
 
@@ -23,6 +26,9 @@ localparam EV_MAP         = unsigned'(EV_MAP_EVAL);
 localparam EV_COMP_N      = unsigned'(EV_COMP_N_EVAL);
 localparam SIG_GEN_CTRL   = unsigned'(SIG_GEN_CTRL_EVAL);
 localparam SIG_GEN_N      = unsigned'(SIG_GEN_N_EVAL);
+localparam SIG_GEN_MAP    = unsigned'(SIG_GEN_MAP_EVAL);
+localparam DIFF_IO        = unsigned'(DIFF_IO_EVAL);
+localparam DIFF_IO_N      = unsigned'(DIFF_IO_N_EVAL);
 localparam SFP_CONTROL    = unsigned'(SFP_CONTROL_EVAL);
 localparam EV_COMPARATOR  = unsigned'(EV_COMAPATOR_EVAL);
 
@@ -37,7 +43,9 @@ localparam GTWIZARD     = TIMESTAMPER + 1;
 localparam EVR          = GTWIZARD    + 1;
 localparam EV_MAP       = EVR         + 1;
 localparam SIG_GEN_CTRL = EV_MAP      + 1;
-localparam DEV_CNT      = SIG_GEN_CTRL+ 1;
+localparam SIG_GEN_MAP  = SIG_GEN_CTRL+ 1;
+localparam DIFF_IO      = SIG_GEN_MAP + 1;
+localparam DEV_CNT      = DIFF_IO     + 1;
 
 
 endpackage

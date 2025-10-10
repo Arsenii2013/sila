@@ -46,6 +46,14 @@ sources:
     - src/sim/event_generator/ev_seq_generator.sv
     - src/sim/event_generator/ev_seq_ctrl_generator.sv
     - src/sim/event_network/link_csr_generator.sv
+
+    - src/syn/diff_io/diff_io.svh
+    - src/syn/diff_io/single_output.sv
+    - src/syn/diff_io/diff_io.sv
+    - src/sim/diff_io/diff_io_generator.sv
+    - src/syn/diff_io/gen_map.sv
+    - src/sim/diff_io/gen_map_generator.sv
+
   
     - src/syn/mem_wrapper.sv
     - src/lib/axi/axi_crossbar.sv
