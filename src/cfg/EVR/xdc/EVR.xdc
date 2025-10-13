@@ -21,6 +21,10 @@ set_property -dict { PACKAGE_PIN E11    IOSTANDARD LVDS } [get_ports { START_p[1
 set_property -dict { PACKAGE_PIN B16    IOSTANDARD LVDS } [get_ports { START_p[14] }];
 set_property -dict { PACKAGE_PIN H13    IOSTANDARD LVDS } [get_ports { START_p[15] }];
 
+set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_n }];
+set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_p }];
+create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports SYS_CLK_p]
+
 set_property PACKAGE_PIN AF8 [get_ports {SFP_TX_P[0]}]
 set_property PACKAGE_PIN AD8 [get_ports {SFP_RX_P[0]}]
 

@@ -57,21 +57,21 @@ module topEVR(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       SFP_RX_N[gtx::EVR_PORT_N],
-    input  logic       SFP_RX_P[gtx::EVR_PORT_N],
-    output logic       SFP_TX_N[gtx::EVR_PORT_N],
-    output logic       SFP_TX_P[gtx::EVR_PORT_N],
+    input  logic       SFP_RX_N     [gtx::EVR_PORT_N],
+    input  logic       SFP_RX_P     [gtx::EVR_PORT_N],
+    output logic       SFP_TX_N     [gtx::EVR_PORT_N],
+    output logic       SFP_TX_P     [gtx::EVR_PORT_N],
     output logic       SFP_TX_DIS,
 
 
     input  logic       SYS_CLK_n,
     input  logic       SYS_CLK_p,
 
-    output logic        LED          [EVR_board_pkg::LED_N  -1:0],
-    output logic        SFP_LED_LINK,
-    output logic        SFP_LED_ACT,
-    inout  logic        START_p      [EVR_board_pkg::START_N-1:0],
-    inout  logic        START_n      [EVR_board_pkg::START_N-1:0]
+    output logic       LED          [EVR_board_pkg::LED_N],
+    output logic       SFP_LED_LINK,
+    output logic       SFP_LED_ACT,
+    inout  logic       START_p      [EVR_board_pkg::START_N],
+    inout  logic       START_n      [EVR_board_pkg::START_N]
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -313,7 +313,7 @@ module topEVR(
 
         .o1(o1),
         .o2(o2),
-        .i_logic(diff_inputs),
+        .in_logic(diff_inputs),
 
         .IO_P(START_p),
         .IO_N(START_n)
@@ -340,7 +340,7 @@ module EVR_pretty_leds(
     input  evn::ev_t ev,
     input  logic     diff_inputs [EVR_axi_params::DIFF_IO_N],
 
-    output logic     LED         [EVR_board_pkg::LED_N  -1:0],
+    output logic     LED         [EVR_board_pkg::LED_N],
     output logic     SFP_LED_LINK,
     output logic     SFP_LED_ACT
 );

@@ -56,7 +56,7 @@ module gen_map #(
     logic                         regblk_addr_valid;
     logic                         regblk_addr_is_wr;
 
-    regblk_n_by_addr #(
+    regblk_n_by_addr_gen_map #(
         .ADDR_W($clog2(ENTRY_NUM) + $clog2(WORD_WIDTH/8)),
         .DATA_W(WORD_WIDTH),
         .REGBLK_N(ENTRY_SIZE)
@@ -107,7 +107,7 @@ module gen_map #(
     );
 endmodule
 
-module regblk_n_by_addr #(
+module regblk_n_by_addr_gen_map #(
     parameter ADDR_W   = 32,
     parameter DATA_W   = 32,
     parameter REGBLK_N = 4

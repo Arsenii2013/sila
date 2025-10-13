@@ -216,8 +216,8 @@ module EVR_board_emulator(
         .sys_clk (SYS_CLK)
     );
 
-    wire START_p[START_N];
-    wire START_n[START_N];
+    tri0 START_p[START_N];
+    tri1 START_n[START_N];
 
     topEVR DUT_EVR(
         .REFCLK_SFP_n(~REFCLK_SFP),

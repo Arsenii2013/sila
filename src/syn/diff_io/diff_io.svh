@@ -1,3 +1,5 @@
+`ifndef _DIFF_IO_
+`define _DIFF_IO_
 
 package diff_io_pkg;
 
@@ -25,7 +27,7 @@ localparam unsigned MODE_CLK         = unsigned'(CLK_EVAL);
 localparam unsigned POLARITY_POSITIVE   = unsigned'(POSITIVE_EVAL);
 localparam unsigned POLARITY_NEGATIVE   = unsigned'(NEGATIVE_EVAL);
 
-typedef enum{
+typedef enum logic [$bits(diff_io_axi_core__mode_t_e)-1:0] {
     TRI         = MODE_TRI,
     FORCE_CLEAR = MODE_FORCE_CLEAR,
     FORCE_SET   = MODE_FORCE_SET,
@@ -35,7 +37,7 @@ typedef enum{
     CLK         = MODE_CLK
 } mode_t;
 
-typedef enum{
+typedef enum logic [$bits(diff_io_axi_core__polarity_t_e)-1:0] {
     POSITIVE    = POLARITY_POSITIVE,
     NEGATIVE    = POLARITY_NEGATIVE
 } polarity_t;
@@ -46,9 +48,11 @@ endfunction
 
 typedef logic [4:0] odelay_taps_t;
 
-typedef enum{
+typedef enum logic {
     COMMON = 0,
     PRECISE = 1
 } delay_adj_t;
 
 endpackage
+
+`endif // _DIFF_IO_

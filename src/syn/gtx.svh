@@ -1,3 +1,6 @@
+`ifndef _GTX_
+`define _GTX_
+
 package gtx;
 
 localparam DATA_W = 32;
@@ -71,3 +74,5 @@ modport monitor(
     input  aligned
 );
 endinterface
+
+`endif // _GTX_

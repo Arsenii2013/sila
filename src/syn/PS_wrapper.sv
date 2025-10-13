@@ -388,7 +388,7 @@ module PS_wrapper_sv #(
 
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
 
-            diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            /*diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(1, '{diff_io_pkg::NEGATIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GATE});
             diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::FLIP_FLOP});
@@ -401,6 +401,27 @@ module PS_wrapper_sv #(
                 '{map: '{'{o1:1, o2:0}, '{o1:1, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
                 '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
                 '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:1}}}
+            });*/
+            diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(1, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(4, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(5, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(6, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(7, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(8, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(9, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(10, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(11, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(12, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(13, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(14, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(15, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+    
+            gen_map_generator_i.write_mapping('{
+                '{map: '{16{'{o1:0, o2:0}}}},
+                '{map: '{16{'{o1:1, o2:0}}}}
             });
 
             signal_generator_generator_i.set_cfg(0, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});

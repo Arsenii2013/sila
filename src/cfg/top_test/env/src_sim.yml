@@ -4,6 +4,7 @@ sources:
     - src/syn/topEVG.svh
     - src/syn/topEVR.svh
     - src/syn/topFanout.svh
+    - src/syn/gtx.svh
     - src/syn/gtwizard_wrapper.sv
     - src/syn/event_network/common/evn.svh
     - src/lib/axi/axi4_lite_if.svh

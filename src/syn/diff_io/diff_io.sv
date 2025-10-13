@@ -1,3 +1,5 @@
+`include "diff_io.svh"
+
 module diff_io #(
     parameter unsigned OUTPUT_N = 16,
     parameter diff_io_pkg::polarity_t  STATIC_POLARITY [OUTPUT_N] = '{default: diff_io_pkg::POSITIVE},
@@ -11,7 +13,7 @@ module diff_io #(
 
     input  logic    o1[OUTPUT_N],
     input  logic    o2[OUTPUT_N],
-    output logic    i_logic[OUTPUT_N],
+    output logic    in_logic[OUTPUT_N],
 
     inout  logic    IO_P[OUTPUT_N],
     inout  logic    IO_N[OUTPUT_N]
@@ -46,13 +48,13 @@ module diff_io #(
 
             .o1(o1[output_i]),
             .o2(o2[output_i]),
-            .i(inputs[output_i]),
+            .in(inputs[output_i]),
             .mode(modes[output_i]),
             .polarity(polarites[output_i]),
             .IO_P(IO_P[output_i]),
             .IO_N(IO_N[output_i])
         );
-        assign i_logic[output_i] = STATIC_POLARITY[output_i] == POSITIVE ? inputs[output_i] : !inputs[output_i];
+        assign in_logic[output_i] = STATIC_POLARITY[output_i] == POSITIVE ? inputs[output_i] : !inputs[output_i];
     end
     endgenerate
 
