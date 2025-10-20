@@ -3,6 +3,7 @@ import : main
 sources:
     - src/syn/top.svh
     - src/syn/diff_io/diff_io.svh
+    - src/lib/ls_spi/ls_spi_master.sv
     - src/syn/diff_io/single_output.sv
     - src/syn/diff_io/diff_io.sv
     - src/lib/common/signal_interconnect.sv

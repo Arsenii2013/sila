@@ -2,10 +2,13 @@
 sources:
     - src/lib/common/sys_clk_gen.sv
     - src/lib/axi/axi4_lite_if.svh
-    - src/lib/axi/axi_driver.sv
-    - src/lib/axi/axi_generator.sv
-    - src/sim/diff_io/single_outputTB.sv
-    - src/sim/diff_io/diff_ioTB.sv
-    - src/sim/diff_io/diff_io_generator.sv
-    - src/sim/diff_io/gen_mapTB.sv
-    - src/sim/diff_io/gen_map_generator.sv
+#    - src/lib/axi/axi_driver.sv
+#    - src/lib/axi/axi_generator.sv
+#    - src/sim/diff_io/single_outputTB.sv
+#    - src/sim/diff_io/diff_io_generator.sv
+#    - src/sim/diff_io/diff_ioTB.sv
+#    - src/sim/diff_io/gen_map_generator.sv
+#    - src/sim/diff_io/gen_mapTB.sv
+    - src/lib/ls_spi/ls_spi_checker.sv
+    - src/lib/ls_spi/ls_spi_slave.sv
+    - src/lib/ls_spi/ls_spiTB.sv
