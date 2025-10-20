@@ -9,6 +9,3 @@ sources:
 #    - src/sim/diff_io/diff_ioTB.sv
 #    - src/sim/diff_io/gen_map_generator.sv
 #    - src/sim/diff_io/gen_mapTB.sv
-    - src/lib/ls_spi/ls_spi_checker.sv
-    - src/lib/ls_spi/ls_spi_slave.sv
-    - src/lib/ls_spi/ls_spiTB.sv
