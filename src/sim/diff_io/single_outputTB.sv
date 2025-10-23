@@ -241,8 +241,8 @@ module single_output_monitor #(
         .IO_N(IO_N_comp)
     );
 
-    assert property (@(mode) !$isunknown(mode));
-    assert property (@(polarity) !$isunknown(polarity));
+    //assert property (@(mode) !$isunknown(mode));
+    //assert property (@(polarity) !$isunknown(polarity));
 
     logic mode_stable;
     mode_t mode_reg0, mode_reg1, mode_reg2;

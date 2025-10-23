@@ -46,8 +46,6 @@ module ls_spi_master #(
 
 );
 
-import common::*;
-
 //------------------------------------------------------------------------------
 //
 //    Objects
@@ -176,7 +174,7 @@ assign dre  = bufempty;
 assign busy = bitcnt || !bufempty || SCK_cnt != SCK_STOP;
 
 //------------------------------------------------------------------------------
-pf
+pf_m
 #(
     .WIDTH(1),
     .POR("OFF")

@@ -5,6 +5,13 @@ typedef struct packed {
     diff_io_pkg::mode_t     mode;
 } cfg_t;
 
+typedef struct{
+    diff_io_pkg::polarity_t             polarity;
+    diff_io_pkg::mode_t                 mode;
+    diff_io_pkg::rough_delay_adj_t      rough_adj;
+    diff_io_pkg::precise_delay_adj_t    precise_adj;
+} setup_item_t;
+
 endpackage
 
 class diff_io_generator#(
@@ -12,17 +19,28 @@ class diff_io_generator#(
     parameter OUTPUT_N = 16
 ) extends axi_generator;
 
-    typedef diff_io_pkg::polarity_t      polarity_t;
-    typedef diff_io_pkg::mode_t          mode_t;
-    typedef diff_io_generator_pkg::cfg_t cfg_t;
+    typedef diff_io_pkg::polarity_t             polarity_t;
+    typedef diff_io_pkg::mode_t                 mode_t;
+    typedef diff_io_pkg::rough_delay_adj_t      rough_delay_adj_t;
+    typedef diff_io_pkg::precise_delay_adj_t    precise_delay_adj_t;
+    typedef diff_io_generator_pkg::cfg_t        cfg_t;
+    typedef diff_io_generator_pkg::setup_item_t setup_item_t;
+    localparam unsigned ROUGH_DELAY_ADJ_W       = diff_io_pkg::ROUGH_DELAY_ADJ_W;
+    localparam realtime ROUGH_DELAY_ADJ_TAP     = diff_io_pkg::ROUGH_DELAY_ADJ_TAP;
+    localparam realtime ROUGH_DELAY_ADJ_MIN     = diff_io_pkg::ROUGH_DELAY_ADJ_MIN;
+    localparam unsigned PRECISE_DELAY_ADJ_W     = diff_io_pkg::PRECISE_DELAY_ADJ_W;
+    localparam realtime PRECISE_DELAY_ADJ_TAP   = diff_io_pkg::PRECISE_DELAY_ADJ_TAP;
+    localparam realtime PRECISE_DELAY_ADJ_MIN   = diff_io_pkg::PRECISE_DELAY_ADJ_MIN;
 
-    localparam SR               = 'h0;
-    localparam OUT_REGS_BASE    = 'h10;
-    localparam OUT_REGS_SIZE    = 'h10;
-    localparam OUT_SR_OFFS      = 'h0;
-    localparam OUT_CR_OFFS      = 'h4;
-    localparam OUT_CR_S_OFFS    = 'h8;
-    localparam OUT_CR_C_OFFS    = 'hC;
+    localparam SR                       = 'h0;
+    localparam OUT_REGS_BASE            = 'h10;
+    localparam OUT_REGS_SIZE            = 'h18;
+    localparam OUT_SR_OFFS              = 'h0;
+    localparam OUT_CR_OFFS              = 'h4;
+    localparam OUT_CR_S_OFFS            = 'h8;
+    localparam OUT_CR_C_OFFS            = 'hC;
+    localparam ROUGH_DELAY_ADJ_OFFS     = 'h10;
+    localparam PRECISE_DELAY_ADJ_OFFS   = 'h14;
 
     function int unsigned reg_by_offs(input int unsigned gen_n, input int unsigned reg_offs);
         return OUT_REGS_BASE + OUT_REGS_SIZE * gen_n + reg_offs;
@@ -70,10 +88,51 @@ class diff_io_generator#(
         cfg.mode = mode_t'(rd_word[8:1]);
     endtask
 
-    task setup(input cfg_t setup[]);
+    task set_rough_delay_adj(input int unsigned out_n, input rough_delay_adj_t rough_adj);
+        write(BASE + reg_by_offs(out_n, ROUGH_DELAY_ADJ_OFFS), rough_adj);
+    endtask
+    task set_rough_delay_adj_time(input int unsigned out_n, input realtime rough_adj);
+        assert(rough_adj < ROUGH_DELAY_ADJ_TAP * 2 ** ROUGH_DELAY_ADJ_W + ROUGH_DELAY_ADJ_MIN)
+        else begin 
+            $error("diff_io rough delay adjustment greater than max adjustment value");
+            $stop();
+        end
+        assert(rough_adj >= ROUGH_DELAY_ADJ_MIN)
+        else begin 
+            $error("diff_io rough delay adjustment less than min adjustment value");
+            $stop();
+        end
+        set_rough_delay_adj(out_n, (rough_adj - ROUGH_DELAY_ADJ_MIN) / ROUGH_DELAY_ADJ_TAP);
+    endtask
+
+    task set_precise_delay_adj(input int unsigned out_n, input precise_delay_adj_t precise_adj);
+        write(BASE + reg_by_offs(out_n, PRECISE_DELAY_ADJ_OFFS), precise_adj);
+    endtask
+    task set_precise_delay_adj_time(input int unsigned out_n, input realtime precise_adj);
+        assert(precise_adj < PRECISE_DELAY_ADJ_TAP * 2 ** PRECISE_DELAY_ADJ_W + PRECISE_DELAY_ADJ_MIN)
+        else begin 
+            $error("diff_io precise delay adjustment greater than max adjustment value");
+            $display("%t, %t", precise_adj, PRECISE_DELAY_ADJ_TAP * 2 ** PRECISE_DELAY_ADJ_W + PRECISE_DELAY_ADJ_MIN);
+            $display("%t, %t, %d", PRECISE_DELAY_ADJ_TAP, PRECISE_DELAY_ADJ_MIN, 2 ** PRECISE_DELAY_ADJ_W);
+            $stop();
+        end
+        assert(precise_adj >= PRECISE_DELAY_ADJ_MIN)
+        else begin 
+            $error("diff_io precise delay adjustment less than min adjustment value");
+            $display("%t, %t", precise_adj, PRECISE_DELAY_ADJ_MIN);
+            $stop();
+        end
+        set_precise_delay_adj(out_n, (precise_adj - PRECISE_DELAY_ADJ_MIN) / PRECISE_DELAY_ADJ_TAP);
+    endtask
+
+    task setup(input setup_item_t setup[]);
+        cfg_t cfg;
         assert(setup.size() <= OUTPUT_N) else $display("diff_io setup greater than diff_ios number");
         foreach(setup[i]) begin
-            set_cfg(i, setup[i]);
+            cfg = '{setup[i].polarity, setup[i].mode};
+            set_cfg(i, cfg);
+            set_rough_delay_adj(i, setup[i].rough_adj);
+            set_precise_delay_adj(i, setup[i].precise_adj);
         end
     endtask
 

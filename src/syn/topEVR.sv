@@ -6,7 +6,7 @@ package EVR_board_pkg;
     import diff_io_pkg::POSITIVE;
     import diff_io_pkg::NEGATIVE;
 
-    import diff_io_pkg::delay_adj_t;
+    import diff_io_pkg::diff_io_mode_t;
     import diff_io_pkg::PRECISE;
     import diff_io_pkg::COMMON;
 
@@ -18,11 +18,11 @@ package EVR_board_pkg;
           NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE, 
           NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE};
 
-    localparam delay_adj_t START_DELAY_ADJ [START_N] = 
+    localparam diff_io_mode_t START_MODES [START_N] = 
         '{PRECISE, PRECISE, PRECISE, PRECISE, 
           PRECISE, PRECISE, PRECISE, PRECISE, 
-          COMMON,  COMMON,  COMMON,  COMMON, 
-          COMMON,  COMMON,  COMMON,  COMMON};
+          PRECISE,  PRECISE,  PRECISE,  PRECISE, 
+          PRECISE,  PRECISE,  PRECISE,  PRECISE};
 
     localparam LED_N                   = 4;
 endpackage
@@ -303,7 +303,7 @@ module topEVR(
     diff_io #(
         .OUTPUT_N(EVR_board_pkg::START_N),
         .STATIC_POLARITY(EVR_board_pkg::START_POLARITY),
-        .DELAY_ADJ(EVR_board_pkg::START_DELAY_ADJ)
+        .DIFF_IO_MODES(EVR_board_pkg::START_MODES)
     ) diff_io_i (
         .app_clk(app_clk),
         .clear_clk(app_clk),

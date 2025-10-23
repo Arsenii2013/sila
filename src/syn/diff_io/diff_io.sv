@@ -2,8 +2,8 @@
 
 module diff_io #(
     parameter unsigned OUTPUT_N = 16,
-    parameter diff_io_pkg::polarity_t  STATIC_POLARITY [OUTPUT_N] = '{default: diff_io_pkg::POSITIVE},
-    parameter diff_io_pkg::delay_adj_t DELAY_ADJ       [OUTPUT_N] = '{default: diff_io_pkg::COMMON}
+    parameter diff_io_pkg::polarity_t     STATIC_POLARITY [OUTPUT_N] = '{default: diff_io_pkg::POSITIVE},
+    parameter diff_io_pkg::diff_io_mode_t DIFF_IO_MODES   [OUTPUT_N] = '{default: diff_io_pkg::COMMON}
 )(
     input  logic    app_clk,
     input  logic    clear_clk,
@@ -16,7 +16,11 @@ module diff_io #(
     output logic    in_logic[OUTPUT_N],
 
     inout  logic    IO_P[OUTPUT_N],
-    inout  logic    IO_N[OUTPUT_N]
+    inout  logic    IO_N[OUTPUT_N],
+
+    output logic    SER,
+    output logic    SRCLK,
+    output logic    RCLK
 );
     import diff_io_pkg::*;
 
@@ -36,7 +40,7 @@ module diff_io #(
     genvar output_i;
     generate
     for(output_i = 0; output_i < OUTPUT_N; output_i++ ) begin : outputs
-        localparam STATIC_DELAY_TAPS = DELAY_ADJ[output_i] == COMMON ? 29 : 0;
+        localparam STATIC_DELAY_TAPS = DIFF_IO_MODES[output_i] == COMMON ? 29 : 0;
         single_output #(
             .STATIC_ODELAY_TAPS(STATIC_DELAY_TAPS),
             .ODELAY_GROUP(ODELAY_GROUP),
@@ -57,6 +61,41 @@ module diff_io #(
         assign in_logic[output_i] = STATIC_POLARITY[output_i] == POSITIVE ? inputs[output_i] : !inputs[output_i];
     end
     endgenerate
+
+    localparam int unsigned PRECISE_CNT = 8;
+    localparam int unsigned SN74HC595_CNT = PRECISE_CNT * PRECISE_DELAY_ADJ_W / 8;
+    logic [7                    : 0] sn74hc595_Q                  [SN74HC595_CNT];
+    logic                            sn74hc595_Q_upd;
+    logic [PRECISE_DELAY_ADJ_W-1: 0] hwif_precise_delay_adj     [PRECISE_CNT];
+    logic                            hwif_precise_delay_adj_upd [PRECISE_CNT];
+
+    logic [SN74HC595_CNT-1: 0][7                    : 0] sn74hc595_Q_flat;
+    logic [PRECISE_CNT  -1: 0][PRECISE_DELAY_ADJ_W-1: 0] hwif_precise_delay_adj_flat;
+    assign hwif_precise_delay_adj_flat  = {<<10{hwif_precise_delay_adj}};
+    assign sn74hc595_Q_flat             = hwif_precise_delay_adj_flat;
+    assign sn74hc595_Q                  = {>>{sn74hc595_Q_flat}};
+    assign sn74hc595_Q_upd              = hwif_precise_delay_adj_upd.or();
+    /*always_comb begin
+        sn74hc595_Q_upd = 0;
+        foreach (hwif_precise_delay_adj_upd[i]) begin
+            sn74hc595_Q_upd |= 
+        end
+    end*/
+
+    sn74hc595_controller #(
+        .CASCADE_LEN(SN74HC595_CNT),
+        .SRCLK_PRESCALER(1000)
+    ) sn74hc595_controller_inst (
+        .clk(app_clk),
+        .reset(app_rst),
+
+        .Q(sn74hc595_Q),
+        .send_Q(sn74hc595_Q_upd),
+
+        .SER(SER),
+        .RCLK(RCLK),
+        .SRCLK(SRCLK)
+    );
 
     diff_io_axi_core_pkg::diff_io_axi_core__in_t  hwif_in;
     diff_io_axi_core_pkg::diff_io_axi_core__out_t hwif_out;
@@ -86,6 +125,12 @@ module diff_io #(
         assign modes[hwif_i]     =     mode_t'((hwif_out.out_regs[hwif_i].out_cr.mode.value | 
                                                 hwif_out.out_regs[hwif_i].out_cr_s.mode.value) & 
                                                ~hwif_out.out_regs[hwif_i].out_cr_c.mode.value);
+
+        if(DIFF_IO_MODES[hwif_i] == PRECISE) begin
+            assign hwif_precise_delay_adj[hwif_i]     = hwif_out.out_regs[hwif_i].precise_delay_adj.value.value;
+            assign hwif_precise_delay_adj_upd[hwif_i] = hwif_out.out_regs[hwif_i].precise_delay_adj.value.swmod;
+            assign hwif_in.out_regs[hwif_i].precise_delay_adj.value.next = hwif_precise_delay_adj[hwif_i];
+        end
 
     end
     endgenerate

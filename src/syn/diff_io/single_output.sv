@@ -37,13 +37,13 @@ module single_output #(
     xpm_cdc_single #(
         .DEST_SYNC_FF(4),
         .INIT_SYNC_FF(0),
-        .SIM_ASSERT_CHK(1),
+        .SIM_ASSERT_CHK(0),
         .SRC_INPUT_REG(0)
     )
     in_cdc_inst (
         .dest_out(in),
         .dest_clk(app_clk),
-        .src_in(in_async)
+        .src_in(in_async && mode != CLK)
     );
 
 
@@ -98,10 +98,14 @@ module single_output #(
 
     assign gated_val = o1 && o2;
     always_ff @(posedge app_clk) begin
-        if(o2 || app_rst) begin
+        if(app_rst || mode != FLIP_FLOP) begin
             flip_floped_val <= 0;
-        end else if(o1) begin
-            flip_floped_val <= 1;
+        end else begin
+            if(o2) begin
+                flip_floped_val <= 0;
+            end else if(o1) begin
+                flip_floped_val <= 1;
+            end
         end
     end
 

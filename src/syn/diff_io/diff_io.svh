@@ -1,6 +1,6 @@
 `ifndef _DIFF_IO_
 `define _DIFF_IO_
-
+`timescale 1ps/10fs
 package diff_io_pkg;
 
 import diff_io_axi_core_pkg::*;
@@ -49,9 +49,31 @@ endfunction
 typedef logic [4:0] odelay_taps_t;
 
 typedef enum logic {
-    COMMON = 0,
+    COMMON  = 0,
     PRECISE = 1
-} delay_adj_t;
+} diff_io_mode_t;
+
+localparam unsigned ROUGH_DELAY_ADJ_W       = 5;
+localparam realtime ROUGH_DELAY_ADJ_TAP     = 78ps;
+localparam realtime ROUGH_DELAY_ADJ_MIN     = 0ns;
+localparam unsigned PRECISE_DELAY_ADJ_W     = 10;
+localparam realtime PRECISE_DELAY_ADJ_TAP   = 10ps;
+localparam realtime PRECISE_DELAY_ADJ_MIN   = 2.2ns;
+
+typedef logic [ROUGH_DELAY_ADJ_W  -1: 0] rough_delay_adj_t;
+typedef logic [PRECISE_DELAY_ADJ_W-1: 0] precise_delay_adj_t;
+
+function count_precise_chs(diff_io_pkg::diff_io_mode_t delay_adjs [16]);
+    int unsigned count;
+    count = 0;
+    $error("adsas");
+    foreach (delay_adjs[i]) begin
+        $error("adsas");
+        if(delay_adjs[i] == PRECISE)
+            count ++;
+    end
+    return count;
+endfunction
 
 endpackage
 
