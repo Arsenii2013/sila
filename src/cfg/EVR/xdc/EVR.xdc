@@ -2,6 +2,8 @@ set_property -dict { PACKAGE_PIN AF12   IOSTANDARD LVCMOS33 } [get_ports { LED[0
 set_property -dict { PACKAGE_PIN AE12   IOSTANDARD LVCMOS33 } [get_ports { LED[1] }];
 set_property -dict { PACKAGE_PIN AB17   IOSTANDARD LVCMOS33 } [get_ports { LED[2] }];
 set_property -dict { PACKAGE_PIN AB16   IOSTANDARD LVCMOS33 } [get_ports { LED[3] }];
+set_property -dict { PACKAGE_PIN AC17   IOSTANDARD LVCMOS33 } [get_ports { SFP_LED_LINK }];
+set_property -dict { PACKAGE_PIN AC16   IOSTANDARD LVCMOS33 } [get_ports { SFP_LED_ACT }];
 set_property -dict { PACKAGE_PIN G14    IOSTANDARD LVDS } [get_ports { START_p[0] }];
 set_property -dict { PACKAGE_PIN E10    IOSTANDARD LVDS } [get_ports { START_p[1] }];
 set_property -dict { PACKAGE_PIN A15    IOSTANDARD LVDS } [get_ports { START_p[2] }];
@@ -18,6 +20,14 @@ set_property -dict { PACKAGE_PIN C14    IOSTANDARD LVDS } [get_ports { START_p[1
 set_property -dict { PACKAGE_PIN E11    IOSTANDARD LVDS } [get_ports { START_p[13] }];
 set_property -dict { PACKAGE_PIN B16    IOSTANDARD LVDS } [get_ports { START_p[14] }];
 set_property -dict { PACKAGE_PIN H13    IOSTANDARD LVDS } [get_ports { START_p[15] }];
+
+set_property -dict { PACKAGE_PIN W18    IOSTANDARD LVCMOS33 } [get_ports { SER }];
+set_property -dict { PACKAGE_PIN AF19   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
+set_property -dict { PACKAGE_PIN W19    IOSTANDARD LVCMOS33 } [get_ports { RCLK }];
+
+set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_n }];
+set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_p }];
+create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports SYS_CLK_p]
 
 set_property PACKAGE_PIN AF8 [get_ports {SFP_TX_P[0]}]
 set_property PACKAGE_PIN AD8 [get_ports {SFP_RX_P[0]}]

@@ -1,11 +1,28 @@
 `include "topEVR.svh"
 //`include "gtx.svh"
 
-package EVR_board;
+package EVR_board_pkg;
+    import diff_io_pkg::polarity_t;
+    import diff_io_pkg::POSITIVE;
+    import diff_io_pkg::NEGATIVE;
+
+    import diff_io_pkg::diff_io_mode_t;
+    import diff_io_pkg::PRECISE;
+    import diff_io_pkg::COMMON;
+
     localparam START_N                 = 16;
-    localparam integer START_INVERSE [START_N] 
-                    = {0, 1, 0, 1, 1, 1, 1, 0, 
-                       1, 0, 1, 1, 1, 0, 1, 1};
+
+    localparam polarity_t START_POLARITY [START_N] = 
+        '{POSITIVE, NEGATIVE, POSITIVE, NEGATIVE, 
+          NEGATIVE, NEGATIVE, NEGATIVE, POSITIVE, 
+          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE, 
+          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE};
+
+    localparam diff_io_mode_t START_MODES [START_N] = 
+        '{PRECISE, PRECISE, PRECISE, PRECISE, 
+          PRECISE, PRECISE, PRECISE, PRECISE, 
+          COMMON,  COMMON,  COMMON,  COMMON, 
+          COMMON,  COMMON,  COMMON,  COMMON};
 
     localparam LED_N                   = 4;
 endpackage
@@ -40,15 +57,25 @@ module topEVR(
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
 
-    input  logic       SFP_RX_N[gtx::EVR_PORT_N],
-    input  logic       SFP_RX_P[gtx::EVR_PORT_N],
-    output logic       SFP_TX_N[gtx::EVR_PORT_N],
-    output logic       SFP_TX_P[gtx::EVR_PORT_N],
+    input  logic       SFP_RX_N     [gtx::EVR_PORT_N],
+    input  logic       SFP_RX_P     [gtx::EVR_PORT_N],
+    output logic       SFP_TX_N     [gtx::EVR_PORT_N],
+    output logic       SFP_TX_P     [gtx::EVR_PORT_N],
     output logic       SFP_TX_DIS,
 
-    output logic [EVR_board::LED_N  -1:0] LED,
-    output logic [EVR_board::START_N-1:0] START_p,
-    output logic [EVR_board::START_N-1:0] START_n
+
+    input  logic       SYS_CLK_n,
+    input  logic       SYS_CLK_p,
+
+    output logic       LED          [EVR_board_pkg::LED_N],
+    output logic       SFP_LED_LINK,
+    output logic       SFP_LED_ACT,
+    inout  logic       START_p      [EVR_board_pkg::START_N],
+    inout  logic       START_n      [EVR_board_pkg::START_N],
+
+    output logic       SER,
+    output logic       SRCLK,
+    output logic       RCLK
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -66,6 +93,9 @@ module topEVR(
         .DW(axi_params::MMR_DATA_W),
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
+
+    logic sysclk;
+    IBUFDS sysclk_ibufds_inst (.O(sysclk), .I(SYS_CLK_p), .IB(SYS_CLK_n));
 
     pf_m #(
         .WIDTH(1000),
@@ -167,15 +197,6 @@ module topEVR(
         .app_clk(app_clk)
     );
 
-    blink #(
-        .FREQ_HZ(125000000),
-        .LED_PERIOD_NS(500000000)
-    ) blink1 (
-        .reset(app_reset[EVR_reset_params::COMMON]),
-        .clk(app_clk),
-        .led(LED[0])
-    );
-
     localparam GTX_PORTS = gtx::EVR_PORT_N;
     logic sfp_loss [GTX_PORTS];
     gtx_if evr_gtx_if[GTX_PORTS]();
@@ -235,7 +256,6 @@ module topEVR(
     logic clear    [EVR_axi_params::SIG_GEN_N];
     logic trigger  [EVR_axi_params::SIG_GEN_N];
     logic cnt_reset[EVR_axi_params::SIG_GEN_N];
-    logic gen_out  [EVR_axi_params::SIG_GEN_N];
     ev_map #(
         .COMP_N(EVR_axi_params::EV_COMP_N),
         .SIG_GEN_N(EVR_axi_params::SIG_GEN_N)
@@ -250,7 +270,7 @@ module topEVR(
         .ev(ev)
     );
 
-    logic [EVR_board::START_N-1:0] start;
+    logic gen_out  [EVR_axi_params::SIG_GEN_N];
     signal_generator #(
         .N(EVR_axi_params::SIG_GEN_N)
     ) signal_generator_i (
@@ -263,28 +283,112 @@ module topEVR(
         .cnt_reset(cnt_reset),
         .gen_out(gen_out)
     );
-    assign start = {<<{gen_out}};
 
-    genvar start_gen_i;
-    generate
-    for(start_gen_i = 0; start_gen_i < EVR_board::START_N; start_gen_i ++) begin
-        if(EVR_board::START_INVERSE[start_gen_i]) begin
-            OBUFDS start_OBUFDS (
-                .O(START_p[start_gen_i]),
-                .OB(START_n[start_gen_i]),
-                .I(!start[start_gen_i])
-            );
-        end else begin
-            OBUFDS start_OBUFDS (
-                .O(START_p[start_gen_i]),
-                .OB(START_n[start_gen_i]),
-                .I(start[start_gen_i])
-            );
-        end
+    logic o1 [EVR_axi_params::DIFF_IO_N];
+    logic o2 [EVR_axi_params::DIFF_IO_N];
+    gen_map #(
+        .SIG_GEN_N(EVR_axi_params::SIG_GEN_N),
+        .DIFF_IO_N(EVR_board_pkg::START_N)
+    ) gen_map_i (
+        .app_clk(app_clk),
+        .app_rst(app_reset[EVR_reset_params::SIG_GEN_MAP]),
+        .mmr(mmr[EVR_axi_params::SIG_GEN_MAP]),
+        .o1(o1),
+        .o2(o2),
+        .gen_out(gen_out)
+    );
+
+
+    if (EVR_axi_params::DIFF_IO_N != EVR_board_pkg::START_N) begin
+        $error("Number of diff_io in axi must be equal to number of board START signals");
     end
-    endgenerate
-    
-    assign LED[1] = evr_gtx_if[0].tx_reset_done;
-    assign LED[2] = evr_gtx_if[0].rx_reset_done;
-    assign LED[3] = start[0];
+
+    logic diff_inputs [EVR_axi_params::DIFF_IO_N];
+    diff_io #(
+        .OUTPUT_N(EVR_board_pkg::START_N),
+        .STATIC_POLARITY(EVR_board_pkg::START_POLARITY),
+        .DIFF_IO_MODES(EVR_board_pkg::START_MODES)
+    ) diff_io_i (
+        .app_clk(app_clk),
+        .clear_clk(app_clk),
+        .app_rst(app_reset[EVR_reset_params::DIFF_IO]),
+        .iodelayctrl_refclk(sysclk),
+        .mmr(mmr[EVR_axi_params::DIFF_IO]),
+
+        .o1(o1),
+        .o2(o2),
+        .in_logic(diff_inputs),
+
+        .IO_P(START_p),
+        .IO_N(START_n),
+
+        .SER(SER),
+        .RCLK(RCLK),
+        .SRCLK(SRCLK)
+    );
+
+    EVR_pretty_leds EVR_pretty_leds_i(
+        .app_clk(app_clk),
+        .app_reset(app_reset[EVR_reset_params::COMMON]),
+        .sfp_aligned(evr_gtx_if[0].aligned),
+        .ev(ev),
+        .diff_inputs(diff_inputs),
+        .LED(LED),
+        .SFP_LED_LINK(SFP_LED_LINK),
+        .SFP_LED_ACT(SFP_LED_ACT)
+    );
+
+endmodule
+
+module EVR_pretty_leds(
+    input  logic     app_clk,
+    input  logic     app_reset,
+
+    input  logic     sfp_aligned,
+    input  evn::ev_t ev,
+    input  logic     diff_inputs [EVR_axi_params::DIFF_IO_N],
+
+    output logic     LED         [EVR_board_pkg::LED_N],
+    output logic     SFP_LED_LINK,
+    output logic     SFP_LED_ACT
+);
+
+    assign SFP_LED_LINK = sfp_aligned;
+    pf_m #(
+        .WIDTH(12500000),
+        .POR("OFF")
+    ) sfp_led_act_pf_i (
+        .clk(app_clk),
+        .in(ev != '0),
+        .out(SFP_LED_ACT)
+    );
+
+    assign LED[0] = 1;
+
+    blink #(
+        .FREQ_HZ(125000000),
+        .LED_PERIOD_NS(500000000)
+    ) blink1 (
+        .reset(app_reset),
+        .clk(app_clk),
+        .led(LED[1]),
+        .sync(ev != 0)
+    );
+
+    logic diff_inputs_ored;
+    always_comb begin
+        diff_inputs_ored = 0;
+        for(int i = 0; i < EVR_axi_params::DIFF_IO_N; i++)
+            diff_inputs_ored |= diff_inputs[i];
+    end
+    pf_m #(
+        .WIDTH(12500000),
+        .POR("OFF")
+    ) led2_pf_i (
+        .clk(app_clk),
+        .in(diff_inputs_ored),
+        .out(LED[2])
+    );
+
+    assign LED[3] = 0;
 endmodule

@@ -15,7 +15,7 @@ module signal_interconnect #(
     generate 
     if(PIPELINE <= 3) begin
         logic in_[IN_N];
-        logic out_[IN_N];
+        logic out_[OUT_N];
         if(PIPELINE >= 2) begin
             always_ff @(posedge clk) in_ <= in;
             always_ff @(posedge clk) out <= out_;

@@ -26,6 +26,13 @@ sources:
     - src/syn/signal_generator/signal_gen_channel.sv
     - src/lib/common/signal_interconnect.sv
     - src/syn/signal_generator/ev_map.sv
+
+    - src/syn/diff_io/diff_io.svh
+    - src/syn/diff_io/single_output.sv
+    - src/lib/ls_spi/ls_spi_master.sv
+    - src/lib/ic/74HC595.sv
+    - src/syn/diff_io/diff_io.sv
+    - src/syn/diff_io/gen_map.sv
   
     - src/syn/mem_wrapper.sv
     - src/lib/axi/axi_crossbar.sv

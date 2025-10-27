@@ -4,6 +4,7 @@ sources:
     - src/syn/topEVG.svh
     - src/syn/topEVR.svh
     - src/syn/topFanout.svh
+    - src/syn/gtx.svh
     - src/syn/gtwizard_wrapper.sv
     - src/syn/event_network/common/evn.svh
     - src/lib/axi/axi4_lite_if.svh
@@ -46,6 +47,16 @@ sources:
     - src/sim/event_generator/ev_seq_generator.sv
     - src/sim/event_generator/ev_seq_ctrl_generator.sv
     - src/sim/event_network/link_csr_generator.sv
+
+    - src/syn/diff_io/diff_io.svh
+    - src/syn/diff_io/single_output.sv
+    - src/lib/ls_spi/ls_spi_master.sv
+    - src/lib/ic/74HC595.sv
+    - src/syn/diff_io/diff_io.sv
+    - src/sim/diff_io/diff_io_generator.sv
+    - src/syn/diff_io/gen_map.sv
+    - src/sim/diff_io/gen_map_generator.sv
+
   
     - src/syn/mem_wrapper.sv
     - src/lib/axi/axi_crossbar.sv
@@ -64,4 +75,5 @@ sources:
     - src/syn/topEVG.sv
     - src/syn/topFanout.sv
     - src/sim/link_emulator.sv
+    - src/lib/ic/MC100EP195B.sv
     - src/sim/topTB.sv

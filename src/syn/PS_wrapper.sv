@@ -337,7 +337,9 @@ module PS_wrapper_sv #(
             GENERIC_RD_CH = 0,
             EVR_RD_CH,
             SIG_GEN_RD_CH,
-            EV_MAP_RD_CH
+            EV_MAP_RD_CH,
+            GEN_MAP_RD_CH,
+            DIFF_IO_RD_CH
         } rd_ch_enum;
 
         link_csr_generator #(
@@ -353,6 +355,14 @@ module PS_wrapper_sv #(
             .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EV_MAP))
         ) ev_map_generator_i;
 
+        gen_map_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::SIG_GEN_MAP))
+        ) gen_map_generator_i;
+
+        diff_io_generator #(
+            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::DIFF_IO))
+        ) diff_io_generator_i;
+
 
         initial begin
             driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
@@ -361,6 +371,8 @@ module PS_wrapper_sv #(
             EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("EVR with topo id \t%x\t", topo_id));
             signal_generator_generator_i = new(clk_if, req_mbx, resp_mbx, SIG_GEN_RD_CH);
             ev_map_generator_i = new(clk_if, req_mbx, resp_mbx, EV_MAP_RD_CH);
+            gen_map_generator_i = new(clk_if, req_mbx, resp_mbx, GEN_MAP_RD_CH);
+            diff_io_generator_i = new(clk_if, req_mbx, resp_mbx, DIFF_IO_RD_CH);
 
             wait(app_aresetn === 1);
             #50us;
@@ -372,9 +384,53 @@ module PS_wrapper_sv #(
 
 
         task automatic EVR_test();
-            $timeformat(-3, 5, " ms");
+            $timeformat(-5, 5, " ms");
 
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
+
+            /*diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(1, '{diff_io_pkg::NEGATIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GATE});
+            diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::FLIP_FLOP});
+            diff_io_generator_i.set_cfg(4, '{diff_io_pkg::POSITIVE, diff_io_pkg::CLK});
+            diff_io_generator_i.set_cfg(5, '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_CLEAR});
+            diff_io_generator_i.set_cfg(6, '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_SET});
+
+            gen_map_generator_i.write_mapping('{
+                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:1} }},
+                '{map: '{'{o1:1, o2:0}, '{o1:1, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
+                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
+                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:1}}}
+            });*/
+            diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(1, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(4, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(5, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(6, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(7, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(8, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(9, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(10, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(11, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(12, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(13, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(14, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_cfg(15, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_precise_delay_adj(0, 0);
+            diff_io_generator_i.set_precise_delay_adj(1, 10);
+            diff_io_generator_i.set_precise_delay_adj(2, 20);
+            diff_io_generator_i.set_precise_delay_adj(3, 40);
+            diff_io_generator_i.set_precise_delay_adj(4, 80);
+            diff_io_generator_i.set_precise_delay_adj(5, 160);
+            diff_io_generator_i.set_precise_delay_adj(6, 320);
+            diff_io_generator_i.set_precise_delay_adj(7, 640);
+    
+            gen_map_generator_i.write_mapping('{
+                '{map: '{16{'{o1:0, o2:0}}}},
+                '{map: '{16{'{o1:1, o2:0}}}}
+            });
 
             signal_generator_generator_i.set_cfg(0, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
             signal_generator_generator_i.set_cfg(1, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
@@ -384,12 +440,15 @@ module PS_wrapper_sv #(
             signal_generator_generator_i.set_period(2, 10);
             signal_generator_generator_i.set_delay(2, 2);
             signal_generator_generator_i.set_width(2, 2);
+            signal_generator_generator_i.set_cfg(3, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
+            signal_generator_generator_i.set_delay(3, 1000);
+            signal_generator_generator_i.set_width(3, 100);
 
             ev_map_generator_i.write_mapping('{
                 '{ev: 'h1,    map: '{'{set  :1, default:0},     '{           default:0},    '{cnt_reset:1, default:0}}},
-                '{ev: 'h20,   map: '{'{         default:0},     '{trigger:1, default:0}                              }},
+                '{ev: 'h20,   map: '{'{         default:0},     '{trigger:1, default:0},    '{             default:0}, '{trigger:1, default:0}}},
                 '{ev: 'h80,   map: '{'{clear:1, default:0}                                                           }},
-                '{ev: 'h1234, map: '{'{         default:0},     '{trigger:1, default:0}                              }}
+                '{ev: 'h1234, map: '{'{         default:0},     '{trigger:1, default:0},    '{             default:0}, '{trigger:1, default:0}}}
             });
             driver.sync();
 
