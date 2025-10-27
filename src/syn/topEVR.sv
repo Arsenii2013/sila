@@ -21,8 +21,8 @@ package EVR_board_pkg;
     localparam diff_io_mode_t START_MODES [START_N] = 
         '{PRECISE, PRECISE, PRECISE, PRECISE, 
           PRECISE, PRECISE, PRECISE, PRECISE, 
-          PRECISE,  PRECISE,  PRECISE,  PRECISE, 
-          PRECISE,  PRECISE,  PRECISE,  PRECISE};
+          COMMON,  COMMON,  COMMON,  COMMON, 
+          COMMON,  COMMON,  COMMON,  COMMON};
 
     localparam LED_N                   = 4;
 endpackage
@@ -71,7 +71,11 @@ module topEVR(
     output logic       SFP_LED_LINK,
     output logic       SFP_LED_ACT,
     inout  logic       START_p      [EVR_board_pkg::START_N],
-    inout  logic       START_n      [EVR_board_pkg::START_N]
+    inout  logic       START_n      [EVR_board_pkg::START_N],
+
+    output logic       SER,
+    output logic       SRCLK,
+    output logic       RCLK
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -316,7 +320,11 @@ module topEVR(
         .in_logic(diff_inputs),
 
         .IO_P(START_p),
-        .IO_N(START_n)
+        .IO_N(START_n),
+
+        .SER(SER),
+        .RCLK(RCLK),
+        .SRCLK(SRCLK)
     );
 
     EVR_pretty_leds EVR_pretty_leds_i(

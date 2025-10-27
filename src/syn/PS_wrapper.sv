@@ -384,7 +384,7 @@ module PS_wrapper_sv #(
 
 
         task automatic EVR_test();
-            $timeformat(-3, 5, " ms");
+            $timeformat(-5, 5, " ms");
 
             generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
 
@@ -418,6 +418,14 @@ module PS_wrapper_sv #(
             diff_io_generator_i.set_cfg(13, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(14, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(15, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
+            diff_io_generator_i.set_precise_delay_adj(0, 0);
+            diff_io_generator_i.set_precise_delay_adj(1, 10);
+            diff_io_generator_i.set_precise_delay_adj(2, 20);
+            diff_io_generator_i.set_precise_delay_adj(3, 40);
+            diff_io_generator_i.set_precise_delay_adj(4, 80);
+            diff_io_generator_i.set_precise_delay_adj(5, 160);
+            diff_io_generator_i.set_precise_delay_adj(6, 320);
+            diff_io_generator_i.set_precise_delay_adj(7, 640);
     
             gen_map_generator_i.write_mapping('{
                 '{map: '{16{'{o1:0, o2:0}}}},

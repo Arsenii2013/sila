@@ -74,13 +74,13 @@ module diff_io #(
     assign hwif_precise_delay_adj_flat  = {<<10{hwif_precise_delay_adj}};
     assign sn74hc595_Q_flat             = hwif_precise_delay_adj_flat;
     assign sn74hc595_Q                  = {>>{sn74hc595_Q_flat}};
-    assign sn74hc595_Q_upd              = hwif_precise_delay_adj_upd.or();
-    /*always_comb begin
+    //assign sn74hc595_Q_upd              = hwif_precise_delay_adj_upd.or();
+    always_comb begin
         sn74hc595_Q_upd = 0;
         foreach (hwif_precise_delay_adj_upd[i]) begin
-            sn74hc595_Q_upd |= 
+            sn74hc595_Q_upd |= hwif_precise_delay_adj_upd[i];
         end
-    end*/
+    end
 
     sn74hc595_controller #(
         .CASCADE_LEN(SN74HC595_CNT),

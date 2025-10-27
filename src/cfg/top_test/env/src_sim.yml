@@ -50,6 +50,8 @@ sources:
 
     - src/syn/diff_io/diff_io.svh
     - src/syn/diff_io/single_output.sv
+    - src/lib/ls_spi/ls_spi_master.sv
+    - src/lib/ic/74HC595.sv
     - src/syn/diff_io/diff_io.sv
     - src/sim/diff_io/diff_io_generator.sv
     - src/syn/diff_io/gen_map.sv
@@ -73,4 +75,5 @@ sources:
     - src/syn/topEVG.sv
     - src/syn/topFanout.sv
     - src/sim/link_emulator.sv
+    - src/lib/ic/MC100EP195B.sv
     - src/sim/topTB.sv

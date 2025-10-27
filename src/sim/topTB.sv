@@ -1,4 +1,4 @@
-`timescale 1ns/1ns
+`timescale 1ns/1ps
 `include "top.svh"
 
 module topTB(
@@ -194,6 +194,7 @@ module EVR_board_emulator(
 );
     import EVR_board_pkg::START_N;
     import EVR_board_pkg::START_POLARITY;
+    import EVR_board_pkg::START_MODES;
     import EVR_board_pkg::polarity_t;
     import EVR_board_pkg::POSITIVE;
     import EVR_board_pkg::NEGATIVE;
@@ -219,6 +220,8 @@ module EVR_board_emulator(
     tri0 START_p[START_N];
     tri1 START_n[START_N];
 
+    logic SER, SRCLK, RCLK;
+
     topEVR DUT_EVR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
@@ -231,13 +234,73 @@ module EVR_board_emulator(
         .SFP_TX_N(sfp_tx_p),
         .SFP_TX_P(sfp_tx_n),
         .START_p(START_p),
-        .START_n(START_n)
+        .START_n(START_n),
+
+        .SER(SER),
+        .RCLK(RCLK),
+        .SRCLK(SRCLK)
     );
 
-    genvar START_i;
-    generate
-        for(START_i = 0; START_i < START_N; START_i ++) begin
-            assign START[START_i] = START_POLARITY[START_i] == POSITIVE ? START_p[START_i] : START_n[START_i];
+    localparam int unsigned PRECISE_CNT   = 8;
+    localparam int unsigned SN74HC595_CNT = PRECISE_CNT * diff_io_pkg::PRECISE_DELAY_ADJ_W / 8;
+
+    logic [SN74HC595_CNT-1: 0][7: 0] sn74hc595_Q;
+    logic [PRECISE_CNT  -1: 0][9: 0] mc100ep195B_D;
+    assign mc100ep195B_D = sn74hc595_Q;
+
+    logic SERS [SN74HC595_CNT];
+    assign SERS[0] = SER;
+    generate 
+    for(genvar i = 0; i < SN74HC595_CNT; i ++) begin
+        if(i != SN74HC595_CNT - 1) begin
+            sn74hc595_emulator sn74hc595_emulator_inst(
+                .Q(sn74hc595_Q[i]),
+                .Q_H_backtick(SERS[i+1]),
+
+                .SER(SERS[i]),
+                .RCLK(RCLK),
+                .SRCLK(SRCLK),
+                .OE_N(0),
+                .SRCLR_N(1)
+            );
+        end else begin
+            sn74hc595_emulator sn74hc595_emulator_inst(
+                .Q(sn74hc595_Q[i]),
+                .SER(SERS[i]),
+                .RCLK(RCLK),
+                .SRCLK(SRCLK),
+                .OE_N(0),
+                .SRCLR_N(1)
+            );
         end
+    end
     endgenerate
+
+    generate
+    for(genvar i = 0; i < START_N; i ++) begin
+        if(START_MODES[i] == diff_io_pkg::PRECISE) begin
+            if(START_POLARITY[i] == diff_io_pkg::POSITIVE) begin
+                mc100ep195b_emulator mc100ep195b_emulator_inst(
+                    .D(mc100ep195B_D[i]),
+                    .IN(START_p[i]),
+                    .Q(START[i])
+                );
+            end else begin
+                mc100ep195b_emulator mc100ep195b_emulator_inst(
+                    .D(mc100ep195B_D[i]),
+                    .IN(START_n[i]),
+                    .Q(START[i])
+                );
+            end
+        end else begin
+            if(START_POLARITY[i] == diff_io_pkg::POSITIVE) begin
+                assign START[i] = START_p[i];
+            end else begin
+                assign START[i] = START_n[i];
+            end
+        end
+
+    end
+    endgenerate
+
 endmodule
