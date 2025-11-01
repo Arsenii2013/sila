@@ -36,7 +36,8 @@ module PS_wrapper_sv #(
     output logic       peripheral_reset,
     input  logic       app_aresetn,
     input  logic       app_clk,
-    axi4_lite_if.m     GP_0
+    axi4_lite_if.m     GP_0,
+    i2c_tri_state_if.master I2C_0
    );
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_slice();
 
@@ -96,6 +97,13 @@ module PS_wrapper_sv #(
         .GP_0_wstrb(GP_0_slice.wstrb),
         .GP_0_wvalid(GP_0_slice.wvalid),
 
+        .I2C_0_scl_i(I2C_0.scl_i),
+        .I2C_0_scl_o(I2C_0.scl_o),
+        .I2C_0_scl_t(I2C_0.scl_t),
+        .I2C_0_sda_i(I2C_0.sda_i),
+        .I2C_0_sda_o(I2C_0.sda_o),
+        .I2C_0_sda_t(I2C_0.sda_t),
+
         .peripheral_aresetn(peripheral_aresetn),
         .peripheral_clock(peripheral_clock),
         .peripheral_reset(peripheral_reset),
@@ -152,6 +160,11 @@ module PS_wrapper_sv #(
         .DW(axi_params::GP0_DATA_W)
     ) driver;
     axi_generator generic_generator;
+
+    i2c_driver I2C_0_driver(
+        .clk(peripheral_clock),
+        .I2C(I2C_0)
+    );
 
     `define BASE_FROM_NUMBER(number) (GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * (number))
 
@@ -333,6 +346,16 @@ module PS_wrapper_sv #(
     end
 
     if(SIM_DEVICE == "EVR") begin
+        initial begin
+            forever begin
+                for(int i = 0; i < 4; i ++) begin
+                    generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::I2C_MUX) + 'h4, i);
+                    driver.sync();
+                    repeat(10) I2C_0_driver.write($urandom, $urandom);
+                end
+            end
+        end
+
         typedef enum{
             GENERIC_RD_CH = 0,
             EVR_RD_CH,
@@ -385,9 +408,6 @@ module PS_wrapper_sv #(
 
         task automatic EVR_test();
             $timeformat(-5, 5, " ms");
-
-            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'h0);
-
             /*diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(1, '{diff_io_pkg::NEGATIVE, diff_io_pkg::GENERATOR});
             diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GATE});
@@ -497,3 +517,68 @@ module PS_wrapper_sv #(
     end
     `endif //SYNTHESIS 
  endmodule
+
+module i2c_driver(
+    input  logic            clk,
+    i2c_tri_state_if.master I2C
+);
+
+    initial begin
+        I2C.scl_o = 0;
+        I2C.sda_o = 0;
+        I2C.scl_t = 1;
+        I2C.sda_t = 1;
+    end
+
+    task tx_bit(bit b);
+        I2C.sda_t <= !b;
+        repeat (50) @(posedge clk);
+        I2C.scl_t <= 1;
+        repeat (50) @(posedge clk);
+        I2C.scl_t <= 0;
+    endtask
+
+    task rx_bit(output logic b);
+        I2C.sda_t <= 1;
+        repeat (50) @(posedge clk);
+        I2C.scl_t <= 1;
+        repeat (25) @(posedge clk);
+        b <= I2C.sda_i;
+        repeat (25) @(posedge clk);
+        I2C.scl_t <= 0;
+    endtask
+
+    task write(bit [6:0] addr, bit [7:0] data);
+        bit [6:0] addr_reg;
+        bit [7:0] data_reg;
+        bit       ack;
+
+        @(posedge clk);
+        addr_reg    <= addr;
+        data_reg    <= data;
+
+        @(posedge clk);
+        I2C.sda_t <= 0;
+        repeat (50) @(posedge clk);
+        I2C.scl_t <= 0;
+        repeat (50) @(posedge clk);
+        
+        repeat (7) begin
+            tx_bit(addr_reg);
+            addr_reg = addr_reg >> 1;
+        end
+        tx_bit(1);
+        rx_bit(ack);
+        repeat (8) begin
+            tx_bit(data_reg);
+            data_reg = data_reg >> 1;
+        end
+        rx_bit(ack);
+
+        I2C.scl_t <= 1;
+        repeat (50) @(posedge clk);
+        I2C.sda_t <= 1;
+        repeat (50) @(posedge clk);
+    endtask
+
+endmodule
