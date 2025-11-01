@@ -1,6 +1,8 @@
 module link_slave
 (
     input  logic            beacon_clk,
+    input  logic            local_clk, // локальный тактовый сигнал, на котором ПЛИС должна работать 
+                                       // до того, как получит частоту от опт. сети
 
     //------GTP signals-------
     gtx_if.app              gtx_if,
@@ -184,7 +186,7 @@ module link_slave
 
     mmcm_wrapper mmcm_i(
         .clk_in1(gtx_if.rx_clk),
-        .clk_in2(beacon_clk),
+        .clk_in2(local_clk),
         .clk_in_sel(gtx_if.aligned),
         
         .clk_out1(app_clk),
