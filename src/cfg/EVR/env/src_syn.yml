@@ -45,4 +45,5 @@ sources:
     - src/syn/event_comparator.sv
     - src/syn/axi_register_slice_wrapper.sv
     - src/syn/PS_wrapper.sv
+    - src/syn/i2c_mux.sv
     - src/syn/topEVR.sv

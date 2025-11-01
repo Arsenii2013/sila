@@ -61,8 +61,14 @@ module topEVR(
     input  logic       SFP_RX_P     [gtx::EVR_PORT_N],
     output logic       SFP_TX_N     [gtx::EVR_PORT_N],
     output logic       SFP_TX_P     [gtx::EVR_PORT_N],
-    output logic       SFP_TX_DIS,
-
+    output logic       SFP_TX_DIS   [gtx::EVR_PORT_N],
+    input  logic       SFP_TX_FAULT [gtx::EVR_PORT_N],
+    input  logic       SFP_DETECT   [gtx::EVR_PORT_N],
+    input  logic       SFP_RX_LOS   [gtx::EVR_PORT_N],
+    output logic       SFP_RS0,
+    output logic       SFP_RS1,
+    inout  logic       SFP_SDA      [gtx::EVR_PORT_N],
+    inout  logic       SFP_SCL      [gtx::EVR_PORT_N],
 
     input  logic       SYS_CLK_n,
     input  logic       SYS_CLK_p,
@@ -75,7 +81,20 @@ module topEVR(
 
     output logic       SER,
     output logic       SRCLK,
-    output logic       RCLK
+    output logic       RCLK,
+
+    inout  logic       SI570_SDA,
+    inout  logic       SI570_SCL,
+
+    inout  logic       PLL_RST_N,
+    inout  logic       PLL1_SDA,
+    inout  logic       PLL1_SCL,
+    inout  logic       PLL1_IN_SEL0,
+    inout  logic       PLL1_IN_SEL1,
+    inout  logic       PLL1_LOL_N,
+    inout  logic       PLL2_SDA,
+    inout  logic       PLL2_SCL,
+    inout  logic       PLL2_LOL_N
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -200,8 +219,30 @@ module topEVR(
         .app_clk(app_clk)
     );
 
+    i2c_mux #(
+        .SFP_N(gtx::EVR_PORT_N)
+    ) i2c_mux_inst (
+        .app_clk(app_clk),
+        .app_rst(app_reset[EVR_reset_params::COMMON]),
+        .mmr(mmr[EVR_axi_params::I2C_MUX]),
+
+        .I2C_s(I2C_0),
+
+        .SI570_SDA(SI570_SDA),
+        .SI570_SCL(SI570_SCL),
+        .PLL1_SDA(PLL1_SDA),
+        .PLL1_SCL(PLL1_SCL),
+        .PLL2_SDA(PLL2_SDA),
+        .PLL2_SCL(PLL2_SCL),
+        .SFP_SDA(SFP_SDA),
+        .SFP_SCL(SFP_SCL)
+    );
+
+    assign PLL_RST_N    = 1;
+    assign PLL1_IN_SEL0 = 0;
+    assign PLL1_IN_SEL1 = 0;
+
     localparam GTX_PORTS = gtx::EVR_PORT_N;
-    logic sfp_loss [GTX_PORTS];
     gtx_if evr_gtx_if[GTX_PORTS]();
     logic soft_reset_sync;
 
@@ -219,29 +260,22 @@ module topEVR(
         .refclk_p(REFCLK_SFP_p),
         .sysclk(PS_clk), 
         .soft_reset(soft_reset_sync),
-        .sfp_loss(sfp_loss),
+        .sfp_loss(SFP_RX_LOS),
         .rx_n(SFP_RX_N),
         .rx_p(SFP_RX_P),
         .tx_n(SFP_TX_N),
         .tx_p(SFP_TX_P),
         .gtx_if(evr_gtx_if)
     );
-    assign SFP_TX_DIS = '0;
-
-    sfp_control #(
-        .PORT_N(GTX_PORTS)
-    ) sfp_control_i(
-        .app_clk(app_clk),
-        .app_rst(app_reset[EVR_reset_params::COMMON]),
-        .mmr(mmr[EVR_axi_params::SFP_CONTROL]),
-        .sfp_loss(sfp_loss),
-        .sfp_loss_clk(PS_clk)
-    );
+    assign SFP_TX_DIS = '{default : 0};
+    assign SFP_RS0    = 1;
+    assign SFP_RS1    = 1;
 
     evr #(
         .PORT_N(GTX_PORTS)
     ) evr_i (
         .beacon_clk(evr_gtx_if[0].tx_clk),
+        .local_clk(PS_clk),
         .gtx_if(evr_gtx_if),
 
         //------Application signals-------
