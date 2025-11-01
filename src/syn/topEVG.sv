@@ -123,6 +123,8 @@ module topEVG(
         .ev(ev)
     );
 
+    i2c_tri_state_if I2C_0();
+
     PS_wrapper_sv #(
         .GP0_ADDR_W(axi_params::GP0_ADDR_W),
         .GP0_DATA_W(axi_params::GP0_DATA_W),
@@ -154,6 +156,7 @@ module topEVG(
         `endif // SYNTHESIS
 
         .GP_0(GP_0),
+        .I2C_0(I2C_0),
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),

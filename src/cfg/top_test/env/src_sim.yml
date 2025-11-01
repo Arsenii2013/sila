@@ -65,6 +65,7 @@ sources:
     - src/lib/common/sys_clk_gen.sv
     - src/sim/xpm_fifo.sv
 
+    - src/syn/i2c_mux.sv
     - src/syn/device_info.sv
     - src/syn/timestamper.sv
     - src/syn/sfp_control.sv

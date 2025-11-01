@@ -32,7 +32,27 @@ create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports SYS_C
 set_property PACKAGE_PIN AF8 [get_ports {SFP_TX_P[0]}]
 set_property PACKAGE_PIN AD8 [get_ports {SFP_RX_P[0]}]
 
-set_property -dict { PACKAGE_PIN AA14   IOSTANDARD LVCMOS33 } [get_ports { SFP_TX_DIS }];
+set_property -dict { PACKAGE_PIN AA14   IOSTANDARD LVCMOS33 } [get_ports { SFP_TX_DIS[0] }];
+set_property -dict { PACKAGE_PIN AA15   IOSTANDARD LVCMOS33 } [get_ports { SFP_TX_FAULT[0] }];
+set_property -dict { PACKAGE_PIN AE11   IOSTANDARD LVCMOS33 } [get_ports { SFP_DETECT[0] }];
+set_property -dict { PACKAGE_PIN AB12   IOSTANDARD LVCMOS33 } [get_ports { SFP_RX_LOS[0] }];
+set_property -dict { PACKAGE_PIN AF10   IOSTANDARD LVCMOS33 } [get_ports { SFP_RS0 }];
+set_property -dict { PACKAGE_PIN AC11   IOSTANDARD LVCMOS33 } [get_ports { SFP_RS1 }];
+set_property -dict { PACKAGE_PIN  W13   IOSTANDARD LVCMOS33 } [get_ports { SFP_SDA[0] }];
+set_property -dict { PACKAGE_PIN  Y13   IOSTANDARD LVCMOS33 } [get_ports { SFP_SCL[0] }];
+
+set_property -dict { PACKAGE_PIN AE15   IOSTANDARD LVCMOS33 } [get_ports { SI570_SDA }];
+set_property -dict { PACKAGE_PIN AE16   IOSTANDARD LVCMOS33 } [get_ports { SI570_SCL }];
+
+set_property -dict { PACKAGE_PIN AD15   IOSTANDARD LVCMOS33 } [get_ports { PLL_RST_N }];
+set_property -dict { PACKAGE_PIN AE13   IOSTANDARD LVCMOS33 } [get_ports { PLL1_SDA }];
+set_property -dict { PACKAGE_PIN AB11   IOSTANDARD LVCMOS33 } [get_ports { PLL1_SCL }];
+set_property -dict { PACKAGE_PIN AF13   IOSTANDARD LVCMOS33 } [get_ports { PLL1_IN_SEL0 }];
+set_property -dict { PACKAGE_PIN AB10   IOSTANDARD LVCMOS33 } [get_ports { PLL1_IN_SEL1 }];
+set_property -dict { PACKAGE_PIN AE10   IOSTANDARD LVCMOS33 } [get_ports { PLL1_LOL_N }];
+set_property -dict { PACKAGE_PIN AB14   IOSTANDARD LVCMOS33 } [get_ports { PLL2_SDA }];
+set_property -dict { PACKAGE_PIN AB15   IOSTANDARD LVCMOS33 } [get_ports { PLL2_SCL }];
+set_property -dict { PACKAGE_PIN AD16   IOSTANDARD LVCMOS33 } [get_ports { PLL2_LOL_N }];
 
 set_property LOC GTXE2_CHANNEL_X0Y8 [get_cells gtwizard_i/gtwizard_port_0/inst/EVR_gtwizard_port_0_i/gt0_EVR_gtwizard_port_0_i/gtxe2_i]
 

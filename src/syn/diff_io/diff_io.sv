@@ -40,7 +40,7 @@ module diff_io #(
     genvar output_i;
     generate
     for(output_i = 0; output_i < OUTPUT_N; output_i++ ) begin : outputs
-        localparam STATIC_DELAY_TAPS = DIFF_IO_MODES[output_i] == COMMON ? 29 : 0;
+        localparam STATIC_DELAY_TAPS = DIFF_IO_MODES[output_i] == COMMON ? 31 : 0;
         single_output #(
             .STATIC_ODELAY_TAPS(STATIC_DELAY_TAPS),
             .ODELAY_GROUP(ODELAY_GROUP),

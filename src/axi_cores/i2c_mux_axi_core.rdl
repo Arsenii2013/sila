@@ -1,0 +1,64 @@
+addrmap i2c_mux_axi_core{
+    name = "Выбор устройства I2C";
+    desc = "
+    ";
+
+    enum select_t {
+        SI570 = 0;
+        PLL1;
+        Pll2;
+        SFP0;
+        SFP1;
+        SFP2;
+        SFP3;
+        SFP4;
+        SFP5;
+        SFP6;
+        SFP7;
+    };
+
+    addressing = compact;
+    reg {
+        name = "SR";
+        desc = "
+            Регистр статуса модуля.
+        ";
+        field {sw=r; hw=w; encode=select_t; desc="
+            Выбранное устройство.
+        "; } sel[8] = select_t::SI570;
+    } sr;
+
+    reg {
+        name = "CR";
+        desc = "
+            Регистр управления модулем.
+        ";
+        field {sw=rw; hw=rw; encode=select_t; desc="
+            Выбранное устройство.
+        "; } sel[8] = select_t::SI570;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        desc = "
+            Регистр управления модулем.
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr ИЛИ cr_s, то есть выставляются в 1 все биты, выставленные в 1 регистре cr_s.
+        ";
+        field {sw=rw; hw=rw; encode=select_t; desc="
+            Выбранное устройство.
+        "; } sel[8] = select_t::SI570;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        desc = "
+            Регистр управления модулем.
+            При чтении возвращает 0.
+            При записи, в регистр cr устанавливается значение cr И НЕ cr_c, то есть выставляются в 0 все биты, выставленные в 1 регистре cr_c.
+        ";
+        field {sw=rw; hw=rw; encode=select_t; desc="
+            Выбранное устройство.
+        "; } sel[8] = select_t::SI570;
+    } cr_c;
+};

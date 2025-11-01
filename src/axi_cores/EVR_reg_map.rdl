@@ -7,6 +7,7 @@
 `include "gen_map_axi_core.rdl"
 `include "diff_io_axi_core.rdl"
 `include "sfp_control_axi_core.rdl"
+`include "i2c_mux_axi_core.rdl"
 `include "rdl_axi_params.rdl"
 
 addrmap EVR_reg_map {
@@ -37,7 +38,7 @@ addrmap EVR_reg_map {
         SIG_GEN_MAP;
         DIFF_IO;
         SFP_CONTROL = `DEBUG_DEVICE;
-        EVENT_COMPARATOR;
+        I2C_MUX;
         MAX_DEVICE  = `MAX_DEVICE;
     };
 
@@ -49,6 +50,7 @@ addrmap EVR_reg_map {
     gen_map_axi_core         signal_gen_map  @ device_numbers::SIG_GEN_MAP  * `MMR_BLOCK_SIZE;
     diff_io_axi_core         diff_io_ctrl    @ device_numbers::DIFF_IO      * `MMR_BLOCK_SIZE;
     sfp_control_axi_core     sfp_control     @ device_numbers::SFP_CONTROL  * `MMR_BLOCK_SIZE;
+    i2c_mux_axi_core         i2c_mux         @ device_numbers::I2C_MUX      * `MMR_BLOCK_SIZE;
 
 
     regfile {

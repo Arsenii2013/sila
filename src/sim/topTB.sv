@@ -217,6 +217,12 @@ module EVR_board_emulator(
         .sys_clk (SYS_CLK)
     );
 
+    logic SFP_RX_LOSS[gtx::EVR_PORT_N];
+    generate
+    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++)
+        assign SFP_RX_LOSS[i] = sfp_rx_p[i] === 1'bx || sfp_rx_p[i] === 1'bz;
+    endgenerate
+
     tri0 START_p[START_N];
     tri1 START_n[START_N];
 
@@ -233,6 +239,7 @@ module EVR_board_emulator(
         .SFP_RX_P(sfp_rx_p),
         .SFP_TX_N(sfp_tx_p),
         .SFP_TX_P(sfp_tx_n),
+        .SFP_RX_LOS(SFP_RX_LOSS),
         .START_p(START_p),
         .START_n(START_n),
 
