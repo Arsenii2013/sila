@@ -72,6 +72,8 @@ sources:
     - src/syn/event_comparator.sv
     - src/syn/axi_register_slice_wrapper.sv
     - src/syn/PS_wrapper.sv
+    - src/lib/common/stable.sv
+    - src/lib/xilinx/ODDRDS.sv
     - src/syn/topEVR.sv
     - src/syn/topEVG.sv
     - src/syn/topFanout.sv
