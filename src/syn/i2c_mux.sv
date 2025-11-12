@@ -170,8 +170,8 @@ module I2C_tri_mux #(
     assign PS_i2c.sda_i     = sel < DEVICES_N ? sda_i_flat[sel] : 0;
 
     always_comb begin
-        scl_t_flat      = '0;
-        sda_t_flat      = '0;
+        scl_t_flat      = '1;
+        sda_t_flat      = '1;
         if(sel < DEVICES_N) begin
             scl_t_flat[sel] = PS_i2c.scl_t;
             sda_t_flat[sel] = PS_i2c.sda_t;
