@@ -56,6 +56,8 @@ module topEVR(
         //-------------SFP---------------\\
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
+    input  logic       MGTREFCLK_n,
+    input  logic       MGTREFCLK_p,
 
     input  logic       SFP_RX_N     [gtx::EVR_PORT_N],
     input  logic       SFP_RX_P     [gtx::EVR_PORT_N],
@@ -73,11 +75,20 @@ module topEVR(
     input  logic       SYS_CLK_n,
     input  logic       SYS_CLK_p,
 
+    output logic       RXCLK_n,
+    output logic       RXCLK_p,
+    input  logic       DM_CLK_n,
+    input  logic       DM_CLK_p,
+    output logic       DC_CLK_n,
+    output logic       DC_CLK_p,
+
     output logic       LED          [EVR_board_pkg::LED_N],
     output logic       SFP_LED_LINK,
     output logic       SFP_LED_ACT,
     inout  logic       START_p      [EVR_board_pkg::START_N],
     inout  logic       START_n      [EVR_board_pkg::START_N],
+    input  logic       FPGA_OUTCLK_n,
+    input  logic       FPGA_OUTCLK_p,
 
     output logic       SER,
     output logic       SRCLK,
@@ -86,15 +97,15 @@ module topEVR(
     inout  logic       SI570_SDA,
     inout  logic       SI570_SCL,
 
-    inout  logic       PLL_RST_N,
+    output logic       PLL_RST_N,
     inout  logic       PLL1_SDA,
     inout  logic       PLL1_SCL,
-    inout  logic       PLL1_IN_SEL0,
-    inout  logic       PLL1_IN_SEL1,
-    inout  logic       PLL1_LOL_N,
+    output logic       PLL1_IN_SEL0,
+    output logic       PLL1_IN_SEL1,
+    input  logic       PLL1_LOL_N,
     inout  logic       PLL2_SDA,
     inout  logic       PLL2_SCL,
-    inout  logic       PLL2_LOL_N
+    input  logic       PLL2_LOL_N
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -114,7 +125,19 @@ module topEVR(
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
     logic sysclk;
-    IBUFDS sysclk_ibufds_inst (.O(sysclk), .I(SYS_CLK_p), .IB(SYS_CLK_n));
+    logic sysclk_ds;
+    IBUFDS sysclk_ibufds_inst (.O(sysclk_ds), .I(SYS_CLK_p), .IB(SYS_CLK_n));
+    BUFG sysclk_BUFG_inst ( .O(sysclk), .I(sysclk_ds));
+
+    logic beacon_clk;
+    logic beacon_clk_ds;
+    IBUFDS beacon_clk_ibufds_inst (.O(beacon_clk_ds), .I(DM_CLK_p), .IB(DM_CLK_n));
+    BUFG beacon_clk_BUFG_inst ( .O(beacon_clk), .I(beacon_clk_ds));
+
+    logic clear_clk;
+    logic clear_clk_ds;
+    IBUFDS clear_clk_ibufds_inst (.O(clear_clk_ds), .I(FPGA_OUTCLK_p), .IB(FPGA_OUTCLK_n));
+    BUFG clear_clk_BUFG_inst ( .O(clear_clk), .I(clear_clk_ds));
 
     pf_m #(
         .WIDTH(1000),
@@ -238,10 +261,6 @@ module topEVR(
         .SFP_SCL(SFP_SCL)
     );
 
-    assign PLL_RST_N    = 1;
-    assign PLL1_IN_SEL0 = 0;
-    assign PLL1_IN_SEL1 = 0;
-
     localparam GTX_PORTS = gtx::EVR_PORT_N;
     gtx_if evr_gtx_if[GTX_PORTS]();
     logic soft_reset_sync;
@@ -256,9 +275,9 @@ module topEVR(
         .DEVICE("EVR"),
         .PORT_N(GTX_PORTS)
     ) gtwizard_i (
-        .refclk_n(REFCLK_SFP_n),
-        .refclk_p(REFCLK_SFP_p),
-        .sysclk(PS_clk), 
+        .refclk_n(MGTREFCLK_n),
+        .refclk_p(MGTREFCLK_p),
+        .sysclk(PS_clk),
         .soft_reset(soft_reset_sync),
         .sfp_loss(SFP_RX_LOS),
         .rx_n(SFP_RX_N),
@@ -271,10 +290,35 @@ module topEVR(
     assign SFP_RS0    = 1;
     assign SFP_RS1    = 1;
 
+    logic pll_rst;
+    pf_m #(
+        .WIDTH(125000),
+        .POR("ON")
+    ) pll_rst_pf (
+        .clk(app_clk),
+        .in(0),
+        .out(pll_rst)
+    );
+    assign PLL_RST_N    = !pll_rst;
+    assign PLL1_IN_SEL0 = 0;
+    stable_m #(
+        .LEN(1023)
+    ) PLL1_IN_SEL1_stable (
+        .clk(app_clk),
+        .in(evr_gtx_if[0].aligned),
+        .out(PLL1_IN_SEL1)
+    );
+
+    ODDRDS RXCLK_ODDRDS_inst(
+        .C(evr_gtx_if[0].rx_clk),
+        .O(RXCLK_p),
+        .OB(RXCLK_n)
+    );
+
     evr #(
         .PORT_N(GTX_PORTS)
     ) evr_i (
-        .beacon_clk(evr_gtx_if[0].tx_clk),
+        .beacon_clk(beacon_clk),
         .local_clk(PS_clk),
         .gtx_if(evr_gtx_if),
 
@@ -287,6 +331,12 @@ module topEVR(
         .trig('0),
 
         .delay(delay)
+    );
+
+    ODDRDS DC_CLK_ODDRDS_inst(
+        .C(app_clk),
+        .O(DC_CLK_p),
+        .OB(DC_CLK_n)
     );
 
     logic set      [EVR_axi_params::SIG_GEN_N];
@@ -347,7 +397,7 @@ module topEVR(
         .DIFF_IO_MODES(EVR_board_pkg::START_MODES)
     ) diff_io_i (
         .app_clk(app_clk),
-        .clear_clk(app_clk),
+        .clear_clk(clear_clk),
         .app_rst(app_reset[EVR_reset_params::DIFF_IO]),
         .iodelayctrl_refclk(sysclk),
         .mmr(mmr[EVR_axi_params::DIFF_IO]),

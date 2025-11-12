@@ -20,6 +20,8 @@ set_property -dict { PACKAGE_PIN C14    IOSTANDARD LVDS } [get_ports { START_p[1
 set_property -dict { PACKAGE_PIN E11    IOSTANDARD LVDS } [get_ports { START_p[13] }];
 set_property -dict { PACKAGE_PIN B16    IOSTANDARD LVDS } [get_ports { START_p[14] }];
 set_property -dict { PACKAGE_PIN H13    IOSTANDARD LVDS } [get_ports { START_p[15] }];
+set_property -dict { PACKAGE_PIN D14    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_n }];
+set_property -dict { PACKAGE_PIN D15    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_p }];
 
 set_property -dict { PACKAGE_PIN W18    IOSTANDARD LVCMOS33 } [get_ports { SER }];
 set_property -dict { PACKAGE_PIN AF19   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
@@ -28,6 +30,13 @@ set_property -dict { PACKAGE_PIN W19    IOSTANDARD LVCMOS33 } [get_ports { RCLK 
 set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_n }];
 set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_p }];
 create_clock -period 5.000 -name sysclk -waveform {0.000 2.500} [get_ports SYS_CLK_p]
+
+set_property -dict { PACKAGE_PIN G10   IOSTANDARD LVDS } [get_ports { RXCLK_p }];
+set_property -dict { PACKAGE_PIN F10   IOSTANDARD LVDS } [get_ports { RXCLK_n }];
+set_property -dict { PACKAGE_PIN J14   IOSTANDARD LVDS } [get_ports { DM_CLK_p }];
+set_property -dict { PACKAGE_PIN H14   IOSTANDARD LVDS } [get_ports { DM_CLK_n }];
+set_property -dict { PACKAGE_PIN E12   IOSTANDARD LVDS } [get_ports { DC_CLK_n }];
+set_property -dict { PACKAGE_PIN F12   IOSTANDARD LVDS } [get_ports { DC_CLK_p }];
 
 set_property PACKAGE_PIN AF8 [get_ports {SFP_TX_P[0]}]
 set_property PACKAGE_PIN AD8 [get_ports {SFP_RX_P[0]}]
@@ -61,6 +70,9 @@ set_property RXSLIDE_MODE PMA [get_cells -regexp -hierarchical .*gtxe2_i ]
 set_property PACKAGE_PIN AA6 [get_ports {REFCLK_SFP_p}]
 set_property PACKAGE_PIN AA5 [get_ports {REFCLK_SFP_n}]
 create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { REFCLK_SFP_p }];
+set_property PACKAGE_PIN  W6 [get_ports {MGTREFCLK_p}]
+set_property PACKAGE_PIN  W5 [get_ports {MGTREFCLK_n}]
+create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { MGTREFCLK_p }];
 set_property LOC GTXE2_COMMON_X0Y2 [get_cells gtwizard_i/common0_i/gtxe2_common_i]
 
 set_clock_groups -name exclusive_clk0_clk1 -physically_exclusive -group clk_out1_clk_wiz -group clk_out1_clk_wiz_1
