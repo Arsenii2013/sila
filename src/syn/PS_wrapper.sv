@@ -347,7 +347,8 @@ module PS_wrapper_sv #(
 
     if(SIM_DEVICE == "EVR") begin
         initial begin
-            #1;
+            wait(app_aresetn === 1);
+            #50us;
             forever begin
                 for(int i = 0; i < 4; i ++) begin
                     generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::I2C_MUX) + 'h4, i);

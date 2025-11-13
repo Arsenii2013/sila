@@ -22,6 +22,8 @@ set_property -dict { PACKAGE_PIN B16    IOSTANDARD LVDS } [get_ports { START_p[1
 set_property -dict { PACKAGE_PIN H13    IOSTANDARD LVDS } [get_ports { START_p[15] }];
 set_property -dict { PACKAGE_PIN D14    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_n }];
 set_property -dict { PACKAGE_PIN D15    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_p }];
+create_clock -period 8.000 -name fpga_outclk -waveform {1.000 5.000} [get_ports FPGA_OUTCLK_p]
+# памерял осциллографом задержку сигнала в джиттер клинере относительно DC_CLK
 
 set_property -dict { PACKAGE_PIN W18    IOSTANDARD LVCMOS33 } [get_ports { SER }];
 set_property -dict { PACKAGE_PIN AF19   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
@@ -35,6 +37,7 @@ set_property -dict { PACKAGE_PIN G10   IOSTANDARD LVDS } [get_ports { RXCLK_p }]
 set_property -dict { PACKAGE_PIN F10   IOSTANDARD LVDS } [get_ports { RXCLK_n }];
 set_property -dict { PACKAGE_PIN J14   IOSTANDARD LVDS } [get_ports { DM_CLK_p }];
 set_property -dict { PACKAGE_PIN H14   IOSTANDARD LVDS } [get_ports { DM_CLK_n }];
+create_clock -period 8.000 -name dm_clk -waveform {0.000 4.000} [get_ports DM_CLK_p]
 set_property -dict { PACKAGE_PIN E12   IOSTANDARD LVDS } [get_ports { DC_CLK_n }];
 set_property -dict { PACKAGE_PIN F12   IOSTANDARD LVDS } [get_ports { DC_CLK_p }];
 

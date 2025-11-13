@@ -201,13 +201,34 @@ module EVR_board_emulator(
     
     localparam REFCLK_OFFSET = 0;
     logic      REFCLK_SFP;
+    logic      MGTREFCLK;
+    logic      DM_CLK;
+    logic      DC_CLK;
+    logic      FPGA_OUTCLK;
     sys_clk_gen
     #(
         .halfcycle (4000), // 4000 ps = 125 MHz
         .offset    (REFCLK_OFFSET)
-    ) REFCLK_SFP_gen1 (
+    ) REFCLK_SFP_gen (
         .sys_clk (REFCLK_SFP)
     );
+    // TODO simulate MGTREFCLK clock switch
+    sys_clk_gen
+    #(
+        .halfcycle (4000), // 4000 ps = 125 MHz
+        .offset    (REFCLK_OFFSET)
+    ) MGTREFCLK_gen (
+        .sys_clk (MGTREFCLK)
+    );
+    // TODO simulate DM_CLK small difference from MGTREFCLK
+    sys_clk_gen
+    #(
+        .halfcycle (3999), // 4000 ps = 125 MHz
+        .offset    (0)
+    ) DM_CLK_gen (
+        .sys_clk (DM_CLK)
+    );
+    assign #1ns FPGA_OUTCLK = DC_CLK;
     logic     SYS_CLK;
     sys_clk_gen
     #(
@@ -231,9 +252,15 @@ module EVR_board_emulator(
     topEVR DUT_EVR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
+        .MGTREFCLK_n(~MGTREFCLK),
+        .MGTREFCLK_p(MGTREFCLK),
 
         .SYS_CLK_n(~SYS_CLK),
         .SYS_CLK_p(SYS_CLK),
+
+        .DM_CLK_n(~DM_CLK),
+        .DM_CLK_p(DM_CLK),
+        .DC_CLK_p(DC_CLK),
 
         .SFP_RX_N(sfp_rx_n),
         .SFP_RX_P(sfp_rx_p),
@@ -242,6 +269,8 @@ module EVR_board_emulator(
         .SFP_RX_LOS(SFP_RX_LOSS),
         .START_p(START_p),
         .START_n(START_n),
+        .FPGA_OUTCLK_n(~FPGA_OUTCLK),
+        .FPGA_OUTCLK_p(FPGA_OUTCLK),
 
         .SER(SER),
         .RCLK(RCLK),
