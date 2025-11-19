@@ -3,9 +3,13 @@
 module evr#(
     parameter PORT_N = 1
 )(
-    input  logic            beacon_clk,
-    input  logic            local_clk, // локальный тактовый сигнал, на котором ПЛИС должна работать 
-                                       // до того, как получит частоту от опт. сети
+    input  logic            beacon_clk, // измерительный клок от 5344
+    input  logic            local_clk,  // локальный тактовый сигнал, на котором ПЛИС должна работать 
+                                        // до того, как получит частоту от опт. сети и залочится 5344 и 5342
+    output logic            dc_clk,     // клок идущий к 5342
+    input  logic            jc_clk,     // клок идущий от 5342
+    input  logic            jc_clk_valid, // лок 5342
+
     gtx_if.app              gtx_if[PORT_N],
 
     //------Application signals-------
@@ -39,6 +43,9 @@ module evr#(
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
         .local_clk(local_clk),
+        .dc_clk(dc_clk),
+        .jc_clk(jc_clk),
+        .jc_clk_valid(jc_clk_valid),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),

@@ -79,3 +79,16 @@ create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { MGT
 set_property LOC GTXE2_COMMON_X0Y2 [get_cells gtwizard_i/common0_i/gtxe2_common_i]
 
 set_clock_groups -name exclusive_clk0_clk1 -physically_exclusive -group clk_out1_clk_wiz -group clk_out1_clk_wiz_1
+set_clock_groups -name exclusive_fpgaoutclk -physically_exclusive -group fpga_outclk -group clk_fpga_0
+
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
+
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/topo_id_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/topo_id_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/tgt_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/tgt_delay_rx_fsm/param_reg[0][*]/C}]

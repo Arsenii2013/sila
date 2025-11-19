@@ -124,6 +124,8 @@ module topEVR(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    gtx_if evr_gtx_if[gtx::EVR_PORT_N]();
+
     logic sysclk;
     logic sysclk_ds;
     IBUFDS sysclk_ibufds_inst (.O(sysclk_ds), .I(SYS_CLK_p), .IB(SYS_CLK_n));
@@ -139,29 +141,16 @@ module topEVR(
     IBUFDS clear_clk_ibufds_inst (.O(clear_clk_ds), .I(FPGA_OUTCLK_p), .IB(FPGA_OUTCLK_n));
     BUFG clear_clk_BUFG_inst ( .O(clear_clk), .I(clear_clk_ds));
 
-    pf_m #(
-        .WIDTH(1000),
-        .POR("ON")
-    ) pf_i (
-        .clk(app_clk),
-        .in(0),
-        .out(POR_reset)
-    );
+    EVR_system_reset system_reset_i (
+        .app_clk(app_clk),
+        .PS_reset(PS_reset),
+        .PS_aresetn(PS_aresetn),
+        .gtx_aligned(evr_gtx_if[0].aligned),
+        .PLL1_LOL(!PLL1_LOL_N),
+        .PLL2_LOL(!PLL2_LOL_N),
 
-    reset_fanout #(
-        .N(EVR_reset_params::DEV_CNT)
-    ) reset_fanout_i(
-        .clk(app_clk),
-        .reset_in(POR_reset || PS_reset),
-        .reset_out(app_reset)
-    );
-
-    reset_fanout #(
-        .N(EVR_aresetn_params::DEV_CNT)
-    ) aresetn_fanout_i(
-        .clk(app_clk),
-        .reset_in(~POR_reset && PS_aresetn),
-        .reset_out(app_aresetn)
+        .app_reset(app_reset),
+        .app_aresetn(app_aresetn)
     );
 
     axi_crossbar #(
@@ -261,8 +250,6 @@ module topEVR(
         .SFP_SCL(SFP_SCL)
     );
 
-    localparam GTX_PORTS = gtx::EVR_PORT_N;
-    gtx_if evr_gtx_if[GTX_PORTS]();
     logic soft_reset_sync;
 
     xpm_cdc_async_rst sofr_reset_cdc_i(
@@ -273,7 +260,7 @@ module topEVR(
 
     gtwizard_wrapper #(
         .DEVICE("EVR"),
-        .PORT_N(GTX_PORTS)
+        .PORT_N(gtx::EVR_PORT_N)
     ) gtwizard_i (
         .refclk_n(MGTREFCLK_n),
         .refclk_p(MGTREFCLK_p),
@@ -315,11 +302,16 @@ module topEVR(
         .OB(RXCLK_n)
     );
 
+    logic dc_clk;
+
     evr #(
-        .PORT_N(GTX_PORTS)
+        .PORT_N(gtx::EVR_PORT_N)
     ) evr_i (
         .beacon_clk(beacon_clk),
         .local_clk(PS_clk),
+        .dc_clk(dc_clk),
+        .jc_clk(clear_clk),
+        .jc_clk_valid(PLL2_LOL_N),
         .gtx_if(evr_gtx_if),
 
         //------Application signals-------
@@ -334,7 +326,7 @@ module topEVR(
     );
 
     ODDRDS DC_CLK_ODDRDS_inst(
-        .C(app_clk),
+        .C(dc_clk),
         .O(DC_CLK_p),
         .OB(DC_CLK_n)
     );
@@ -478,4 +470,66 @@ module EVR_pretty_leds(
     );
 
     assign LED[3] = 0;
+endmodule
+
+module EVR_system_reset(
+    input  logic app_clk,
+    input  logic PS_reset,
+    input  logic PS_aresetn,
+    input  logic gtx_aligned,
+    input  logic PLL1_LOL,
+    input  logic PLL2_LOL,
+
+    output logic app_reset[EVR_reset_params::DEV_CNT],
+    output logic app_aresetn[EVR_aresetn_params::DEV_CNT]
+);
+
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    localparam int NO_LINK_RST_N = 3;
+    logic PLLS_LOL_sync;
+    logic opt_link_not_ready;
+    always_ff @(posedge app_clk) opt_link_not_ready <= !gtx_aligned || PLLS_LOL_sync;
+
+    xpm_cdc_async_rst PLLS_LOL_cdc_inst (
+        .dest_arst(PLLS_LOL_sync),
+
+        .dest_clk(app_clk),
+        .src_arst(PLL1_LOL || PLL2_LOL)
+    );
+
+    reset_fanout #(
+        .N(NO_LINK_RST_N)
+    ) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset),
+        .reset_out('{app_reset[EVR_reset_params::COMMON  ], app_reset[EVR_reset_params::DEVICE_INFO], 
+                     app_reset[EVR_reset_params::GTWIZARD]})
+    );
+
+    reset_fanout #(
+        .N(EVR_reset_params::DEV_CNT - NO_LINK_RST_N)
+    ) link_reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset || opt_link_not_ready),
+        .reset_out('{app_reset[EVR_reset_params::TIMESTAMPER], app_reset[EVR_reset_params::EVR         ], 
+                     app_reset[EVR_reset_params::EV_MAP     ], app_reset[EVR_reset_params::SIG_GEN_CTRL], 
+                     app_reset[EVR_reset_params::SIG_GEN_MAP], app_reset[EVR_reset_params::DIFF_IO     ]})
+    );
+
+    reset_fanout #(
+        .N(EVR_aresetn_params::DEV_CNT)
+    ) aresetn_fanout_i(
+        .clk(app_clk),
+        .reset_in(~POR_reset && PS_aresetn),
+        .reset_out(app_aresetn)
+    );
+
 endmodule

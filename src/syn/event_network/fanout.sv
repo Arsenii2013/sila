@@ -40,9 +40,13 @@ module fanout#(
     logic   sub_delay_iternal_upd[PORT_N - 1];
     logic   app_clk_iternal[PORT_N - 1];
 
+    logic   dc_clk;
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
         .local_clk(local_clk),
+        .dc_clk(dc_clk),
+        .jc_clk(dc_clk),
+        .jc_clk_valid(1),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),
