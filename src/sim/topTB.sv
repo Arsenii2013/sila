@@ -198,29 +198,41 @@ module EVR_board_emulator(
     import EVR_board_pkg::polarity_t;
     import EVR_board_pkg::POSITIVE;
     import EVR_board_pkg::NEGATIVE;
-    
-    localparam REFCLK_OFFSET = 0;
+
+    // On SOM clock generators
     logic      REFCLK_SFP;
+    logic      SYS_CLK;
+    sys_clk_gen
+    #(
+        .halfcycle (4000), // 4000 ps = 125 MHz
+        .offset    (0)
+    ) REFCLK_SFP_gen (
+        .sys_clk (REFCLK_SFP)
+    );
+    sys_clk_gen
+    #(
+        .halfcycle (2500), // 2500 ps = 200 MHz 
+        .offset    (0)
+    ) CLK_GEN1 (
+        .sys_clk (SYS_CLK)
+    );
+
+    // MOU si570 si5344 si5342
+
     logic      MGTREFCLK;
     logic      DM_CLK;
     logic      DC_CLK;
     logic      FPGA_OUTCLK;
-    sys_clk_gen
-    #(
-        .halfcycle (4000), // 4000 ps = 125 MHz
-        .offset    (REFCLK_OFFSET)
-    ) REFCLK_SFP_gen (
-        .sys_clk (REFCLK_SFP)
-    );
+    logic      PLL1_LOL_N = 0;
+    logic      PLL2_LOL_N = 0;
     // TODO simulate MGTREFCLK clock switch
     sys_clk_gen
     #(
         .halfcycle (4000), // 4000 ps = 125 MHz
-        .offset    (REFCLK_OFFSET)
+        .offset    (0)
     ) MGTREFCLK_gen (
         .sys_clk (MGTREFCLK)
     );
-    // TODO simulate DM_CLK small difference from MGTREFCLK
     sys_clk_gen
     #(
         .halfcycle (3999), // 4000 ps = 125 MHz
@@ -229,14 +241,14 @@ module EVR_board_emulator(
         .sys_clk (DM_CLK)
     );
     assign #1ns FPGA_OUTCLK = DC_CLK;
-    logic     SYS_CLK;
-    sys_clk_gen
-    #(
-        .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
-        .offset    (0)
-    ) CLK_GEN1 (
-        .sys_clk (SYS_CLK)
-    );
+    initial begin 
+        repeat (5000) @(posedge FPGA_OUTCLK);
+        PLL1_LOL_N <= 1;
+    end
+    initial begin 
+        repeat (5000) @(posedge MGTREFCLK);
+        PLL2_LOL_N <= 1;
+    end
 
     logic SFP_RX_LOSS[gtx::EVR_PORT_N];
     generate
@@ -271,6 +283,9 @@ module EVR_board_emulator(
         .START_n(START_n),
         .FPGA_OUTCLK_n(~FPGA_OUTCLK),
         .FPGA_OUTCLK_p(FPGA_OUTCLK),
+
+        .PLL1_LOL_N(PLL1_LOL_N),
+        .PLL2_LOL_N(PLL2_LOL_N),
 
         .SER(SER),
         .RCLK(RCLK),
