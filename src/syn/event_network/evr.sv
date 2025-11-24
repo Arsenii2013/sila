@@ -42,17 +42,14 @@ module evr#(
 
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
-        .local_clk(local_clk),
         .dc_clk(dc_clk),
-        .jc_clk(jc_clk),
-        .jc_clk_valid(jc_clk_valid),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
-        .app_rst(local_app_rst[0]),
+        .app_clk(app_clk),
+        .app_rst(local_app_rst[0] || !jc_clk_valid),
 
         .ev(ev), 
         .trig(trig),
@@ -62,6 +59,23 @@ module evr#(
         .total_delay(delay),
         .link_data(ports_data[0])
     );
+
+    BUFGCTRL #(
+        .INIT_OUT(0),
+        .PRESELECT_I0("TRUE"),
+        .PRESELECT_I1("FALSE")
+    ) BUFGCTRL_inst (
+        .O(app_clk),
+        .CE0(1),
+        .CE1(1),
+        .I0(local_clk),
+        .I1(jc_clk),
+        .IGNORE0(0),
+        .IGNORE1(0),
+        .S0(!jc_clk_valid),
+        .S1(jc_clk_valid)
+    );
+
 
     evr_axi_core #(
         .PORT_N(PORT_N)

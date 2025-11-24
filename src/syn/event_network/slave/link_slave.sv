@@ -1,18 +1,14 @@
 module link_slave
 (
-    input  logic            beacon_clk, // измерительный клок от 5344
-    input  logic            local_clk,  // локальный тактовый сигнал, на котором ПЛИС должна работать 
-                                        // до того, как получит частоту от опт. сети и залочится 5344 и 5342
-    output logic            dc_clk,     // клок идущий к 5342
-    input  logic            jc_clk,     // клок идущий от 5342
-    input  logic            jc_clk_valid, // лок 5342
+    input  logic            beacon_clk, // измерительный клок
+    output logic            dc_clk,     // клок, фазу которого модуль будет подкручивать
 
     //------GTP signals-------
     gtx_if.app              gtx_if,
 
     //------Application signals-------
-    output logic            app_clk,    // мультиплексированный клок, на котором работает вся логика. 
-                                        // до лока 5344 и 5342 должен быть локальным
+    input  logic            app_clk,    // ожидаю, что app_clk той же частоты, что и dc_clk, отличается только фаза
+                                        // dc_clk в свою очередь генерирную на mmcm, с динамическим сдвигом фазы
     input  logic            app_rst,
 
     output evn::ev_t        ev, // ev_valid = ev != 0
@@ -190,8 +186,8 @@ module link_slave
 
     mmcm_wrapper mmcm_i(
         .clk_in1(gtx_if.rx_clk),
-        .clk_in2(local_clk),
-        .clk_in_sel(gtx_if.aligned),
+        .clk_in2(0),
+        .clk_in_sel(1),
         
         .clk_out1(dc_clk),
 
@@ -200,22 +196,6 @@ module link_slave
 
         .reset(0),
         .locked(mmcm_locked)
-    );
-
-    BUFGCTRL #(
-        .INIT_OUT(0),
-        .PRESELECT_I0("TRUE"),
-        .PRESELECT_I1("FALSE")
-    ) BUFGCTRL_inst (
-        .O(app_clk),
-        .CE0(1),
-        .CE1(1),
-        .I0(local_clk),
-        .I1(jc_clk),
-        .IGNORE0(0),
-        .IGNORE1(0),
-        .S0(!jc_clk_valid),
-        .S1(jc_clk_valid)
     );
 
     dc_control #(

@@ -303,6 +303,16 @@ module topEVR(
     );
 
     logic dc_clk;
+    logic PLLS_LOL_sync;
+    logic jc_clk_invalid;
+    always_ff @(posedge app_clk) jc_clk_invalid <= !evr_gtx_if[0].aligned || PLLS_LOL_sync;
+
+    xpm_cdc_async_rst PLLS_LOL_cdc_inst (
+        .dest_arst(PLLS_LOL_sync),
+
+        .dest_clk(app_clk),
+        .src_arst(!PLL1_LOL_N || !PLL2_LOL_N)
+    );
 
     evr #(
         .PORT_N(gtx::EVR_PORT_N)
@@ -311,7 +321,7 @@ module topEVR(
         .local_clk(PS_clk),
         .dc_clk(dc_clk),
         .jc_clk(clear_clk),
-        .jc_clk_valid(PLL2_LOL_N),
+        .jc_clk_valid(!jc_clk_invalid),
         .gtx_if(evr_gtx_if),
 
         //------Application signals-------
@@ -493,7 +503,6 @@ module EVR_system_reset(
         .out(POR_reset)
     );
 
-    localparam int NO_LINK_RST_N = 3;
     logic PLLS_LOL_sync;
     logic opt_link_not_ready;
     always_ff @(posedge app_clk) opt_link_not_ready <= !gtx_aligned || PLLS_LOL_sync;
@@ -506,22 +515,11 @@ module EVR_system_reset(
     );
 
     reset_fanout #(
-        .N(NO_LINK_RST_N)
+        .N(EVR_reset_params::DEV_CNT)
     ) reset_fanout_i(
         .clk(app_clk),
         .reset_in(POR_reset || PS_reset),
-        .reset_out('{app_reset[EVR_reset_params::COMMON  ], app_reset[EVR_reset_params::DEVICE_INFO], 
-                     app_reset[EVR_reset_params::GTWIZARD]})
-    );
-
-    reset_fanout #(
-        .N(EVR_reset_params::DEV_CNT - NO_LINK_RST_N)
-    ) link_reset_fanout_i(
-        .clk(app_clk),
-        .reset_in(POR_reset || PS_reset || opt_link_not_ready),
-        .reset_out('{app_reset[EVR_reset_params::TIMESTAMPER], app_reset[EVR_reset_params::EVR         ], 
-                     app_reset[EVR_reset_params::EV_MAP     ], app_reset[EVR_reset_params::SIG_GEN_CTRL], 
-                     app_reset[EVR_reset_params::SIG_GEN_MAP], app_reset[EVR_reset_params::DIFF_IO     ]})
+        .reset_out(app_reset)
     );
 
     reset_fanout #(

@@ -43,16 +43,13 @@ module fanout#(
     logic   dc_clk;
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
-        .local_clk(local_clk),
-        .dc_clk(dc_clk),
-        .jc_clk(dc_clk),
-        .jc_clk_valid(1),
+        .dc_clk(app_clk),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk),
         .app_rst(local_app_rst[0]),
 
         .ev(ev), 

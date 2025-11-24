@@ -6,7 +6,7 @@ module link_master
     gtx_if.app              gtx_if,
 
     //------Application signals-------
-    input  logic            app_clk,
+    input  logic            app_clk, // ожидаю, что app_clk той же частоты, что и tx_clk, отличается только фаза
     input  logic            app_rst,
     
     input  evn::ev_t        ev, // ev_valid = ev != 0
