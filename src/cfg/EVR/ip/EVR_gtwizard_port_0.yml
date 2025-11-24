@@ -31,8 +31,8 @@ config:
     gt0_val_tx_int_datawidth : 40
     gt0_val_tx_line_rate : 5
     gt0_val_tx_reference_clock : "125.000"
-    gt8_val_rx_refclk : "REFCLK1_Q2"
-    gt8_val_tx_refclk : "REFCLK1_Q2"
+    gt8_val_rx_refclk : "REFCLK0_Q2"
+    gt8_val_tx_refclk : "REFCLK0_Q2"
     gt_val_rx_pll : "QPLL"
     gt_val_tx_pll : "QPLL"
     identical_val_rx_line_rate : 5

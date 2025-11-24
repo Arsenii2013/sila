@@ -39,7 +39,7 @@ module topEVG(
     input  logic       sysclk_n,
     input  logic       sysclk_p,
     output logic [3:0] led,
-    output logic       event_pulse
+    output logic       gpio [4]
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -215,7 +215,7 @@ module topEVG(
     evg #(
         .PORT_N(GTX_PORTS)
     ) evg_i (
-        .beacon_clk(evg_gtx_if[0].tx_clk),
+        .beacon_clk(PS_clk),
         .gtx_if(evg_gtx_if),
 
         //------Application signals-------
@@ -247,12 +247,14 @@ module topEVG(
         .rst(app_reset[EVG_reset_params::COMMON]),
         .mmr(mmr[EVG_axi_params::EV_COMPARATOR]),
         .ev(ev),
-        .pulse(event_pulse)
+        .pulse(gpio[0])
     );
 
     assign led[1] = evg_gtx_if[0].tx_reset_done;
     assign led[2] = evg_gtx_if[0].rx_reset_done;
-    assign led[3] = event_pulse;
+    assign led[3] = gpio[0];
+    assign gpio[1]= evg_gtx_if[0].tx_clk;
+    assign gpio[2]= evg_gtx_if[0].rx_clk;
 endmodule
 
 module gtx_if_ila(

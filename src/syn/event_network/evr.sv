@@ -3,7 +3,13 @@
 module evr#(
     parameter PORT_N = 1
 )(
-    input  logic            beacon_clk,
+    input  logic            beacon_clk, // измерительный клок от 5344
+    input  logic            local_clk,  // локальный тактовый сигнал, на котором ПЛИС должна работать 
+                                        // до того, как получит частоту от опт. сети и залочится 5344 и 5342
+    output logic            dc_clk,     // клок идущий к 5342
+    input  logic            jc_clk,     // клок идущий от 5342
+    input  logic            jc_clk_valid, // лок 5342
+
     gtx_if.app              gtx_if[PORT_N],
 
     //------Application signals-------
@@ -36,13 +42,14 @@ module evr#(
 
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
+        .dc_clk(dc_clk),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
-        .app_rst(local_app_rst[0]),
+        .app_clk(app_clk),
+        .app_rst(local_app_rst[0] || !jc_clk_valid),
 
         .ev(ev), 
         .trig(trig),
@@ -52,6 +59,23 @@ module evr#(
         .total_delay(delay),
         .link_data(ports_data[0])
     );
+
+    BUFGCTRL #(
+        .INIT_OUT(0),
+        .PRESELECT_I0("TRUE"),
+        .PRESELECT_I1("FALSE")
+    ) BUFGCTRL_inst (
+        .O(app_clk),
+        .CE0(1),
+        .CE1(1),
+        .I0(local_clk),
+        .I1(jc_clk),
+        .IGNORE0(0),
+        .IGNORE1(0),
+        .S0(!jc_clk_valid),
+        .S1(jc_clk_valid)
+    );
+
 
     evr_axi_core #(
         .PORT_N(PORT_N)

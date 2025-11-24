@@ -236,7 +236,8 @@ module topFanout(
     fanout #(
         .PORT_N(GTX_PORTS)
     ) fanout_i (
-        .beacon_clk(beacon_clk),
+        .beacon_clk(PS_clk),
+        .local_clk(PS_clk),
         .gtx_if(fanout_gtx_if),
 
         //------Application signals-------

@@ -1,12 +1,14 @@
 module link_slave
 (
-    input  logic            beacon_clk,
+    input  logic            beacon_clk, // измерительный клок
+    output logic            dc_clk,     // клок, фазу которого модуль будет подкручивать
 
     //------GTP signals-------
     gtx_if.app              gtx_if,
 
     //------Application signals-------
-    output logic            app_clk,
+    input  logic            app_clk,    // ожидаю, что app_clk той же частоты, что и dc_clk, отличается только фаза
+                                        // dc_clk в свою очередь генерирную на mmcm, с динамическим сдвигом фазы
     input  logic            app_rst,
 
     output evn::ev_t        ev, // ev_valid = ev != 0
@@ -184,10 +186,10 @@ module link_slave
 
     mmcm_wrapper mmcm_i(
         .clk_in1(gtx_if.rx_clk),
-        .clk_in2(beacon_clk),
-        .clk_in_sel(gtx_if.aligned),
+        .clk_in2(0),
+        .clk_in_sel(1),
         
-        .clk_out1(app_clk),
+        .clk_out1(dc_clk),
 
         .ph_inc(pll_ph_inc),
         .ph_dec(pll_ph_dec),

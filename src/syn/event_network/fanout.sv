@@ -4,6 +4,8 @@ module fanout#(
     parameter PORT_N = 4
 )(
     input  logic            beacon_clk,
+    input  logic            local_clk, // локальный тактовый сигнал, на котором ПЛИС должна работать 
+                                       // до того, как получит частоту от опт. сети
     gtx_if.app              gtx_if[PORT_N],
 
     //------Application signals-------
@@ -38,14 +40,16 @@ module fanout#(
     logic   sub_delay_iternal_upd[PORT_N - 1];
     logic   app_clk_iternal[PORT_N - 1];
 
+    logic   dc_clk;
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
+        .dc_clk(app_clk),
 
         //------GTP signals-------
         .gtx_if(gtx_if[0]),
 
         //------Application signals-------
-        .app_clk(app_clk), // app_clk generated only by first evg
+        .app_clk(app_clk),
         .app_rst(local_app_rst[0]),
 
         .ev(ev), 

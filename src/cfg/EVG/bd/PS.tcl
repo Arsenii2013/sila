@@ -15,6 +15,7 @@
    CONFIG.PROTOCOL {AXI4LITE} \
    ] $GP_0
 
+  set I2C_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 I2C_0 ]
 
   # Create ports
   set peripheral_aresetn [ create_bd_port -dir O -from 0 -to 0 -type rst peripheral_aresetn ]
@@ -91,7 +92,7 @@
     CONFIG.PCW_ENET0_PERIPHERAL_ENABLE {1} \
     CONFIG.PCW_ENET0_PERIPHERAL_FREQMHZ {1000 Mbps} \
     CONFIG.PCW_ENET0_RESET_ENABLE {1} \
-    CONFIG.PCW_ENET0_RESET_IO {MIO 7} \
+    CONFIG.PCW_ENET0_RESET_IO {MIO 38} \
     CONFIG.PCW_ENET1_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_ENET1_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_ENET_RESET_ENABLE {1} \
@@ -115,8 +116,8 @@
     CONFIG.PCW_EN_EMIO_CD_SDIO1 {0} \
     CONFIG.PCW_EN_EMIO_ENET0 {0} \
     CONFIG.PCW_EN_EMIO_ENET1 {0} \
-    CONFIG.PCW_EN_EMIO_GPIO {0} \
-    CONFIG.PCW_EN_EMIO_I2C0 {0} \
+    CONFIG.PCW_EN_EMIO_GPIO {1} \
+    CONFIG.PCW_EN_EMIO_I2C0 {1} \
     CONFIG.PCW_EN_EMIO_I2C1 {0} \
     CONFIG.PCW_EN_EMIO_MODEM_UART0 {0} \
     CONFIG.PCW_EN_EMIO_MODEM_UART1 {0} \
@@ -137,7 +138,7 @@
     CONFIG.PCW_EN_ENET0 {1} \
     CONFIG.PCW_EN_ENET1 {0} \
     CONFIG.PCW_EN_GPIO {1} \
-    CONFIG.PCW_EN_I2C0 {0} \
+    CONFIG.PCW_EN_I2C0 {1} \
     CONFIG.PCW_EN_I2C1 {0} \
     CONFIG.PCW_EN_MODEM_UART0 {0} \
     CONFIG.PCW_EN_MODEM_UART1 {0} \
@@ -178,14 +179,20 @@
     CONFIG.PCW_GP1_EN_MODIFIABLE_TXN {1} \
     CONFIG.PCW_GP1_NUM_READ_THREADS {4} \
     CONFIG.PCW_GP1_NUM_WRITE_THREADS {4} \
-    CONFIG.PCW_GPIO_EMIO_GPIO_ENABLE {0} \
+    CONFIG.PCW_GPIO_EMIO_GPIO_ENABLE {1} \
+    CONFIG.PCW_GPIO_EMIO_GPIO_IO {64} \
+    CONFIG.PCW_GPIO_EMIO_GPIO_WIDTH {64} \
     CONFIG.PCW_GPIO_MIO_GPIO_ENABLE {1} \
     CONFIG.PCW_GPIO_MIO_GPIO_IO {MIO} \
     CONFIG.PCW_GPIO_PERIPHERAL_ENABLE {0} \
-    CONFIG.PCW_I2C0_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_I2C0_I2C0_IO {EMIO} \
+    CONFIG.PCW_I2C0_PERIPHERAL_ENABLE {1} \
+    CONFIG.PCW_I2C0_RESET_ENABLE {0} \
     CONFIG.PCW_I2C1_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_I2C_PERIPHERAL_FREQMHZ {111.111115} \
     CONFIG.PCW_I2C_RESET_ENABLE {1} \
     CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
+    CONFIG.PCW_I2C_RESET_SELECT {Share reset pin} \
     CONFIG.PCW_IMPORT_BOARD_PRESET {None} \
     CONFIG.PCW_INCLUDE_ACP_TRANS_CHECK {0} \
     CONFIG.PCW_MIO_0_IOTYPE {LVCMOS 3.3V} \
@@ -281,7 +288,6 @@
     CONFIG.PCW_MIO_37_PULLUP {enabled} \
     CONFIG.PCW_MIO_37_SLEW {slow} \
     CONFIG.PCW_MIO_38_IOTYPE {LVCMOS 1.8V} \
-    CONFIG.PCW_MIO_38_PULLUP {enabled} \
     CONFIG.PCW_MIO_38_SLEW {slow} \
     CONFIG.PCW_MIO_39_IOTYPE {LVCMOS 1.8V} \
     CONFIG.PCW_MIO_39_PULLUP {enabled} \
@@ -344,10 +350,10 @@
     CONFIG.PCW_MIO_9_PULLUP {enabled} \
     CONFIG.PCW_MIO_9_SLEW {slow} \
     CONFIG.PCW_MIO_PRIMITIVE {54} \
-    CONFIG.PCW_MIO_TREE_PERIPHERALS {Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#ENET Reset#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad\
-SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#SD\
+    CONFIG.PCW_MIO_TREE_PERIPHERALS {Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#GPIO#Quad SPI Flash#Quad SPI Flash#Quad SPI Flash#Quad SPI\
+Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#Enet 0#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#GPIO#ENET Reset#GPIO#SD\
 0#SD 0#SD 0#SD 0#SD 0#SD 0#SD 1#SD 1#SD 1#SD 1#SD 1#SD 1#Enet 0#Enet 0} \
-    CONFIG.PCW_MIO_TREE_SIGNALS {qspi1_ss_b#qspi0_ss_b#qspi0_io[0]#qspi0_io[1]#qspi0_io[2]#qspi0_io[3]/HOLD_B#qspi0_sclk#reset#qspi_fbclk#qspi1_sclk#qspi1_io[0]#qspi1_io[1]#qspi1_io[2]#qspi1_io[3]#rx#tx#tx_clk#txd[0]#txd[1]#txd[2]#txd[3]#tx_ctl#rx_clk#rxd[0]#rxd[1]#rxd[2]#rxd[3]#rx_ctl#gpio[28]#gpio[29]#gpio[30]#gpio[31]#gpio[32]#gpio[33]#gpio[34]#gpio[35]#gpio[36]#gpio[37]#gpio[38]#gpio[39]#clk#cmd#data[0]#data[1]#data[2]#data[3]#data[0]#cmd#clk#data[1]#data[2]#data[3]#mdc#mdio}\
+    CONFIG.PCW_MIO_TREE_SIGNALS {qspi1_ss_b#qspi0_ss_b#qspi0_io[0]#qspi0_io[1]#qspi0_io[2]#qspi0_io[3]/HOLD_B#qspi0_sclk#gpio[7]#qspi_fbclk#qspi1_sclk#qspi1_io[0]#qspi1_io[1]#qspi1_io[2]#qspi1_io[3]#rx#tx#tx_clk#txd[0]#txd[1]#txd[2]#txd[3]#tx_ctl#rx_clk#rxd[0]#rxd[1]#rxd[2]#rxd[3]#rx_ctl#gpio[28]#gpio[29]#gpio[30]#gpio[31]#gpio[32]#gpio[33]#gpio[34]#gpio[35]#gpio[36]#gpio[37]#reset#gpio[39]#clk#cmd#data[0]#data[1]#data[2]#data[3]#data[0]#cmd#clk#data[1]#data[2]#data[3]#mdc#mdio}\
 \
     CONFIG.PCW_M_AXI_GP0_ENABLE_STATIC_REMAP {0} \
     CONFIG.PCW_M_AXI_GP0_ID_WIDTH {12} \
@@ -397,7 +403,7 @@ SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 
     CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_1 {0.019} \
     CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_2 {0.018} \
     CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_3 {-0.003} \
-    CONFIG.PCW_PACKAGE_NAME {ffg900} \
+    CONFIG.PCW_PACKAGE_NAME {ffg676} \
     CONFIG.PCW_PCAP_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_PCAP_PERIPHERAL_FREQMHZ {200} \
     CONFIG.PCW_PERIPHERAL_BOARD_PRESET {None} \
@@ -583,6 +589,7 @@ SPI Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 
   connect_bd_intf_net -intf_net axi_clock_converter_0_M_AXI [get_bd_intf_ports GP_0] [get_bd_intf_pins axi_protocol_convert_0/M_AXI]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins processing_system7_0/FIXED_IO]
+  connect_bd_intf_net -intf_net processing_system7_0_IIC_0 [get_bd_intf_ports I2C_0] [get_bd_intf_pins processing_system7_0/IIC_0]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins axi_protocol_convert_0/S_AXI] [get_bd_intf_pins processing_system7_0/M_AXI_GP0]
 
   # Create port connections

@@ -198,24 +198,57 @@ module EVR_board_emulator(
     import EVR_board_pkg::polarity_t;
     import EVR_board_pkg::POSITIVE;
     import EVR_board_pkg::NEGATIVE;
-    
-    localparam REFCLK_OFFSET = 0;
+
+    // On SOM clock generators
     logic      REFCLK_SFP;
+    logic      SYS_CLK;
     sys_clk_gen
     #(
         .halfcycle (4000), // 4000 ps = 125 MHz
-        .offset    (REFCLK_OFFSET)
-    ) REFCLK_SFP_gen1 (
+        .offset    (0)
+    ) REFCLK_SFP_gen (
         .sys_clk (REFCLK_SFP)
     );
-    logic     SYS_CLK;
     sys_clk_gen
     #(
-        .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
+        .halfcycle (2500), // 2500 ps = 200 MHz 
         .offset    (0)
     ) CLK_GEN1 (
         .sys_clk (SYS_CLK)
     );
+
+    // MOU si570 si5344 si5342
+
+    logic      MGTREFCLK;
+    logic      DM_CLK;
+    logic      DC_CLK;
+    logic      FPGA_OUTCLK;
+    logic      PLL1_LOL_N = 0;
+    logic      PLL2_LOL_N = 0;
+    // TODO simulate MGTREFCLK clock switch
+    sys_clk_gen
+    #(
+        .halfcycle (4000), // 4000 ps = 125 MHz
+        .offset    (0)
+    ) MGTREFCLK_gen (
+        .sys_clk (MGTREFCLK)
+    );
+    sys_clk_gen
+    #(
+        .halfcycle (3999), // 4000 ps = 125 MHz
+        .offset    (0)
+    ) DM_CLK_gen (
+        .sys_clk (DM_CLK)
+    );
+    assign #1ns FPGA_OUTCLK = DC_CLK;
+    initial begin 
+        repeat (5000) @(posedge FPGA_OUTCLK);
+        PLL1_LOL_N <= 1;
+    end
+    initial begin 
+        repeat (5000) @(posedge MGTREFCLK);
+        PLL2_LOL_N <= 1;
+    end
 
     logic SFP_RX_LOSS[gtx::EVR_PORT_N];
     generate
@@ -231,9 +264,15 @@ module EVR_board_emulator(
     topEVR DUT_EVR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
+        .MGTREFCLK_n(~MGTREFCLK),
+        .MGTREFCLK_p(MGTREFCLK),
 
         .SYS_CLK_n(~SYS_CLK),
         .SYS_CLK_p(SYS_CLK),
+
+        .DM_CLK_n(~DM_CLK),
+        .DM_CLK_p(DM_CLK),
+        .DC_CLK_p(DC_CLK),
 
         .SFP_RX_N(sfp_rx_n),
         .SFP_RX_P(sfp_rx_p),
@@ -242,6 +281,11 @@ module EVR_board_emulator(
         .SFP_RX_LOS(SFP_RX_LOSS),
         .START_p(START_p),
         .START_n(START_n),
+        .FPGA_OUTCLK_n(~FPGA_OUTCLK),
+        .FPGA_OUTCLK_p(FPGA_OUTCLK),
+
+        .PLL1_LOL_N(PLL1_LOL_N),
+        .PLL2_LOL_N(PLL2_LOL_N),
 
         .SER(SER),
         .RCLK(RCLK),
