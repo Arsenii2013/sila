@@ -45,5 +45,6 @@ config:
     gt0_val_tx_buffer_bypass_mode : "Auto"
     gt0_val_txbuf_en : "false"
     gt0_val_txoutclk_source : "true"
+    gt0_val_port_txpolarity : "true"
     gt7_val : "true"
     gt0_val : "false"
