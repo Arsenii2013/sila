@@ -4,6 +4,9 @@ module evg#(
     parameter PORT_N = 4
 )(
     input  logic            beacon_clk,
+    input  logic            local_clk,  // локальный тактовый сигнал, на котором ПЛИС должна работать 
+                                        // до того, как получит частоту от опт. сети и залочится 5344 и 5342
+    input  logic            gtx_refclk_valid,
     gtx_if.app              gtx_if[PORT_N],
 
     //------Application signals-------
@@ -53,7 +56,7 @@ module evg#(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(local_app_rst[i]),
+        .app_rst(local_app_rst[i] || !gtx_if[i].aligned),
         
         .ev(ev), 
         .trig(trig_iternal[i]),
@@ -65,7 +68,22 @@ module evg#(
     end
     endgenerate
 
-    assign app_clk = gtx_if[0].tx_clk;
+
+    BUFGCTRL #(
+        .INIT_OUT(0),
+        .PRESELECT_I0("TRUE"),
+        .PRESELECT_I1("FALSE")
+    ) BUFGCTRL_inst (
+        .O(app_clk),
+        .CE0(1),
+        .CE1(1),
+        .I0(local_clk),
+        .I1(gtx_if[0].tx_clk),
+        .IGNORE0(0),
+        .IGNORE1(0),
+        .S0(!gtx_refclk_valid),
+        .S1(gtx_refclk_valid)
+    );
 
     assign axi_data.topo_id    = '0;
     assign axi_data.up_delay   = '0;
