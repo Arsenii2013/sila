@@ -36,5 +36,6 @@ sources:
     - src/syn/axi_register_slice_wrapper.sv
     - src/syn/i2c_mux.sv
     - src/syn/PS_wrapper.sv
+    - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv
     - src/syn/topEVG.sv

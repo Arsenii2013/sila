@@ -249,7 +249,21 @@ module topEVG(
         .tx_p(SFP_TX_P),
         .gtx_if(evg_gtx_if)
     );
-    assign SFP_TX_DIS = '{default : 0};
+    logic pll_lol_sync;
+    xpm_cdc_sync_rst pll_lol_cdc_inst (
+        .dest_rst(pll_lol_sync),
+        .dest_clk(app_clk),
+        .src_rst(!PLL_LOL_N)
+    );
+    logic sfp_tx_dis_inv;
+    stable_m #(
+        .LEN(1023)
+    ) SFP_TX_DIS_stable (
+        .clk(app_clk),
+        .in(!pll_lol_sync),
+        .out(sfp_tx_dis_inv)
+    );
+    assign SFP_TX_DIS = '{default : !sfp_tx_dis_inv};
     assign SFP_RS0    = 1;
     assign SFP_RS1    = 1;
 
@@ -325,7 +339,6 @@ module topEVG(
         .SFP_LED_LINK(SFP_LED_LINK),
         .SFP_LED_ACT(SFP_LED_ACT)
     );
-
 
 endmodule
 

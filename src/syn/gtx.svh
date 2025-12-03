@@ -9,7 +9,7 @@ typedef logic [DATA_W/8-1:0] is_k_t;
 
 localparam ALIGNMENT_COMMA = 8'hBC;
 localparam ALIGNMENT_WORD   = {ALIGNMENT_COMMA,  8'h00,      8'h00, 8'h00};
-localparam ALIGNMENT_IS_K   = 'h8;
+localparam ALIGNMENT_IS_K   = 4'h8;
 
 function logic is_alignment(gtx::data_t data, gtx::is_k_t is_k);
     return data == ALIGNMENT_WORD && is_k == ALIGNMENT_IS_K;

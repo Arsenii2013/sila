@@ -281,7 +281,15 @@ module topEVR(
         .tx_p(SFP_TX_P),
         .gtx_if(evr_gtx_if)
     );
-    assign SFP_TX_DIS = '{default : 0};
+    logic sfp_tx_dis_inv;
+    stable_m #(
+        .LEN(2**25 - 1)
+    ) SFP_TX_DIS_stable (
+        .clk(app_clk),
+        .in(evr_gtx_if[0].aligned),
+        .out(sfp_tx_dis_inv)
+    );
+    assign SFP_TX_DIS[0] = !sfp_tx_dis_inv;
     assign SFP_RS0    = 1;
     assign SFP_RS1    = 1;
 
