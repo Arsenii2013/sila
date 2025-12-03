@@ -28,7 +28,7 @@ package EVR_board_pkg;
 endpackage
 
 module topEVR(
-        //-------Processing System-------\\
+    //-------Processing System-------\\
     `ifdef SYNTHESIS
     inout wire [14:0]   DDR_addr,
     inout wire [2:0]    DDR_ba,
@@ -53,7 +53,7 @@ module topEVR(
     inout wire          FIXED_IO_ps_srstb,
     `endif //SYNTHESIS 
 
-        //-------------SFP---------------\\
+    //-------------SFP---------------\\
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
     input  logic       MGTREFCLK_n,
@@ -72,6 +72,7 @@ module topEVR(
     inout  logic       SFP_SDA      [gtx::EVR_PORT_N],
     inout  logic       SFP_SCL      [gtx::EVR_PORT_N],
 
+    //-----------Clocking------------\\
     input  logic       SYS_CLK_n,
     input  logic       SYS_CLK_p,
 
@@ -81,19 +82,10 @@ module topEVR(
     input  logic       DM_CLK_p,
     output logic       DC_CLK_n,
     output logic       DC_CLK_p,
-
-    output logic       LED          [EVR_board_pkg::LED_N],
-    output logic       SFP_LED_LINK,
-    output logic       SFP_LED_ACT,
-    inout  logic       START_p      [EVR_board_pkg::START_N],
-    inout  logic       START_n      [EVR_board_pkg::START_N],
     input  logic       FPGA_OUTCLK_n,
     input  logic       FPGA_OUTCLK_p,
 
-    output logic       SER,
-    output logic       SRCLK,
-    output logic       RCLK,
-
+    //-------Clocking control--------\\
     inout  logic       SI570_SDA,
     inout  logic       SI570_SCL,
 
@@ -105,7 +97,19 @@ module topEVR(
     input  logic       PLL1_LOL_N,
     inout  logic       PLL2_SDA,
     inout  logic       PLL2_SCL,
-    input  logic       PLL2_LOL_N
+    input  logic       PLL2_LOL_N,
+
+    //-----------Outputs-------------\\
+    inout  logic       START_p      [EVR_board_pkg::START_N],
+    inout  logic       START_n      [EVR_board_pkg::START_N],
+    output logic       SER,
+    output logic       SRCLK,
+    output logic       RCLK,
+
+    //-------------LEDs--------------\\
+    output logic       LED          [EVR_board_pkg::LED_N],
+    output logic       SFP_LED_LINK [gtx::EVR_PORT_N],
+    output logic       SFP_LED_ACT  [gtx::EVR_PORT_N]
 );
     logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
@@ -123,6 +127,8 @@ module topEVR(
         .DW(axi_params::MMR_DATA_W),
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
+
+    EMIO_tri_state_if EMIO_0[emio_params::EMIO_0_WIDTH]();
 
     gtx_if evr_gtx_if[gtx::EVR_PORT_N]();
 
@@ -223,6 +229,7 @@ module topEVR(
 
         .GP_0(GP_0),
         .I2C_0(I2C_0),
+        .EMIO_0(EMIO_0),
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
@@ -232,7 +239,8 @@ module topEVR(
     );
 
     i2c_mux #(
-        .SFP_N(gtx::EVR_PORT_N)
+        .SFP_N(gtx::EVR_PORT_N),
+        .DEVICE("EVR")
     ) i2c_mux_inst (
         .app_clk(app_clk),
         .app_rst(app_reset[EVR_reset_params::COMMON]),
@@ -296,7 +304,7 @@ module topEVR(
         .out(PLL1_IN_SEL1)
     );
 
-    ODDRDS RXCLK_ODDRDS_inst(
+    ODDRDS #(.POL("N")) RXCLK_ODDRDS_inst(
         .C(evr_gtx_if[0].rx_clk),
         .O(RXCLK_p),
         .OB(RXCLK_n)
@@ -423,8 +431,8 @@ module topEVR(
         .ev(ev),
         .diff_inputs(diff_inputs),
         .LED(LED),
-        .SFP_LED_LINK(SFP_LED_LINK),
-        .SFP_LED_ACT(SFP_LED_ACT)
+        .SFP_LED_LINK(SFP_LED_LINK[0]),
+        .SFP_LED_ACT(SFP_LED_ACT[0])
     );
 
 endmodule
