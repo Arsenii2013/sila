@@ -1,3 +1,4 @@
+  # Create interface ports
   set DDR [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddrx_rtl:1.0 DDR ]
 
   set FIXED_IO [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_processing_system7:fixedio_rtl:1.0 FIXED_IO ]
@@ -16,6 +17,9 @@
    ] $GP_0
 
   set I2C_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 I2C_0 ]
+
+  set EMIO_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gpio_rtl:1.0 EMIO_0 ]
+
 
   # Create ports
   set peripheral_aresetn [ create_bd_port -dir O -from 0 -to 0 -type rst peripheral_aresetn ]
@@ -187,12 +191,10 @@
     CONFIG.PCW_GPIO_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_I2C0_I2C0_IO {EMIO} \
     CONFIG.PCW_I2C0_PERIPHERAL_ENABLE {1} \
-    CONFIG.PCW_I2C0_RESET_ENABLE {0} \
     CONFIG.PCW_I2C1_PERIPHERAL_ENABLE {0} \
     CONFIG.PCW_I2C_PERIPHERAL_FREQMHZ {111.111115} \
-    CONFIG.PCW_I2C_RESET_ENABLE {1} \
+    CONFIG.PCW_I2C_RESET_ENABLE {0} \
     CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
-    CONFIG.PCW_I2C_RESET_SELECT {Share reset pin} \
     CONFIG.PCW_IMPORT_BOARD_PRESET {None} \
     CONFIG.PCW_INCLUDE_ACP_TRANS_CHECK {0} \
     CONFIG.PCW_MIO_0_IOTYPE {LVCMOS 3.3V} \
@@ -288,6 +290,7 @@
     CONFIG.PCW_MIO_37_PULLUP {enabled} \
     CONFIG.PCW_MIO_37_SLEW {slow} \
     CONFIG.PCW_MIO_38_IOTYPE {LVCMOS 1.8V} \
+    CONFIG.PCW_MIO_38_PULLUP {enabled} \
     CONFIG.PCW_MIO_38_SLEW {slow} \
     CONFIG.PCW_MIO_39_IOTYPE {LVCMOS 1.8V} \
     CONFIG.PCW_MIO_39_PULLUP {enabled} \
@@ -589,6 +592,7 @@ Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#En
   connect_bd_intf_net -intf_net axi_clock_converter_0_M_AXI [get_bd_intf_ports GP_0] [get_bd_intf_pins axi_protocol_convert_0/M_AXI]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins processing_system7_0/FIXED_IO]
+  connect_bd_intf_net -intf_net processing_system7_0_GPIO_0 [get_bd_intf_ports EMIO_0] [get_bd_intf_pins processing_system7_0/GPIO_0]
   connect_bd_intf_net -intf_net processing_system7_0_IIC_0 [get_bd_intf_ports I2C_0] [get_bd_intf_pins processing_system7_0/IIC_0]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins axi_protocol_convert_0/S_AXI] [get_bd_intf_pins processing_system7_0/M_AXI_GP0]
 

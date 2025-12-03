@@ -1,5 +1,22 @@
 `include "axi4_lite_if.svh"
 
+interface EMIO_tri_state_if;
+    logic i;
+    logic o;
+    logic t;
+
+    modport in(
+        output i,
+        input  o,
+        input  t
+    );
+    modport out(
+        input  i,
+        output o,
+        output t
+    );
+endinterface
+
 module PS_wrapper_sv #(
     parameter GP0_ADDR_W   = 32,
     parameter GP0_DATA_W   = 32,
@@ -36,7 +53,9 @@ module PS_wrapper_sv #(
     output logic       peripheral_reset,
     input  logic       app_aresetn,
     input  logic       app_clk,
-    axi4_lite_if.m     GP_0,
+
+    EMIO_tri_state_if.out   EMIO_0[emio_params::EMIO_0_WIDTH],
+    axi4_lite_if.m          GP_0,
     i2c_tri_state_if.master I2C_0
    );
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_slice();
@@ -55,6 +74,18 @@ module PS_wrapper_sv #(
     assign GP_0_slice.awaddr = GP_0_awaddr - GP_0_BASE_ADDR;
    
     `ifdef SYNTHESIS
+    localparam EMIO_N = emio_params::EMIO_0_WIDTH;
+    logic [EMIO_N-1: 0] EMIO_0_i;
+    logic [EMIO_N-1: 0] EMIO_0_o;
+    logic [EMIO_N-1: 0] EMIO_0_t;
+
+    generate 
+    for( genvar i = 0; i < EMIO_N; i++) begin
+        assign EMIO_0_i[i]  = EMIO_0[i].i;
+        assign EMIO_0[i].o  = EMIO_0_o[i];
+        assign EMIO_0[i].t  = EMIO_0_t[i];
+    end
+    endgenerate
     PS PS_i   (
         .DDR_addr(DDR_addr),
         .DDR_ba(DDR_ba),
@@ -77,6 +108,7 @@ module PS_wrapper_sv #(
         .FIXED_IO_ps_clk(FIXED_IO_ps_clk),
         .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
         .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
+
         .GP_0_araddr(GP_0_araddr),
         .GP_0_arprot(GP_0_slice.arprot),
         .GP_0_arready(GP_0_slice.arready),
@@ -96,6 +128,10 @@ module PS_wrapper_sv #(
         .GP_0_wready(GP_0_slice.wready),
         .GP_0_wstrb(GP_0_slice.wstrb),
         .GP_0_wvalid(GP_0_slice.wvalid),
+
+        .EMIO_0_tri_i(EMIO_0_i),
+        .EMIO_0_tri_o(EMIO_0_o),
+        .EMIO_0_tri_t(EMIO_0_t),
 
         .I2C_0_scl_i(I2C_0.scl_i),
         .I2C_0_scl_o(I2C_0.scl_o),
@@ -173,6 +209,18 @@ module PS_wrapper_sv #(
     genvar gen_i;
     generate 
     if(SIM_DEVICE == "EVG") begin
+        initial begin
+            wait(app_aresetn === 1);
+            #1us;
+            forever begin
+                for(int i = 0; i < 4; i ++) begin
+                    generic_generator.write(`BASE_FROM_NUMBER(EVG_axi_params::I2C_MUX) + 'h4, i);
+                    driver.sync();
+                    repeat(10) I2C_0_driver.write($urandom, $urandom);
+                end
+            end
+        end
+
         typedef enum{
             GENERIC_RD_CH = 0,
             EVG_RD_CH,
@@ -217,7 +265,6 @@ module PS_wrapper_sv #(
         task automatic EVG_test();
             $timeformat(-3, 5, " ms");
 
-            generic_generator.write(`BASE_FROM_NUMBER(EVG_axi_params::SFP_CONTROL) + 'h10, 'h0);
             ev_seq_generator_i[0].inst.write_seq('{
                 '{0,    'h1},
                 '{1,    'h2},
@@ -305,9 +352,9 @@ module PS_wrapper_sv #(
         task automatic Fanout_test();
             $timeformat(-3, 5, " ms");
 
-            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, 'b1110);
+            generic_generator.write(`BASE_FROM_NUMBER(Fanout_axi_params::SFP_CONTROL) + 'h10, 'b1110);
             Fanout_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
-            generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::SFP_CONTROL) + 'h10, '0);
+            generic_generator.write(`BASE_FROM_NUMBER(Fanout_axi_params::SFP_CONTROL) + 'h10, '0);
 
             Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
             #10us;
