@@ -1,3 +1,8 @@
 type : axi_register_slice
 config :
-    PROTOCOL     : AXI4LITE 
+    PROTOCOL      : AXI4LITE 
+    REG_AR        : 10 
+    REG_AW        : 10 
+    REG_B         : 10 
+    REG_R         : 10 
+    REG_W         : 10 
