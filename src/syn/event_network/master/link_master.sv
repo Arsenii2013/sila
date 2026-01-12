@@ -191,6 +191,12 @@ module link_master
     logic fifo_rst_busy;
     logic rd_rst_busy, wr_rst_busy;
     assign fifo_rst_busy = rd_rst_busy || wr_rst_busy;
+    logic rd_rst_busy_rd_clk;
+    xpm_cdc_async_rst rd_rst_busy_sunchronizer_i(
+        .dest_clk(app_rst),
+        .dest_arst(rd_rst_busy),
+        .src_arst(rd_rst_busy_rd_clk)
+    );
     xpm_fifo_async #(
         .CASCADE_HEIGHT(0),
         .CDC_SYNC_STAGES(2),
@@ -202,7 +208,12 @@ module link_master
         .RELATED_CLOCKS(0),
         .SIM_ASSERT_CHK(1),
         .WRITE_DATA_WIDTH(36),
-        .DOUT_RESET_VALUE($sformatf("%h", {ALIGNMENT_WORD, ALIGNMENT_IS_K}))
+
+        `ifdef SYNTHESIS
+            .DOUT_RESET_VALUE($sformatf("%h", {ALIGNMENT_WORD, ALIGNMENT_IS_K}))
+        `else
+            .DOUT_RESET_VALUE(0)
+        `endif
     ) tx_data_syncronizer (
         .rd_clk(gtx_if.tx_clk),
         .rd_en(!fifo_rst_busy),
@@ -213,13 +224,20 @@ module link_master
         .din({tx_data_app_clk, tx_is_k_app_clk}),
 
         .rst(app_rst),
-        .rd_rst_busy(rd_rst_busy),
+        .rd_rst_busy(rd_rst_busy_rd_clk),
         .wr_rst_busy(wr_rst_busy)
     );
 
 
 
 // Delay measurement
+    logic fifo_rst_busy_rd_clk;
+    xpm_cdc_async_rst fifo_rst_busy_sunchronizer_i(
+        .dest_clk(gtx_if.tx_clk),
+        .dest_arst(fifo_rst_busy_rd_clk),
+        .src_arst(fifo_rst_busy)
+    );
+
     delay_t fifo_delay, link_delay;
     link_delay_st_t fifo_delay_st, link_delay_st;
 
@@ -232,7 +250,7 @@ module link_master
         
         .start(!fifo_rst_busy && is_beacon(tx_data_app_clk, tx_is_k_app_clk)),
         .start_clk(app_clk),
-        .stop(!fifo_rst_busy && is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
+        .stop(!fifo_rst_busy_rd_clk && is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
         .stop_clk(gtx_if.tx_clk),
         .measure_clk(beacon_clk),
 
@@ -258,7 +276,12 @@ module link_master
         .delay(link_delay),
         .delay_status(link_delay_st)
     );
-    assign link_data.link_up = gtx_if.aligned;
+
+    xpm_cdc_async_rst link_up_cdc_i(
+        .dest_clk(app_clk),
+        .dest_arst(link_data.link_up),
+        .src_arst(gtx_if.aligned)
+    );
     assign link_data.link_delay = link_delay + (fifo_delay << 1) + (1 << DELAY_FRAC_W);
     assign link_data.link_delay_st = fifo_delay_st < link_delay_st ? fifo_delay_st : link_delay_st;
 endmodule

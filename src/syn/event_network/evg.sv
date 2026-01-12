@@ -36,36 +36,44 @@ module evg#(
     trig_t  trig_iternal[PORT_N];
     delay_t sub_delay_iternal[PORT_N];
     logic   sub_delay_iternal_upd[PORT_N];
+    logic   gtx_aligned_sync[PORT_N];
 
     genvar i;
     generate
     for(i = 0; i < PORT_N; i++) begin : link_master_inst
-    assign ports_data[i].topo_id        = i+1;
-    assign ports_data[i].topo_id_upd    = 0;
-    assign ports_data[i].tgt_delay      = axi_data.tgt_delay;
-    assign ports_data[i].tgt_delay_upd  = axi_data.tgt_delay_upd;
-    assign ports_data[i].up_delay       = '0;
-    assign ports_data[i].up_delay_upd   = 0;
-    assign sub_delay_iternal[i]         = ports_data[i].sub_delay;
-    assign sub_delay_iternal_upd[i]     = ports_data[i].sub_delay_upd;
-    link_master link_master_i(
-        .beacon_clk(beacon_clk),
+        assign ports_data[i].topo_id        = i+1;
+        assign ports_data[i].topo_id_upd    = 0;
+        assign ports_data[i].tgt_delay      = axi_data.tgt_delay;
+        assign ports_data[i].tgt_delay_upd  = axi_data.tgt_delay_upd;
+        assign ports_data[i].up_delay       = '0;
+        assign ports_data[i].up_delay_upd   = 0;
+        assign sub_delay_iternal[i]         = ports_data[i].sub_delay;
+        assign sub_delay_iternal_upd[i]     = ports_data[i].sub_delay_upd;
 
-        //------GTP signals-------
-        .gtx_if(gtx_if[i]),
 
-        //------Application signals-------
-        .app_clk(app_clk),
-        .app_rst(local_app_rst[i] || !gtx_if[i].aligned),
-        
-        .ev(ev), 
-        .trig(trig_iternal[i]),
-        .in_packet(slave_in_packet[i]),
-        .out_packet(slave_out_packet[i]),
+        xpm_cdc_async_rst sofr_reset_cdc_i(
+            .dest_clk(app_clk),
+            .dest_arst(gtx_aligned_sync[i]),
+            .src_arst(gtx_if[i].aligned)
+        );
+        link_master link_master_i(
+            .beacon_clk(beacon_clk),
 
-        .link_data(ports_data[i])
-    );
-    end
+            //------GTP signals-------
+            .gtx_if(gtx_if[i]),
+
+            //------Application signals-------
+            .app_clk(app_clk),
+            .app_rst(local_app_rst[i] || !gtx_aligned_sync[i]),
+            
+            .ev(ev), 
+            .trig(trig_iternal[i]),
+            .in_packet(slave_in_packet[i]),
+            .out_packet(slave_out_packet[i]),
+
+            .link_data(ports_data[i])
+        );
+        end
     endgenerate
 
 
@@ -142,9 +150,9 @@ module evg_axi_core#(
     genvar i;
     generate
     for(i = 0; i < PORT_N; i++) begin
-    assign hwif_in.port_sr[i].link_up.next        = ports_data[i].link_up;
-    assign hwif_in.port_sr[i].link_delay_st.next  = ports_data[i].link_delay_st;
-    assign hwif_in.port_sr[i].delay_comp_st.next  = ports_data[i].delay_comp_st;
+        assign hwif_in.port_sr[i].link_up.next        = ports_data[i].link_up;
+        assign hwif_in.port_sr[i].link_delay_st.next  = ports_data[i].link_delay_st;
+        assign hwif_in.port_sr[i].delay_comp_st.next  = ports_data[i].delay_comp_st;
     end
     endgenerate
 

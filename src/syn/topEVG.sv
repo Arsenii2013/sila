@@ -287,9 +287,29 @@ module topEVG(
     assign PLL_IN_SEL1 = 0;
 
     logic local_clk;
-    MMCM MMCM_inst(
-        .clk_in(sysclk),
-        .clk_out(local_clk)
+    logic clk_fb_buf;
+    logic clk_fb;
+    MMCME2_BASE #(
+        .BANDWIDTH("OPTIMIZED"),
+        .CLKFBOUT_MULT_F(7.0), 
+        .CLKFBOUT_PHASE(0.0),
+        .CLKIN1_PERIOD(5.0),
+        .CLKOUT0_DIVIDE_F(8.0),
+        .CLKOUT0_DUTY_CYCLE(0.5),
+        .CLKOUT0_PHASE(0.0),
+        .CLKOUT4_CASCADE("FALSE"),
+        .DIVCLK_DIVIDE(1)
+    ) local_clk_MMCME2_BASE_inst (
+        .CLKOUT0(local_clk),
+        .CLKFBOUT(clk_fb_buf),
+        .CLKIN1(sysclk),
+        .PWRDWN(0),
+        .RST(0),
+        .CLKFBIN(clk_fb)
+    );
+    BUFG clk_fb_bufg (
+        .O(clk_fb),
+        .I(clk_fb_buf)
     );
 
     evg #(
@@ -385,42 +405,6 @@ module EVG_pretty_leds(
 
     assign LED[2] = 0;
     assign LED[3] = 0;
-endmodule
-
-module MMCM(
-    input  logic clk_in,
-    output logic clk_out
-);
-    logic  clk_out_buf;
-    logic  clk_fb_buf;
-    logic  clk_fb;
-    MMCME2_BASE #(
-        .BANDWIDTH("OPTIMIZED"),
-        .CLKFBOUT_MULT_F(5.0), 
-        .CLKFBOUT_PHASE(0.0),
-        .CLKIN1_PERIOD(5.0),
-        .CLKOUT0_DIVIDE_F(8.0),
-        .CLKOUT0_DUTY_CYCLE(0.5),
-        .CLKOUT0_PHASE(0.0),
-        .CLKOUT4_CASCADE("FALSE"),
-        .DIVCLK_DIVIDE(1)
-    )
-    MMCME2_BASE_inst (
-        .CLKOUT0(clk_out),
-        .CLKFBOUT(clk_fb_buf),
-        .CLKIN1(clk_in),
-        .PWRDWN(0),
-        .RST(0),
-        .CLKFBIN(clk_fb)
-    );
-
-    /*BUFG clk_out_bufg
-    (.O (clk_out),
-        .I (clk_out_buf));*/
-
-    BUFG clk_fb_bufg
-    (.O   (clk_fb),
-        .I   (clk_fb_buf));
 endmodule
 
 module EVG_system_reset(
