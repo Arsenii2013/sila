@@ -66,20 +66,15 @@ module link_master
     alignment_cnt_t alignment_cnt = ALIGNMENT_PERIOD;
 
     always_ff @(posedge app_clk) begin
-        if(app_rst) begin
+        if(alignment_cnt == 0) begin
             alignment_cnt   <= ALIGNMENT_PERIOD;
-            alignment_valid <= 0;
+            alignment_valid <= 1;
         end else begin
-            if(alignment_cnt == 0) begin
-                alignment_cnt   <= ALIGNMENT_PERIOD;
-                alignment_valid <= 1;
+            alignment_cnt <= alignment_cnt - 1;
+            if(alignment_ready) begin
+                alignment_valid <= 0;
             end else begin
-                alignment_cnt <= alignment_cnt - 1;
-                if(alignment_ready) begin
-                    alignment_valid <= 0;
-                end else begin
-                    alignment_valid <= alignment_valid;
-                end
+                alignment_valid <= alignment_valid;
             end
         end
     end
@@ -199,7 +194,6 @@ module link_master
     xpm_fifo_async #(
         .CASCADE_HEIGHT(0),
         .CDC_SYNC_STAGES(2),
-        .DOUT_RESET_VALUE("0"),
         .FIFO_MEMORY_TYPE("auto"),
         .FIFO_READ_LATENCY(1),
         .FIFO_WRITE_DEPTH(16),
@@ -207,7 +201,8 @@ module link_master
         .READ_MODE("std"),
         .RELATED_CLOCKS(0),
         .SIM_ASSERT_CHK(1),
-        .WRITE_DATA_WIDTH(36)
+        .WRITE_DATA_WIDTH(36),
+        .DOUT_RESET_VALUE($sformatf("%h", {ALIGNMENT_WORD, ALIGNMENT_IS_K}))
     ) tx_data_syncronizer (
         .rd_clk(gtx_if.tx_clk),
         .rd_en(!fifo_rst_busy),
@@ -221,6 +216,8 @@ module link_master
         .rd_rst_busy(rd_rst_busy),
         .wr_rst_busy(wr_rst_busy)
     );
+
+
 
 // Delay measurement
     delay_t fifo_delay, link_delay;

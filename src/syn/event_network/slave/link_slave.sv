@@ -72,20 +72,15 @@ module link_slave
     alignment_cnt_t alignment_cnt = ALIGNMENT_PERIOD;
 
     always_ff @(posedge gtx_if.tx_clk) begin
-        if(app_rst) begin
+        if(alignment_cnt == 0) begin
             alignment_cnt   <= ALIGNMENT_PERIOD;
-            alignment_valid <= 0;
+            alignment_valid <= 1;
         end else begin
-            if(alignment_cnt == 0) begin
-                alignment_cnt   <= ALIGNMENT_PERIOD;
-                alignment_valid <= 1;
+            alignment_cnt <= alignment_cnt - 1;
+            if(alignment_ready) begin
+                alignment_valid <= 0;
             end else begin
-                alignment_cnt <= alignment_cnt - 1;
-                if(alignment_ready) begin
-                    alignment_valid <= 0;
-                end else begin
-                    alignment_valid <= alignment_valid;
-                end
+                alignment_valid <= alignment_valid;
             end
         end
     end

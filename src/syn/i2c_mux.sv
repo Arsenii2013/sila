@@ -27,7 +27,8 @@ interface i2c_tri_state_if;
 endinterface
 
 module i2c_mux #(
-    parameter SFP_N = 8
+    parameter SFP_N  = 8,
+    parameter DEVICE = "EVG"
 )(
     input  logic    app_clk,
     input  logic    app_rst,
@@ -60,11 +61,13 @@ module i2c_mux #(
         .SCL(PLL1_SCL),
         .SDA(PLL1_SDA)
     );
+    generate if(DEVICE == "EVR") begin
     I2C_oibuf PLL2_iobuf(
         .i2c(PLL2_tri),
         .SCL(PLL2_SCL),
         .SDA(PLL2_SDA)
     );
+    end endgenerate
     generate;
     for(genvar sfp_i = 0; sfp_i < SFP_N; sfp_i ++) begin : SFP_iobufs
         I2C_oibuf inst(

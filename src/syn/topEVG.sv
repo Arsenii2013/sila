@@ -1,7 +1,11 @@
 `include "topEVG.svh"
 
+package EVG_board_pkg;
+    localparam LED_N                   = 4;
+endpackage
+
 module topEVG(
-        //-------Processing System-------\\
+    //-------Processing System-------\\
     `ifdef SYNTHESIS
     inout wire [14:0]   DDR_addr,
     inout wire [2:0]    DDR_ba,
@@ -24,24 +28,53 @@ module topEVG(
     inout wire          FIXED_IO_ps_clk,
     inout wire          FIXED_IO_ps_porb,
     inout wire          FIXED_IO_ps_srstb,
+    inout wire          PHY0_RST,
+    inout wire          PHY1_RST,
     `endif //SYNTHESIS 
 
-        //-------------SFP---------------\\
+    //-------------SFP---------------\\
     input  logic       REFCLK_SFP_n,
     input  logic       REFCLK_SFP_p,
+    input  logic       REFCLK_n,
+    input  logic       REFCLK_p,
 
-    input  logic       sfp_rx_n[gtx::EVG_PORT_N],
-    input  logic       sfp_rx_p[gtx::EVG_PORT_N],
-    output logic       sfp_tx_n[gtx::EVG_PORT_N],
-    output logic       sfp_tx_p[gtx::EVG_PORT_N],
-    output logic [1:0] sfp_tx_disable,
+    input  logic       SFP_RX_N     [gtx::EVG_PORT_N],
+    input  logic       SFP_RX_P     [gtx::EVG_PORT_N],
+    output logic       SFP_TX_N     [gtx::EVG_PORT_N],
+    output logic       SFP_TX_P     [gtx::EVG_PORT_N],
+    output logic       SFP_TX_DIS   [gtx::EVG_PORT_N],
+    input  logic       SFP_TX_FAULT [gtx::EVG_PORT_N],
+    input  logic       SFP_RX_LOS   [gtx::EVG_PORT_N],
+    output logic       SFP_RS0,
+    output logic       SFP_RS1,
+    inout  logic       SFP_SDA      [8],
+    inout  logic       SFP_SCL      [8],
 
-    input  logic       sysclk_n,
-    input  logic       sysclk_p,
-    output logic [3:0] led,
-    output logic       gpio [4]
+    //-----------Clocking------------\\
+    input  logic       SYS_CLK_n,
+    input  logic       SYS_CLK_p,
+
+    output logic       RXCLK_n,
+    output logic       RXCLK_p,
+    input  logic       DM_CLK_n,
+    input  logic       DM_CLK_p,
+
+    //-------Clocking control--------\\
+    inout  logic       SI570_SDA,
+    inout  logic       SI570_SCL,
+
+    output logic       PLL_RST_N,
+    inout  logic       PLL_SDA,
+    inout  logic       PLL_SCL,
+    output logic       PLL_IN_SEL0,
+    output logic       PLL_IN_SEL1,
+    input  logic       PLL_LOL_N,
+
+    //-------------LEDs--------------\\
+    output logic       LED          [EVG_board_pkg::LED_N],
+    output logic       SFP_LED_LINK [gtx::EVG_PORT_N],
+    output logic       SFP_LED_ACT  [gtx::EVG_PORT_N]
 );
-    logic POR_reset;
     logic PS_clk, PS_aresetn, PS_reset;
 
     logic app_clk;
@@ -58,32 +91,24 @@ module topEVG(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    EMIO_tri_state_if EMIO_0[emio_params::EMIO_0_WIDTH]();
+
     logic sysclk;
-    IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
+    logic sysclk_ds;
+    IBUFDS sysclk_ibuf_i (.O(sysclk_ds), .I(SYS_CLK_p), .IB(SYS_CLK_n));
+    BUFG sysclk_BUFG_inst ( .O(sysclk), .I(sysclk_ds));
 
-    pf_m #(
-        .WIDTH(1000),
-        .POR("ON")
-    ) pf_i (
-        .clk(app_clk),
-        .in(0),
-        .out(POR_reset)
-    );
+    logic beacon_clk;
+    logic beacon_clk_ds;
+    IBUFDS beacon_clk_ibufds_inst (.O(beacon_clk_ds), .I(DM_CLK_p), .IB(DM_CLK_n));
+    BUFG beacon_clk_BUFG_inst ( .O(beacon_clk), .I(~beacon_clk_ds));
 
-    reset_fanout #(
-        .N(EVG_reset_params::DEV_CNT)
-    ) reset_fanout_i(
-        .clk(app_clk),
-        .reset_in(POR_reset || PS_reset),
-        .reset_out(app_reset)
-    );
-
-    reset_fanout #(
-        .N(EVG_aresetn_params::DEV_CNT)
-    ) aresetn_fanout_i(
-        .clk(app_clk),
-        .reset_in(~POR_reset && PS_aresetn),
-        .reset_out(app_aresetn)
+    EVG_system_reset system_reset_i (
+        .app_clk(app_clk),
+        .PS_reset(PS_reset),
+        .PS_aresetn(PS_aresetn),
+        .app_reset(app_reset),
+        .app_aresetn(app_aresetn)
     );
 
     axi_crossbar #(
@@ -157,6 +182,7 @@ module topEVG(
 
         .GP_0(GP_0),
         .I2C_0(I2C_0),
+        .EMIO_0(EMIO_0),
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
@@ -164,14 +190,37 @@ module topEVG(
         .app_aresetn(app_aresetn[EVG_aresetn_params::COMMON]),
         .app_clk(app_clk)
     );
+    `ifdef SYNTHESIS
+    IOBUF PHY0_RST_IOBUF_inst (
+        .O(EMIO_0[0].i),
+        .IO(PHY0_RST),
+        .I(EMIO_0[0].o),
+        .T(EMIO_0[0].t)
+    );
+    IOBUF PHY1_RST_IOBUF_inst (
+        .O(EMIO_0[1].i),
+        .IO(PHY1_RST),
+        .I(EMIO_0[1].o),
+        .T(EMIO_0[1].t)
+    );
+    `endif // SYNTHESIS
 
-    blink #(
-        .FREQ_HZ(125000000),
-        .LED_PERIOD_NS(500000000)
-    ) blink1 (
-        .reset(app_reset[2]),
-        .clk(app_clk),
-        .led(led[0])
+    i2c_mux #(
+        .SFP_N(8),
+        .DEVICE("EVG")
+    ) i2c_mux_inst (
+        .app_clk(app_clk),
+        .app_rst(app_reset[EVG_reset_params::COMMON]),
+        .mmr(mmr[EVG_axi_params::I2C_MUX]),
+
+        .I2C_s(I2C_0),
+
+        .SI570_SDA(SI570_SDA),
+        .SI570_SCL(SI570_SCL),
+        .PLL1_SDA(PLL_SDA),
+        .PLL1_SCL(PLL_SCL),
+        .SFP_SDA(SFP_SDA),
+        .SFP_SCL(SFP_SCL)
     );
 
     localparam GTX_PORTS = gtx::EVG_PORT_N;
@@ -189,33 +238,66 @@ module topEVG(
         .DEVICE("EVG"),
         .PORT_N(GTX_PORTS)
     ) gtwizard_i (
-        .refclk_n(REFCLK_SFP_n),
-        .refclk_p(REFCLK_SFP_p),
+        .refclk_n(REFCLK_n),
+        .refclk_p(REFCLK_p),
         .sysclk(PS_clk), 
         .soft_reset(soft_reset_sync),
-        .sfp_loss(sfp_loss),
-        .rx_n(sfp_rx_n),
-        .rx_p(sfp_rx_p),
-        .tx_n(sfp_tx_n),
-        .tx_p(sfp_tx_p),
+        .sfp_loss(SFP_RX_LOS),
+        .rx_n(SFP_RX_N),
+        .rx_p(SFP_RX_P),
+        .tx_n(SFP_TX_N),
+        .tx_p(SFP_TX_P),
         .gtx_if(evg_gtx_if)
     );
-    assign sfp_tx_disable = '0;
-
-    sfp_control #(
-        .PORT_N(GTX_PORTS)
-    ) sfp_control_i(
-        .app_clk(app_clk),
-        .app_rst(app_reset[EVG_reset_params::COMMON]),
-        .mmr(mmr[EVG_axi_params::SFP_CONTROL]),
-        .sfp_loss(sfp_loss),
-        .sfp_loss_clk(PS_clk)
+    logic pll_lol_sync;
+    xpm_cdc_sync_rst pll_lol_cdc_inst (
+        .dest_rst(pll_lol_sync),
+        .dest_clk(app_clk),
+        .src_rst(!PLL_LOL_N)
     );
-    
+    logic sfp_tx_dis_inv;
+    stable_m #(
+        .LEN(1023)
+    ) SFP_TX_DIS_stable (
+        .clk(app_clk),
+        .in(!pll_lol_sync),
+        .out(sfp_tx_dis_inv)
+    );
+    assign SFP_TX_DIS = '{default : !sfp_tx_dis_inv};
+    assign SFP_RS0    = 1;
+    assign SFP_RS1    = 1;
+
+    ODDRDS RXCLK_ODDRDS_inst(
+        .C(evg_gtx_if[0].rx_clk),
+        .O(RXCLK_p),
+        .OB(RXCLK_n)
+    );
+
+    logic pll_rst;
+    pf_m #(
+        .WIDTH(125000),
+        .POR("ON")
+    ) pll_rst_pf (
+        .clk(app_clk),
+        .in(0),
+        .out(pll_rst)
+    );
+    assign PLL_RST_N    = !pll_rst;
+    assign PLL_IN_SEL0 = 1;
+    assign PLL_IN_SEL1 = 0;
+
+    logic local_clk;
+    MMCM MMCM_inst(
+        .clk_in(sysclk),
+        .clk_out(local_clk)
+    );
+
     evg #(
         .PORT_N(GTX_PORTS)
     ) evg_i (
-        .beacon_clk(PS_clk),
+        .beacon_clk(beacon_clk),
+        .local_clk(local_clk), 
+        .gtx_refclk_valid(PLL_LOL_N),
         .gtx_if(evg_gtx_if),
 
         //------Application signals-------
@@ -242,36 +324,154 @@ module topEVG(
         .ev(ev)
     );
 
-    event_comparator event_comparator_i(
-        .clk(app_clk),
-        .rst(app_reset[EVG_reset_params::COMMON]),
-        .mmr(mmr[EVG_axi_params::EV_COMPARATOR]),
+    logic sfp_aligned[gtx::EVG_PORT_N];
+    generate
+    for(genvar i = 0; i < gtx::EVG_PORT_N; i++) begin
+        assign sfp_aligned[i] = evg_gtx_if[i].aligned;
+    end
+    endgenerate
+    EVG_pretty_leds EVG_pretty_leds_i(
+        .app_clk(app_clk),
+        .app_reset(app_reset[EVG_reset_params::COMMON]),
+        .sfp_aligned(sfp_aligned),
         .ev(ev),
-        .pulse(gpio[0])
+        .LED(LED),
+        .SFP_LED_LINK(SFP_LED_LINK),
+        .SFP_LED_ACT(SFP_LED_ACT)
     );
 
-    assign led[1] = evg_gtx_if[0].tx_reset_done;
-    assign led[2] = evg_gtx_if[0].rx_reset_done;
-    assign led[3] = gpio[0];
-    assign gpio[1]= evg_gtx_if[0].tx_clk;
-    assign gpio[2]= evg_gtx_if[0].rx_clk;
 endmodule
 
-module gtx_if_ila(
-    gtx_if.monitor gtx_if,
-    input  logic   app_clk 
+
+module EVG_pretty_leds(
+    input  logic     app_clk,
+    input  logic     app_reset,
+
+    input  logic     sfp_aligned[gtx::EVG_PORT_N],
+    input  evn::ev_t ev,
+
+    output logic     LED          [EVG_board_pkg::LED_N],
+    output logic     SFP_LED_LINK [gtx::EVG_PORT_N],
+    output logic     SFP_LED_ACT  [gtx::EVG_PORT_N]
 );
 
-    ila_0 ila(
+    assign SFP_LED_LINK = sfp_aligned;
+    logic sfp_act;
+    pf_m #(
+        .WIDTH(12500000),
+        .POR("OFF")
+    ) sfp_led_act_pf_i (
         .clk(app_clk),
-        .probe0(gtx_if.tx_clk),
-        .probe1(gtx_if.tx_data),
-        .probe2(gtx_if.tx_is_k),
-        .probe3(gtx_if.tx_reset_done),
-        .probe4(gtx_if.rx_clk),
-        .probe5(gtx_if.rx_data),
-        .probe6(gtx_if.rx_is_k),
-        .probe7(gtx_if.rx_reset_done),
-        .probe8(gtx_if.aligned)
+        .in(ev != '0),
+        .out(sfp_act)
     );
+    generate
+    for(genvar i = 0; i < gtx::EVG_PORT_N; i++) begin
+        assign SFP_LED_ACT[i] = sfp_act && sfp_aligned[i];
+    end
+    endgenerate
+
+    assign LED[0] = 1;
+
+    blink #(
+        .FREQ_HZ(125000000),
+        .LED_PERIOD_NS(500000000)
+    ) blink1 (
+        .reset(app_reset),
+        .clk(app_clk),
+        .led(LED[1]),
+        .sync(ev != 0)
+    );
+
+    assign LED[2] = 0;
+    assign LED[3] = 0;
+endmodule
+
+module MMCM(
+    input  logic clk_in,
+    output logic clk_out
+);
+    logic  clk_out_buf;
+    logic  clk_fb_buf;
+    logic  clk_fb;
+    MMCME2_BASE #(
+        .BANDWIDTH("OPTIMIZED"),
+        .CLKFBOUT_MULT_F(5.0), 
+        .CLKFBOUT_PHASE(0.0),
+        .CLKIN1_PERIOD(5.0),
+        .CLKOUT0_DIVIDE_F(8.0),
+        .CLKOUT0_DUTY_CYCLE(0.5),
+        .CLKOUT0_PHASE(0.0),
+        .CLKOUT4_CASCADE("FALSE"),
+        .DIVCLK_DIVIDE(1)
+    )
+    MMCME2_BASE_inst (
+        .CLKOUT0(clk_out),
+        .CLKFBOUT(clk_fb_buf),
+        .CLKIN1(clk_in),
+        .PWRDWN(0),
+        .RST(0),
+        .CLKFBIN(clk_fb)
+    );
+
+    /*BUFG clk_out_bufg
+    (.O (clk_out),
+        .I (clk_out_buf));*/
+
+    BUFG clk_fb_bufg
+    (.O   (clk_fb),
+        .I   (clk_fb_buf));
+endmodule
+
+module EVG_system_reset(
+    input  logic app_clk,
+    input  logic PS_clk,
+    input  logic PS_reset,
+    input  logic PS_aresetn,
+
+    output logic app_reset[EVG_reset_params::DEV_CNT],
+    output logic app_aresetn[EVG_aresetn_params::DEV_CNT]
+);
+
+    logic POR_reset;
+    logic PS_reset_app_clk, PS_aresetn_app_clk;
+
+    pf_m #(
+        .WIDTH(1000),
+        .POR("ON")
+    ) pf_i (
+        .clk(app_clk),
+        .in(0),
+        .out(POR_reset)
+    );
+
+    xpm_cdc_sync_rst PS_reset_cdc_inst (
+        .dest_rst(PS_reset_app_clk),
+
+        .dest_clk(app_clk),
+        .src_rst(PS_reset)
+    );
+    xpm_cdc_sync_rst PS_aresetn_cdc_inst (
+        .dest_rst(PS_aresetn_app_clk),
+
+        .dest_clk(app_clk),
+        .src_rst(PS_aresetn)
+    );
+
+    reset_fanout #(
+        .N(EVG_reset_params::DEV_CNT)
+    ) reset_fanout_i(
+        .clk(app_clk),
+        .reset_in(POR_reset || PS_reset_app_clk),
+        .reset_out(app_reset)
+    );
+
+    reset_fanout #(
+        .N(EVG_aresetn_params::DEV_CNT)
+    ) aresetn_fanout_i(
+        .clk(app_clk),
+        .reset_in(~POR_reset && PS_aresetn_app_clk),
+        .reset_out(app_aresetn)
+    );
+
 endmodule

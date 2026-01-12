@@ -25,4 +25,10 @@ typedef logic [MMR_DATA_W-1:0] mmr_data_t;
 
 endpackage
 
+package emio_params;
+
+localparam EMIO_0_WIDTH = 64;
+
+endpackage
+
 `endif //__TOP_SVH__

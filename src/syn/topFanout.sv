@@ -61,6 +61,8 @@ module topFanout(
         .AW(axi_params::MMR_ADDR_W)
     ) mmr[axi_params::MMR_DEV_CNT2]();
 
+    EMIO_tri_state_if EMIO_0[emio_params::EMIO_0_WIDTH]();
+
     logic sysclk;
     IBUFDS sysclk_ibuf_i (.O(sysclk), .I(sysclk_p), .IB(sysclk_n));
 
@@ -160,6 +162,7 @@ module topFanout(
 
         .GP_0(GP_0),
         .I2C_0(I2C_0),
+        .EMIO_0(EMIO_0),
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
