@@ -5,6 +5,7 @@ module mmcm_wrapper(
     
     output logic  clk_out1,
 
+    input  logic  app_clk,
     input  logic  ph_inc,
     input  logic  ph_dec,
 
@@ -44,15 +45,15 @@ module mmcm_wrapper(
         .COMPENSATION         ("ZHOLD"),
         .STARTUP_WAIT         ("FALSE"),
         .DIVCLK_DIVIDE        (1),
-        .CLKFBOUT_MULT_F      (11.000),
+        .CLKFBOUT_MULT_F      (8.000),
         .CLKFBOUT_PHASE       (0.000),
         .CLKFBOUT_USE_FINE_PS ("FALSE"),
-        .CLKOUT0_DIVIDE_F     (11.000),
+        .CLKOUT0_DIVIDE_F     (8.000),
         .CLKOUT0_PHASE        (0.000),
         .CLKOUT0_DUTY_CYCLE   (0.500),
         .CLKOUT0_USE_FINE_PS  ("TRUE"),
-        .CLKIN1_PERIOD        (8),
-        .CLKIN2_PERIOD        (8)
+        .CLKIN1_PERIOD        (5.714),
+        .CLKIN2_PERIOD        (5.714)
     )
     mmcm_adv_inst
     (
@@ -102,7 +103,7 @@ module mmcm_wrapper(
         .I   (clk_out1_clk_wiz));
 
 
-    assign psclk = clk_out1;
+    assign psclk = app_clk;
 
     logic clk_in_sel_prev;
     always_ff @(posedge clk_in1) begin

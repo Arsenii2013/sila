@@ -22,7 +22,7 @@ set_property -dict { PACKAGE_PIN B16    IOSTANDARD LVDS } [get_ports { START_p[1
 set_property -dict { PACKAGE_PIN H13    IOSTANDARD LVDS } [get_ports { START_p[15] }];
 set_property -dict { PACKAGE_PIN D14    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_n }];
 set_property -dict { PACKAGE_PIN D15    IOSTANDARD LVDS } [get_ports { FPGA_OUTCLK_p }];
-create_clock -period 8.000 -name fpga_outclk -waveform {1.000 5.000} [get_ports FPGA_OUTCLK_p]
+create_clock -period 5.714 -name fpga_outclk -waveform {1.000 3.857} [get_ports FPGA_OUTCLK_p]
 # памерял осциллографом задержку сигнала в джиттер клинере относительно DC_CLK
 
 set_property -dict { PACKAGE_PIN W18    IOSTANDARD LVCMOS33 } [get_ports { SER }];
@@ -37,7 +37,7 @@ set_property -dict { PACKAGE_PIN G10   IOSTANDARD LVDS } [get_ports { RXCLK_p }]
 set_property -dict { PACKAGE_PIN F10   IOSTANDARD LVDS } [get_ports { RXCLK_n }];
 set_property -dict { PACKAGE_PIN J14   IOSTANDARD LVDS } [get_ports { DM_CLK_p }];
 set_property -dict { PACKAGE_PIN H14   IOSTANDARD LVDS } [get_ports { DM_CLK_n }];
-create_clock -period 8.000 -name dm_clk -waveform {0.000 4.000} [get_ports DM_CLK_p]
+create_clock -period 5.714 -name dm_clk -waveform {0.000 2.857} [get_ports DM_CLK_p]
 set_property -dict { PACKAGE_PIN E12   IOSTANDARD LVDS } [get_ports { DC_CLK_n }];
 set_property -dict { PACKAGE_PIN F12   IOSTANDARD LVDS } [get_ports { DC_CLK_p }];
 
@@ -75,10 +75,10 @@ set_property PACKAGE_PIN AA5 [get_ports {REFCLK_SFP_n}]
 create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { REFCLK_SFP_p }];
 set_property PACKAGE_PIN  W6 [get_ports {MGTREFCLK_p}]
 set_property PACKAGE_PIN  W5 [get_ports {MGTREFCLK_n}]
-create_clock -add -name REFCLK_SFP -period 8.00 -waveform {0 4} [get_ports { MGTREFCLK_p }];
+create_clock -add -name MGTREFCLK -period 5.714 -waveform {0 2.857} [get_ports { MGTREFCLK_p }];
 set_property LOC GTXE2_COMMON_X0Y2 [get_cells gtwizard_i/common0_i/gtxe2_common_i]
 
-set_clock_groups -name exclusive_fpgaoutclk -physically_exclusive -group fpga_outclk -group clk_fpga_0
+set_clock_groups -name exclusive_fpgaoutclk -physically_exclusive -group local_clk -group fpga_outclk
 
 set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
 set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
@@ -87,6 +87,8 @@ set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_r
 set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/topo_id_rx_fsm/param_reg[0][*]/C}]
 set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
 set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[1][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[1][*]/C}]
 set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
 set_multicycle_path -hold  4 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
 set_multicycle_path -setup 5 -from [get_pins {evr_i/link_slave_i/system_packet_reciever_i/tgt_delay_rx_fsm/param_reg[0][*]/C}]
