@@ -40,6 +40,9 @@ module evr#(
     assign ports_data[0].sub_delay     = ports_data[0].up_delay + ports_data[0].link_delay;
     assign ports_data[0].sub_delay_upd = ports_data[0].up_delay_upd || ports_data[0].link_delay_upd;
 
+    ev_t ev_internal;
+    always_ff @(posedge app_clk) ev <= ev_internal;
+
     link_slave link_slave_i(
         .beacon_clk(beacon_clk),
         .dc_clk(dc_clk),
@@ -51,7 +54,7 @@ module evr#(
         .app_clk(app_clk),
         .app_rst(local_app_rst[0] || !jc_clk_valid),
 
-        .ev(ev), 
+        .ev(ev_internal), 
         .trig(trig),
         .in_packet(slave_in_packet),
         .out_packet(slave_out_packet),

@@ -281,11 +281,12 @@ module topEVR(
         .tx_p(SFP_TX_P),
         .gtx_if(evr_gtx_if)
     );
+
     logic sfp_tx_dis_inv;
     stable_m #(
         .LEN(2**25 - 1)
     ) SFP_TX_DIS_stable (
-        .clk(app_clk),
+        .clk(evr_gtx_if[0].rx_clk),
         .in(evr_gtx_if[0].aligned),
         .out(sfp_tx_dis_inv)
     );
@@ -307,7 +308,7 @@ module topEVR(
     stable_m #(
         .LEN(1023)
     ) PLL1_IN_SEL1_stable (
-        .clk(app_clk),
+        .clk(evr_gtx_if[0].rx_clk),
         .in(evr_gtx_if[0].aligned),
         .out(PLL1_IN_SEL1)
     );
@@ -319,22 +320,45 @@ module topEVR(
     );
 
     logic dc_clk;
-    logic PLLS_LOL_sync;
-    logic jc_clk_invalid;
-    always_ff @(posedge app_clk) jc_clk_invalid <= !evr_gtx_if[0].aligned || PLLS_LOL_sync;
 
     xpm_cdc_async_rst PLLS_LOL_cdc_inst (
-        .dest_arst(PLLS_LOL_sync),
+        .dest_arst(jc_clk_invalid),
 
         .dest_clk(app_clk),
-        .src_arst(!PLL1_LOL_N || !PLL2_LOL_N)
+        .src_arst(!evr_gtx_if[0].aligned || !PLL1_LOL_N || !PLL2_LOL_N)
+    );
+
+    logic local_clk;
+    logic clk_fb_buf;
+    logic clk_fb;
+    MMCME2_BASE #(
+        .BANDWIDTH("OPTIMIZED"),
+        .CLKFBOUT_MULT_F(7.0), 
+        .CLKFBOUT_PHASE(0.0),
+        .CLKIN1_PERIOD(5.0),
+        .CLKOUT0_DIVIDE_F(8.0),
+        .CLKOUT0_DUTY_CYCLE(0.5),
+        .CLKOUT0_PHASE(0.0),
+        .CLKOUT4_CASCADE("FALSE"),
+        .DIVCLK_DIVIDE(1)
+    ) local_clk_MMCME2_BASE_inst (
+        .CLKOUT0(local_clk),
+        .CLKFBOUT(clk_fb_buf),
+        .CLKIN1(sysclk),
+        .PWRDWN(0),
+        .RST(0),
+        .CLKFBIN(clk_fb)
+    );
+    BUFG clk_fb_bufg (
+        .O(clk_fb),
+        .I(clk_fb_buf)
     );
 
     evr #(
         .PORT_N(gtx::EVR_PORT_N)
     ) evr_i (
         .beacon_clk(beacon_clk),
-        .local_clk(PS_clk),
+        .local_clk(local_clk),
         .dc_clk(dc_clk),
         .jc_clk(clear_clk),
         .jc_clk_valid(!jc_clk_invalid),
@@ -510,6 +534,9 @@ module EVR_system_reset(
     output logic app_aresetn[EVR_aresetn_params::DEV_CNT]
 );
 
+    logic POR_reset;
+    logic PS_reset_app_clk, PS_aresetn_app_clk;
+
     pf_m #(
         .WIDTH(1000),
         .POR("ON")
@@ -517,6 +544,19 @@ module EVR_system_reset(
         .clk(app_clk),
         .in(0),
         .out(POR_reset)
+    );
+
+    xpm_cdc_sync_rst PS_reset_cdc_inst (
+        .dest_rst(PS_reset_app_clk),
+
+        .dest_clk(app_clk),
+        .src_rst(PS_reset)
+    );
+    xpm_cdc_sync_rst PS_aresetn_cdc_inst (
+        .dest_rst(PS_aresetn_app_clk),
+
+        .dest_clk(app_clk),
+        .src_rst(PS_aresetn)
     );
 
     logic PLLS_LOL_sync;
@@ -534,7 +574,7 @@ module EVR_system_reset(
         .N(EVR_reset_params::DEV_CNT)
     ) reset_fanout_i(
         .clk(app_clk),
-        .reset_in(POR_reset || PS_reset),
+        .reset_in(POR_reset || PS_reset_app_clk),
         .reset_out(app_reset)
     );
 
@@ -542,7 +582,7 @@ module EVR_system_reset(
         .N(EVR_aresetn_params::DEV_CNT)
     ) aresetn_fanout_i(
         .clk(app_clk),
-        .reset_in(~POR_reset && PS_aresetn),
+        .reset_in(~POR_reset && PS_aresetn_app_clk),
         .reset_out(app_aresetn)
     );
 

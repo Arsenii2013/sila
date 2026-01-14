@@ -74,7 +74,7 @@ module fifo_wrapper
         .DOUT_RESET_VALUE("0"),
         .FIFO_MEMORY_TYPE("block"),
         .FIFO_READ_LATENCY(1),
-        .FIFO_WRITE_DEPTH(2**16),
+        .FIFO_WRITE_DEPTH(DEPTH),
         .READ_DATA_WIDTH(36),
         .READ_MODE("std"),
         .RELATED_CLOCKS(0),

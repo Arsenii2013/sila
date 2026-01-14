@@ -27,7 +27,7 @@ localparam DELAY_FRAC_W     = 16;
 localparam DELAY_W          = DELAY_INT_W + DELAY_FRAC_W;
 typedef logic [DELAY_W-1: 0] delay_t;
 
-localparam MAX_COMPENSATION = 2 ** 10; // должна быть степенью двойки; 2 ** 10 тактов = 1.76 км
+localparam MAX_COMPENSATION = 2 ** 12; // должна быть степенью двойки; 2 ** 10 тактов = 1.76 км
 
 localparam TOPO_ID_W        = 32;
 typedef logic [TOPO_ID_W               -1: 0] topo_id_t;

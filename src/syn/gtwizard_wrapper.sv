@@ -40,25 +40,25 @@ module gtwizard_wrapper#(
     logic rxmcommaalignen[N];
     logic rxpcommaalignen[N];
 
-    logic rxresetdone[N];
-    logic txresetdone[N];
+    wire rxresetdone[N];
+    wire txresetdone[N];
 
-    logic rxresetdone_r[N];
-    logic rxresetdone_r2[N];
-    logic rxresetdone_r3[N];
+    (* ASYNC_REG = "TRUE" *) logic rxresetdone_r[N];
+    (* ASYNC_REG = "TRUE" *) logic rxresetdone_r2[N];
+    (* ASYNC_REG = "TRUE" *) logic rxresetdone_r3[N];
 
-    logic rxfsmresetdone_r[N];
-    logic rxfsmresetdone_r2[N]; 
+    (* ASYNC_REG = "TRUE" *) logic rxfsmresetdone_r[N];
+    (* ASYNC_REG = "TRUE" *) logic rxfsmresetdone_r2[N]; 
 
-    logic txfsmresetdone_r[N];
-    logic txfsmresetdone_r2[N];
+    (* ASYNC_REG = "TRUE" *) logic txfsmresetdone_r[N];
+    (* ASYNC_REG = "TRUE" *) logic txfsmresetdone_r2[N];
 
     genvar i;
     generate
     for (i=0; i < N; i++) begin
         assign data_valid_in[i] = rxresetdone[i];
-        assign gtx_if[i].tx_reset_done = txfsmresetdone_r2[i] && txresetdone[i];
-        assign gtx_if[i].rx_reset_done = rxfsmresetdone_r2[i] && rxresetdone_r3[i];
+        assign gtx_if[i].tx_reset_done = txfsmresetdone_r2[i]; //txfsmresetdone_r2[i] && txresetdone[i];
+        assign gtx_if[i].rx_reset_done = rxresetdone_r3[i]; //rxfsmresetdone_r2[i] && rxresetdone_r3[i];
         assign rxmcommaalignen[i] = rxresetdone[i];
         assign rxpcommaalignen[i] = rxresetdone[i];
     end
@@ -1171,7 +1171,7 @@ module gtwizard_0_common #
 
 
 //***************************** Parameter Declarations ************************
-    localparam QPLL_FBDIV_TOP =  80;
+    localparam QPLL_FBDIV_TOP =  40;
 
     localparam QPLL_FBDIV_IN  =  (QPLL_FBDIV_TOP == 16)  ? 10'b0000100000 : 
 				(QPLL_FBDIV_TOP == 20)  ? 10'b0000110000 :
@@ -1210,18 +1210,16 @@ wire    [63:0]  tied_to_vcc_vec_i;
     (
             // Simulation attributes
             `ifndef SYNTHESIS
-            .SIM_RESET_SPEEDUP   ("TRUE"),
-            .SIM_QPLLREFCLK_SEL  (3'b010),
-            .SIM_VERSION         ("4.0"),
-            `else
-
+                .SIM_RESET_SPEEDUP   (WRAPPER_SIM_GTRESET_SPEEDUP),
+                .SIM_QPLLREFCLK_SEL  (SIM_QPLLREFCLK_SEL),
+                .SIM_VERSION         ("4.0"),
             `endif
 
 
            //----------------COMMON BLOCK Attributes---------------
             .BIAS_CFG                               (64'h0000040000001000),
             .COMMON_CFG                             (32'h00000000),
-            .QPLL_CFG                               (27'h0680181),
+            .QPLL_CFG                               (27'h06801C1),
             .QPLL_CLKOUT_CFG                        (4'b0000),
             .QPLL_COARSE_FREQ_OVRD                  (6'b010000),
             .QPLL_COARSE_FREQ_OVRD_EN               (1'b0),

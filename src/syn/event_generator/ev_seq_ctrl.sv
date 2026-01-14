@@ -26,14 +26,14 @@ module ev_seq_ctrl #(
     ev_t       prog_ev;
     logic      prog_ev_send;
     
-    always_comb begin
-        ev_out = 0;
+    always_ff @(posedge app_clk) begin
+        ev_out <= 0;
         for (int loop_i = EV_SEQ_N-1; loop_i >= 0; loop_i = loop_i - 1) begin 
-        if(ev_in[loop_i] != 0)
-            ev_out = ev_in[loop_i];
+            if(ev_in[loop_i] != 0)
+                ev_out <= ev_in[loop_i];
         end
         if(prog_ev_send)
-            ev_out = prog_ev;
+            ev_out <= prog_ev;
     end
 
     genvar sq_ctrl_n;

@@ -24,6 +24,19 @@ module link_slave
 
     import evn::*;
 
+// Reset sync
+    logic app_rst_tx, app_rst_rx;
+    xpm_cdc_async_rst app_rst_rx_cdc_i(
+        .dest_clk(gtx_if.rx_clk),
+        .dest_arst(app_rst_rx),
+        .src_arst(app_rst)
+    );
+    xpm_cdc_async_rst app_rst_tx_cdc_i(
+        .dest_clk(gtx_if.tx_clk),
+        .dest_arst(app_rst_tx),
+        .src_arst(app_rst)
+    );
+
 // Trigger
     logic trig_valid;
     assign trig_valid = trig != '0;
@@ -41,17 +54,17 @@ module link_slave
     xpm_cdc_pulse beacon_sunchronizer_i(
         .dest_clk(gtx_if.tx_clk),
         .dest_pulse(beacon_pulse_sync),
-        .dest_rst(app_rst),
+        .dest_rst(app_rst_tx),
         .src_clk(gtx_if.rx_clk),
         .src_pulse(beacon_pulse),
-        .src_rst(app_rst)
+        .src_rst(app_rst_rx)
     );
 
     logic beacon_valid = 0;
     logic beacon_ready = 0;
 
     always_ff @(posedge gtx_if.tx_clk) begin
-        if(app_rst) begin
+        if(app_rst_tx) begin
             beacon_valid <= 0;
         end else begin
             if(beacon_pulse_sync) begin
@@ -186,10 +199,11 @@ module link_slave
         
         .clk_out1(dc_clk),
 
+        .app_clk(app_clk),
         .ph_inc(pll_ph_inc),
         .ph_dec(pll_ph_dec),
 
-        .reset(0),
+        .reset(!gtx_if.aligned),
         .locked(mmcm_locked)
     );
 
@@ -218,5 +232,10 @@ module link_slave
         
         .delay_comp(link_data.delay_comp)
     );
-    assign link_data.link_up = gtx_if.aligned;
+
+    xpm_cdc_async_rst link_up_cdc_i(
+        .dest_clk(app_clk),
+        .dest_arst(link_data.link_up),
+        .src_arst(gtx_if.aligned)
+    );
 endmodule
