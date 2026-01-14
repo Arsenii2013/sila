@@ -32,11 +32,11 @@ module dc_control
     typedef logic [INT_W            -1: 0] sample_t;
 
     localparam delay_t  FINE_TRESH      = delay_t'(((1<<FRAC_W) >> 9)); 
-                                        // Для 125 МГц интервал 1/125e6 * 2**-10 = 7,8 пс
+                                        // Для 175 МГц интервал 1/175e6 * 2**-9 = 11,2 пс
     localparam delay_t  PLL_HIST        = delay_t'(((1<<FRAC_W) >> 9)); 
-                                        // Для 125 МГц с множителем 11, F_vco = 1,375 ГГц 
-                                        // шаг фазы равен 1/(56*1375) = 12,9 пс
-                                        // 1/175e6 * (2**-10 + 2**-100) = 13,67 пс
+                                        // Для 175 МГц с множителем 8, F_vco = 1,4 ГГц 
+                                        // шаг фазы равен 1/(56*1400) = 12,8 пс
+                                        // 1/175e6 * 2**-9 = 11,2 пс
     localparam delay_t  ONE_CYCLE_TRESH = delay_t'(1<<FRAC_W);
     localparam          FILTER_N        = 20;
     localparam          LOCK_TIME       = 2**FILTER_N;
