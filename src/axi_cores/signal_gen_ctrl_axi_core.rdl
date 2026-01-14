@@ -40,7 +40,7 @@ addrmap signal_gen_ctrl_axi_core{
         GENERATOR;
     };
 
-    addressing = compact;
+    addressing = regalign;
     reg {
         name = "SR";
         desc = "

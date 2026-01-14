@@ -39,7 +39,7 @@ class signal_generator_generator#(
     typedef signal_generator_pkg::width_t                width_t;
 
     localparam SR               = 'h0;
-    localparam GEN_REGS_BASE    = 'h10;
+    localparam GEN_REGS_BASE    = 'h40;
     localparam GEN_REGS_SIZE    = 'h28;
     localparam GEN_SR_OFFS      = 'h0;
     localparam GEN_CR_OFFS      = 'h4;
