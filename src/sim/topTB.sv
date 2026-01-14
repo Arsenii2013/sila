@@ -44,12 +44,12 @@ module topTB(
         .sfp_tx_n(evg_tx_n),
         .sfp_tx_p(evg_tx_p)
     );
-    Fanout_board_emulator fanout_deep_0_port_0 (
+    /*Fanout_board_emulator fanout_deep_0_port_0 (
         .sfp_rx_n(fanout_rx_n[0]),
         .sfp_rx_p(fanout_rx_p[0]),
         .sfp_tx_n(fanout_tx_n[0]),
         .sfp_tx_p(fanout_tx_p[0])
-    );
+    );*/
     EVR_board_emulator evr_deep_0_port_1 (
         .sfp_rx_n(evr_rx_n[0]),
         .sfp_rx_p(evr_rx_p[0]),
@@ -64,6 +64,30 @@ module topTB(
     );
 
     link_emulator #(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
+    ) link_deep_0_port_0 (
+        .up_rx_n(evg_rx_n[0]),
+        .up_rx_p(evg_rx_p[0]),
+        .up_tx_n(evg_tx_n[0]),
+        .up_tx_p(evg_tx_p[0]),
+        .down_rx_n(evr_rx_n[0][0]),
+        .down_rx_p(evr_rx_p[0][0]),
+        .down_tx_n(evr_tx_n[0][0]),
+        .down_tx_p(evr_tx_p[0][0])
+    );
+    link_emulator #(
+        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
+    ) link_deep_0_port_1 (
+        .up_rx_n(evg_rx_n[1]),
+        .up_rx_p(evg_rx_p[1]),
+        .up_tx_n(evg_tx_n[1]),
+        .up_tx_p(evg_tx_p[1]),
+        .down_rx_n(evr_rx_n[1][0]),
+        .down_rx_p(evr_rx_p[1][0]),
+        .down_tx_n(evr_tx_n[1][0]),
+        .down_tx_p(evr_tx_p[1][0])
+    );
+    /*link_emulator #(
         .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_0)
     ) link_deep_0_port_0 (
         .up_rx_n(evg_rx_n[0]),
@@ -76,18 +100,6 @@ module topTB(
         .down_tx_p(fanout_tx_p[0][0])
     );
     link_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
-    ) link_deep_0_port_1 (
-        .up_rx_n(evg_rx_n[1]),
-        .up_rx_p(evg_rx_p[1]),
-        .up_tx_n(evg_tx_n[1]),
-        .up_tx_p(evg_tx_p[1]),
-        .down_rx_n(evr_rx_n[0][0]),
-        .down_rx_p(evr_rx_p[0][0]),
-        .down_tx_n(evr_tx_n[0][0]),
-        .down_tx_p(evr_tx_p[0][0])
-    );
-    link_emulator #(
         .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_1_PORT_0)
     ) link_deep_1_port_0 (
         .up_rx_n(fanout_rx_n[0][1]),
@@ -98,7 +110,7 @@ module topTB(
         .down_rx_p(evr_rx_p[1][0]),
         .down_tx_n(evr_tx_n[1][0]),
         .down_tx_p(evr_tx_p[1][0])
-    );
+    );*/
 
 initial begin
     #500ms;
@@ -113,33 +125,62 @@ module EVG_board_emulator(
     output logic       sfp_tx_p[gtx::EVG_PORT_N]
 );
     localparam REFCLK_OFFSET = 0;
-    logic     sysclk;
-    logic     REFCLK_SFP;
-    sys_clk_gen
-    #(
+
+    logic     SYS_CLK;
+    logic     REFCLK;
+    logic     DM_CLK;
+    sys_clk_gen #(
         .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
         .offset    (0)
-    ) CLK_GEN1 (
-        .sys_clk (sysclk)
+    ) CLK_GEN (
+        .sys_clk (SYS_CLK)
     );
-    sys_clk_gen
-    #(
-        .halfcycle (4000), // 4000 ps = 125 MHz
+    sys_clk_gen #(
+        .halfcycle (2857), // 2857 ps = 125 MHz
         .offset    (REFCLK_OFFSET)
-    ) REFCLK_SFP_gen1 (
-        .sys_clk (REFCLK_SFP)
+    ) REFCLK_gen (
+        .sys_clk (REFCLK)
     );
+    sys_clk_gen #(
+        .halfcycle (2856), // 2857 ps = 125 MHz
+        .offset    (0)
+    ) DM_CLK_gen (
+        .sys_clk (DM_CLK)
+    );
+
+    logic SFP_RX_LOSS[gtx::EVG_PORT_N] = '{1, 1, 1, 1};
+    generate
+    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++) begin
+        initial begin 
+            repeat (5000) @(posedge sfp_rx_p[i]);
+            SFP_RX_LOSS[i] <= 0;
+        end
+    end
+    endgenerate
+
+    logic PLL_LOL_N = 0;
+    initial begin 
+        repeat (5000) @(posedge REFCLK);
+        PLL_LOL_N <= 1;
+    end
 
     topEVG DUT_EVG(
-        .sysclk_n(~sysclk),
-        .sysclk_p(sysclk),
-        .REFCLK_SFP_n(~REFCLK_SFP),
-        .REFCLK_SFP_p(REFCLK_SFP),
+        .SYS_CLK_n(~SYS_CLK),
+        .SYS_CLK_p(SYS_CLK),
+        .REFCLK_n(~REFCLK),
+        .REFCLK_p(REFCLK),
 
-        .sfp_rx_n(sfp_rx_n),
-        .sfp_rx_p(sfp_rx_p),
-        .sfp_tx_n(sfp_tx_n),
-        .sfp_tx_p(sfp_tx_p)
+        .SFP_RX_N(sfp_rx_p),
+        .SFP_RX_P(sfp_rx_n),
+        .SFP_TX_N(sfp_tx_n),
+        .SFP_TX_P(sfp_tx_p),
+
+        .SFP_RX_LOS(SFP_RX_LOSS),
+        
+        .DM_CLK_n(DM_CLK),
+        .DM_CLK_p(~DM_CLK),
+
+        .PLL_LOL_N(PLL_LOL_N)
     );
 endmodule
 
@@ -204,7 +245,7 @@ module EVR_board_emulator(
     logic      SYS_CLK;
     sys_clk_gen
     #(
-        .halfcycle (4000), // 4000 ps = 125 MHz
+        .halfcycle (2857), // 2857 ps = 125 MHz
         .offset    (0)
     ) REFCLK_SFP_gen (
         .sys_clk (REFCLK_SFP)
@@ -228,14 +269,14 @@ module EVR_board_emulator(
     // TODO simulate MGTREFCLK clock switch
     sys_clk_gen
     #(
-        .halfcycle (4000), // 4000 ps = 125 MHz
+        .halfcycle (2857), // 2857 ps = 125 MHz
         .offset    (0)
     ) MGTREFCLK_gen (
         .sys_clk (MGTREFCLK)
     );
     sys_clk_gen
     #(
-        .halfcycle (3999), // 4000 ps = 125 MHz
+        .halfcycle (2856), // 2857 ps = 125 MHz
         .offset    (0)
     ) DM_CLK_gen (
         .sys_clk (DM_CLK)
@@ -250,10 +291,14 @@ module EVR_board_emulator(
         PLL2_LOL_N <= 1;
     end
 
-    logic SFP_RX_LOSS[gtx::EVR_PORT_N];
+    logic SFP_RX_LOSS[gtx::EVR_PORT_N] = '{1};
     generate
-    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++)
-        assign SFP_RX_LOSS[i] = sfp_rx_p[i] === 1'bx || sfp_rx_p[i] === 1'bz;
+    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++) begin
+        initial begin 
+            repeat (5000) @(posedge sfp_rx_p[i]);
+            SFP_RX_LOSS[i] <= 0;
+        end
+    end
     endgenerate
 
     tri0 START_p[START_N];
@@ -274,8 +319,8 @@ module EVR_board_emulator(
         .DM_CLK_p(DM_CLK),
         .DC_CLK_p(DC_CLK),
 
-        .SFP_RX_N(sfp_rx_n),
-        .SFP_RX_P(sfp_rx_p),
+        .SFP_RX_N(sfp_rx_p),
+        .SFP_RX_P(sfp_rx_n),
         .SFP_TX_N(sfp_tx_p),
         .SFP_TX_P(sfp_tx_n),
         .SFP_RX_LOS(SFP_RX_LOSS),
