@@ -5,8 +5,8 @@ addrmap device_info_axi_core{
     ";
     enum device_type_encoding {
         SIM     = 32'h0;
-        EVG     = 32'h1;
-        EVR     = 32'h2;
+        HSSM     = 32'h1;
+        HSSR     = 32'h2;
         FANOUT  = 32'h3;
     };
 
@@ -51,7 +51,7 @@ addrmap device_info_axi_core{
         desc = "
             Идентификатор типа устройства.
         ";
-        field {sw=r; hw=w; encode = device_type_encoding; } device_type[32] = device_type_encoding::EVG;
+        field {sw=r; hw=w; encode = device_type_encoding; } device_type[32] = device_type_encoding::HSSM;
     } device_type;
 
     reg {

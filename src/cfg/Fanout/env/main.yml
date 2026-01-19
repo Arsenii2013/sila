@@ -1,6 +1,0 @@
-parameters:
-    VARIANT_NAME        : = ARGUMENTS['bv']
-    PROJECT_NAME        : = VARIANT_NAME
-    TOP_NAME            : topFanout
-    TESTBENCH_NAME      : topFanout
-    DEVICE              : xc7z100ffg900-2

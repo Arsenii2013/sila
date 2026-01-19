@@ -19,26 +19,26 @@ module topTB(
     endfunction
     localparam time MAX_SUBTREE_DELAY          = max_time(ENDPOINT_DELAY_ARR);
     localparam FANOUT_CNT = 1;
-    localparam EVR_CNT = 2;
+    localparam HSSR_CNT = 2;
 
     semaphore display_key = new(1);
 
-    logic evg_rx_n [gtx::EVG_PORT_N];
-    logic evg_rx_p [gtx::EVG_PORT_N];
-    logic evg_tx_n [gtx::EVG_PORT_N];
-    logic evg_tx_p [gtx::EVG_PORT_N];
+    logic evg_rx_n [gtx::HSSM_PORT_N];
+    logic evg_rx_p [gtx::HSSM_PORT_N];
+    logic evg_tx_n [gtx::HSSM_PORT_N];
+    logic evg_tx_p [gtx::HSSM_PORT_N];
 
     logic fanout_rx_n [FANOUT_CNT][gtx::FANOUT_PORT_N];
     logic fanout_rx_p [FANOUT_CNT][gtx::FANOUT_PORT_N];
     logic fanout_tx_n [FANOUT_CNT][gtx::FANOUT_PORT_N];
     logic fanout_tx_p [FANOUT_CNT][gtx::FANOUT_PORT_N];
 
-    logic evr_rx_n [EVR_CNT][gtx::EVR_PORT_N];
-    logic evr_rx_p [EVR_CNT][gtx::EVR_PORT_N];
-    logic evr_tx_n [EVR_CNT][gtx::EVR_PORT_N];
-    logic evr_tx_p [EVR_CNT][gtx::EVR_PORT_N];
+    logic evr_rx_n [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic evr_rx_p [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic evr_tx_n [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic evr_tx_p [HSSR_CNT][gtx::HSSR_PORT_N];
 
-    EVG_board_emulator head_evg (
+    HSSM_board_emulator head_evg (
         .sfp_rx_n(evg_rx_n),
         .sfp_rx_p(evg_rx_p),
         .sfp_tx_n(evg_tx_n),
@@ -50,13 +50,13 @@ module topTB(
         .sfp_tx_n(fanout_tx_n[0]),
         .sfp_tx_p(fanout_tx_p[0])
     );*/
-    EVR_board_emulator evr_deep_0_port_1 (
+    HSSR_board_emulator evr_deep_0_port_1 (
         .sfp_rx_n(evr_rx_n[0]),
         .sfp_rx_p(evr_rx_p[0]),
         .sfp_tx_n(evr_tx_n[0]),
         .sfp_tx_p(evr_tx_p[0])
     );
-    EVR_board_emulator evr_deep_1_port_0 (
+    HSSR_board_emulator evr_deep_1_port_0 (
         .sfp_rx_n(evr_rx_n[1]),
         .sfp_rx_p(evr_rx_p[1]),
         .sfp_tx_n(evr_tx_n[1]),
@@ -118,11 +118,11 @@ initial begin
 end
 endmodule
 
-module EVG_board_emulator(
-    input  logic       sfp_rx_n[gtx::EVG_PORT_N],
-    input  logic       sfp_rx_p[gtx::EVG_PORT_N],
-    output logic       sfp_tx_n[gtx::EVG_PORT_N],
-    output logic       sfp_tx_p[gtx::EVG_PORT_N]
+module HSSM_board_emulator(
+    input  logic       sfp_rx_n[gtx::HSSM_PORT_N],
+    input  logic       sfp_rx_p[gtx::HSSM_PORT_N],
+    output logic       sfp_tx_n[gtx::HSSM_PORT_N],
+    output logic       sfp_tx_p[gtx::HSSM_PORT_N]
 );
     localparam REFCLK_OFFSET = 0;
 
@@ -148,9 +148,9 @@ module EVG_board_emulator(
         .sys_clk (DM_CLK)
     );
 
-    logic SFP_RX_LOSS[gtx::EVG_PORT_N] = '{1, 1, 1, 1};
+    logic SFP_RX_LOSS[gtx::HSSM_PORT_N] = '{1, 1, 1, 1};
     generate
-    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++) begin
+    for(genvar i = 0; i < gtx::HSSR_PORT_N; i ++) begin
         initial begin 
             repeat (5000) @(posedge sfp_rx_p[i]);
             SFP_RX_LOSS[i] <= 0;
@@ -164,7 +164,7 @@ module EVG_board_emulator(
         PLL_LOL_N <= 1;
     end
 
-    topEVG DUT_EVG(
+    topHSSM DUT_HSSM(
         .SYS_CLK_n(~SYS_CLK),
         .SYS_CLK_p(SYS_CLK),
         .REFCLK_n(~REFCLK),
@@ -184,6 +184,7 @@ module EVG_board_emulator(
     );
 endmodule
 
+/*
 module Fanout_board_emulator(
     input  logic       sfp_rx_n[gtx::FANOUT_PORT_N],
     input  logic       sfp_rx_p[gtx::FANOUT_PORT_N],
@@ -224,21 +225,21 @@ module Fanout_board_emulator(
         .sfp_tx_p(sfp_tx_p)
     );
 endmodule
+*/
 
-
-module EVR_board_emulator(
-    input  logic       sfp_rx_n[gtx::EVR_PORT_N],
-    input  logic       sfp_rx_p[gtx::EVR_PORT_N],
-    output logic       sfp_tx_n[gtx::EVR_PORT_N],
-    output logic       sfp_tx_p[gtx::EVR_PORT_N],
-    inout  logic       START[EVR_board_pkg::START_N]
+module HSSR_board_emulator(
+    input  logic       sfp_rx_n[gtx::HSSR_PORT_N],
+    input  logic       sfp_rx_p[gtx::HSSR_PORT_N],
+    output logic       sfp_tx_n[gtx::HSSR_PORT_N],
+    output logic       sfp_tx_p[gtx::HSSR_PORT_N],
+    inout  logic       START[HSSR_board_pkg::START_N]
 );
-    import EVR_board_pkg::START_N;
-    import EVR_board_pkg::START_POLARITY;
-    import EVR_board_pkg::START_MODES;
-    import EVR_board_pkg::polarity_t;
-    import EVR_board_pkg::POSITIVE;
-    import EVR_board_pkg::NEGATIVE;
+    import HSSR_board_pkg::START_N;
+    import HSSR_board_pkg::START_POLARITY;
+    import HSSR_board_pkg::START_MODES;
+    import HSSR_board_pkg::polarity_t;
+    import HSSR_board_pkg::POSITIVE;
+    import HSSR_board_pkg::NEGATIVE;
 
     // On SOM clock generators
     logic      REFCLK_SFP;
@@ -291,9 +292,9 @@ module EVR_board_emulator(
         PLL2_LOL_N <= 1;
     end
 
-    logic SFP_RX_LOSS[gtx::EVR_PORT_N] = '{1};
+    logic SFP_RX_LOSS[gtx::HSSR_PORT_N] = '{1};
     generate
-    for(genvar i = 0; i < gtx::EVR_PORT_N; i ++) begin
+    for(genvar i = 0; i < gtx::HSSR_PORT_N; i ++) begin
         initial begin 
             repeat (5000) @(posedge sfp_rx_p[i]);
             SFP_RX_LOSS[i] <= 0;
@@ -306,7 +307,7 @@ module EVR_board_emulator(
 
     logic SER, SRCLK, RCLK;
 
-    topEVR DUT_EVR(
+    topHSSR DUT_HSSR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
         .MGTREFCLK_n(~MGTREFCLK),

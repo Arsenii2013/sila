@@ -1,6 +1,0 @@
-parameters:
-    VARIANT_NAME        : = ARGUMENTS['bv']
-    PROJECT_NAME        : = VARIANT_NAME
-    TOP_NAME            : topEVR
-    TESTBENCH_NAME      : topEVR
-    DEVICE              : xc7z035ffg676-2

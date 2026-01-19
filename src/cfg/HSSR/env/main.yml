@@ -1,0 +1,6 @@
+parameters:
+    VARIANT_NAME        : = ARGUMENTS['bv']
+    PROJECT_NAME        : = VARIANT_NAME
+    TOP_NAME            : topHSSR
+    TESTBENCH_NAME      : topHSSR
+    DEVICE              : xc7z035ffg676-2

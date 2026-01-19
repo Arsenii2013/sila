@@ -1,5 +1,0 @@
-
-sources:
-    - ip/axi_memory.yml
-    - ip/axi_register_slice.yml
-    - ip/EVR_gtwizard_port_0.yml

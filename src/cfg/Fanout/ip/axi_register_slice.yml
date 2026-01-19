@@ -1,3 +1,0 @@
-type : axi_register_slice
-config :
-    PROTOCOL     : AXI4LITE 

@@ -6,8 +6,8 @@ Wrapper for GTX Wizard IP
 */
 
 module gtwizard_wrapper#(
-    parameter DEVICE = "EVG",
-    parameter PORT_N = gtx::EVG_PORT_N
+    parameter DEVICE = "HSSM",
+    parameter PORT_N = gtx::HSSM_PORT_N
 )(
     input  logic        refclk_n,
     input  logic        refclk_p,
@@ -178,8 +178,8 @@ module gtwizard_wrapper#(
     logic gt_qpllreset [N];
 
     generate 
-    if(DEVICE == "EVR") begin
-    EVR_gtwizard_port_0 gtwizard_port_0
+    if(DEVICE == "HSSR") begin
+    HSSR_gtwizard_port_0 gtwizard_port_0
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -265,8 +265,8 @@ module gtwizard_wrapper#(
         .gt0_qplloutclk_in(qplloutclk),
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
-    end else if(DEVICE == "EVG") begin
-    EVG_gtwizard_port_0 gtwizard_port_0
+    end else if(DEVICE == "HSSM") begin
+    HSSM_gtwizard_port_0 gtwizard_port_0
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -353,7 +353,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    EVG_gtwizard_port_1 gtwizard_port_1
+    HSSM_gtwizard_port_1 gtwizard_port_1
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -440,7 +440,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    EVG_gtwizard_port_2 gtwizard_port_2
+    HSSM_gtwizard_port_2 gtwizard_port_2
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),
@@ -527,7 +527,7 @@ module gtwizard_wrapper#(
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
 
-    EVG_gtwizard_port_3 gtwizard_port_3
+    HSSM_gtwizard_port_3 gtwizard_port_3
     (
         .sysclk_in                      (sysclk),
         .soft_reset_tx_in               (soft_reset),

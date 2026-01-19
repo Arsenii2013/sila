@@ -17,7 +17,7 @@ localparam FW_HASH  = '0;
 endpackage
 
 module device_info #(
-    parameter DEVICE      = "EVG"
+    parameter DEVICE      = "HSSM"
 )(
     input  logic                                 app_clk,
     input  logic                                 app_rst,
@@ -32,8 +32,8 @@ module device_info #(
     assign hwif_in.cr_c.reserved.next           = 0;
     generate 
     case (DEVICE)
-    "EVG"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVG;
-    "EVR"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__EVR;
+    "HSSM"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__HSSM;
+    "HSSR"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__HSSR;
     "Fanout" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__FANOUT;
     endcase
     endgenerate
