@@ -69,6 +69,11 @@ sources:
     - src/syn/timestamper.sv
     - src/syn/event_comparator.sv
     - src/syn/axi_register_slice_wrapper.sv
+    - src/sim/network_configuration.sv
+    - src/sim/globals.sv
+    - src/sim/tester.sv
+    - src/sim/HSSMTester.sv
+    - src/sim/HSSRTester.sv
     - src/syn/PS_wrapper.sv
     - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv

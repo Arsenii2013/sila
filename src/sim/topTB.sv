@@ -4,128 +4,279 @@
 module topTB(
 
     );
-    localparam time PROPAGATION_DELAY_DEEP_0_PORT_0 = 1231.56ns;
-    localparam time PROPAGATION_DELAY_DEEP_0_PORT_1 = 560.12ns;
-    localparam time PROPAGATION_DELAY_DEEP_1_PORT_0 = 337ns;
-    localparam time ENDPOINT_DELAY_ARR [2]     = '{
-                                                 PROPAGATION_DELAY_DEEP_0_PORT_0, 
-                                                 PROPAGATION_DELAY_DEEP_0_PORT_1 + PROPAGATION_DELAY_DEEP_1_PORT_0
-                                                  };
-    function time max_time(time times [2]);
-        max_time = 0ps;
-        foreach(times[i])
-            if(times[i] > max_time)
-                max_time = times[i];
+
+    import evn::topo_id_t;
+    import evn::TOPO_ID_LEVEL_W;
+    import evn::TOPO_ID_MAX_LEVEL;
+    typedef NetworkConfiguration::device_type_t device_type_t;
+    localparam HSSR = NetworkConfiguration::HSSR;
+    localparam HSSM = NetworkConfiguration::HSSM;
+    typedef NetworkConfiguration::link_conf_t link_conf_t;
+
+    parameter int         LINKS_SIZE          = 4;
+    parameter link_conf_t LINKS [LINKS_SIZE]  = 
+        '{'{'h0, 0ns, 0, HSSM, '{}}, '{'h1, 2700ns, 0, HSSR, '{}}, 
+                                      '{'h2, 461ns,  0, HSSM, '{}}, '{'h22, 1241.45ns, 1, HSSR, '{}}};
+    
+    localparam realtime MAX_SUBTREE_DELAY = 1231.56ns * 2; // алгоритмически сложно считать
+
+    function int count_device(link_conf_t conf [LINKS_SIZE], device_type_t search_type);
+        int count;
+        count = 0;
+        foreach(conf[i]) begin
+            if(conf[i].device_type == search_type)
+                count ++;
+        end
+        return count;
     endfunction
-    localparam time MAX_SUBTREE_DELAY          = max_time(ENDPOINT_DELAY_ARR);
-    localparam FANOUT_CNT = 1;
-    localparam HSSR_CNT = 2;
 
-    semaphore display_key = new(1);
+    localparam int      HSSM_CNT            = count_device(LINKS, HSSM);
+    localparam int      HSSR_CNT            = count_device(LINKS, HSSR);
 
-    logic evg_rx_n [gtx::HSSM_PORT_N];
-    logic evg_rx_p [gtx::HSSM_PORT_N];
-    logic evg_tx_n [gtx::HSSM_PORT_N];
-    logic evg_tx_p [gtx::HSSM_PORT_N];
+    typedef link_conf_t link_conf_arr_t[LINKS_SIZE];
+    function link_conf_arr_t compile_time_sort_by_topo_id(link_conf_arr_t conf);
+        bit sorted;
+        link_conf_t tmp;
+        sorted = 0;
+        while(!sorted) begin
+            sorted = 1;
+            for(int i = 0; i < LINKS_SIZE; i ++) begin
+                if(conf[i + 1].topo_id == 0) break;
+                if(conf[i].topo_id > conf[i + 1].topo_id) begin
+                    sorted = 0;
+                    tmp = conf[i + 1];
+                    conf[i + 1] = conf[i];
+                    conf[i] = tmp;
+                end
+            end
+        end
+        return conf;
+    endfunction
 
-    logic fanout_rx_n [FANOUT_CNT][gtx::FANOUT_PORT_N];
-    logic fanout_rx_p [FANOUT_CNT][gtx::FANOUT_PORT_N];
-    logic fanout_tx_n [FANOUT_CNT][gtx::FANOUT_PORT_N];
-    logic fanout_tx_p [FANOUT_CNT][gtx::FANOUT_PORT_N];
+    function link_conf_arr_t get_devices_on_level(link_conf_t conf [LINKS_SIZE], int level);
+        link_conf_arr_t res;
+        topo_id_t       mask;
+        int             offset;
+        int             res_ptr;
+        res = '{default: '{'0, 0ns, 0, HSSR, '{}}};
+        if(level == 0) begin 
+            foreach(conf[i]) begin
+                if (conf[i].topo_id == '0) begin
+                    res[0] = conf[i];
+                    break;
+                end 
+            end
+        end else begin
+            mask    = topo_id_t'('1) << ((level - 1) * TOPO_ID_LEVEL_W);
+            offset  =                    (level - 1) * TOPO_ID_LEVEL_W;
+            res_ptr = 0;
+            foreach(conf[i]) begin
+                if (((conf[i].topo_id & mask) >> offset) inside {['h1: 2 ** TOPO_ID_LEVEL_W]}) begin
+                    res[res_ptr] = conf[i];
+                    res_ptr++;
+                end 
+            end
+            //res.sort(r) with (r.topo_id == 0 ? 2**TOPO_ID_LEVEL_W + 1 : r.topo_id);
+            res = compile_time_sort_by_topo_id(res);
+            
+        end
+        return res;
+    endfunction
 
-    logic evr_rx_n [HSSR_CNT][gtx::HSSR_PORT_N];
-    logic evr_rx_p [HSSR_CNT][gtx::HSSR_PORT_N];
-    logic evr_tx_n [HSSR_CNT][gtx::HSSR_PORT_N];
-    logic evr_tx_p [HSSR_CNT][gtx::HSSR_PORT_N];
+    typedef link_conf_t HSSR_link_conf_arr_t[HSSR_CNT];
+    function HSSR_link_conf_arr_t get_all_HSSRs(link_conf_t conf [LINKS_SIZE]);
+        link_conf_t     flat_confs [HSSR_CNT];
+        link_conf_arr_t level_devices;
+        int             level;
+        int             src_ptr;
+        int             dest_ptr;
 
-    HSSM_board_emulator head_evg (
-        .sfp_rx_n(evg_rx_n),
-        .sfp_rx_p(evg_rx_p),
-        .sfp_tx_n(evg_tx_n),
-        .sfp_tx_p(evg_tx_p)
-    );
-    /*Fanout_board_emulator fanout_deep_0_port_0 (
-        .sfp_rx_n(fanout_rx_n[0]),
-        .sfp_rx_p(fanout_rx_p[0]),
-        .sfp_tx_n(fanout_tx_n[0]),
-        .sfp_tx_p(fanout_tx_p[0])
-    );*/
-    HSSR_board_emulator evr_deep_0_port_1 (
-        .sfp_rx_n(evr_rx_n[0]),
-        .sfp_rx_p(evr_rx_p[0]),
-        .sfp_tx_n(evr_tx_n[0]),
-        .sfp_tx_p(evr_tx_p[0])
-    );
-    HSSR_board_emulator evr_deep_1_port_0 (
-        .sfp_rx_n(evr_rx_n[1]),
-        .sfp_rx_p(evr_rx_p[1]),
-        .sfp_tx_n(evr_tx_n[1]),
-        .sfp_tx_p(evr_tx_p[1])
-    );
+        dest_ptr = 0;
+        for(level = 0; level < TOPO_ID_MAX_LEVEL; level ++) begin
+            level_devices = get_devices_on_level(conf, level);
+            src_ptr = 0;
+            while(level_devices[src_ptr] != '{'0, 0ns, 0, HSSR, '{}}) begin
+                if(level_devices[src_ptr].device_type == HSSR) begin
+                    flat_confs[dest_ptr] = level_devices[src_ptr];
+                    dest_ptr++;
+                end
+                src_ptr++;
+            end
+        end
+        return flat_confs;
+    endfunction
 
-    link_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
-    ) link_deep_0_port_0 (
-        .up_rx_n(evg_rx_n[0]),
-        .up_rx_p(evg_rx_p[0]),
-        .up_tx_n(evg_tx_n[0]),
-        .up_tx_p(evg_tx_p[0]),
-        .down_rx_n(evr_rx_n[0][0]),
-        .down_rx_p(evr_rx_p[0][0]),
-        .down_tx_n(evr_tx_n[0][0]),
-        .down_tx_p(evr_tx_p[0][0])
-    );
-    link_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_1)
-    ) link_deep_0_port_1 (
-        .up_rx_n(evg_rx_n[1]),
-        .up_rx_p(evg_rx_p[1]),
-        .up_tx_n(evg_tx_n[1]),
-        .up_tx_p(evg_tx_p[1]),
-        .down_rx_n(evr_rx_n[1][0]),
-        .down_rx_p(evr_rx_p[1][0]),
-        .down_tx_n(evr_tx_n[1][0]),
-        .down_tx_p(evr_tx_p[1][0])
-    );
-    /*link_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_0_PORT_0)
-    ) link_deep_0_port_0 (
-        .up_rx_n(evg_rx_n[0]),
-        .up_rx_p(evg_rx_p[0]),
-        .up_tx_n(evg_tx_n[0]),
-        .up_tx_p(evg_tx_p[0]),
-        .down_rx_n(fanout_rx_n[0][0]),
-        .down_rx_p(fanout_rx_p[0][0]),
-        .down_tx_n(fanout_tx_n[0][0]),
-        .down_tx_p(fanout_tx_p[0][0])
-    );
-    link_emulator #(
-        .PROPAGATION_DELAY(PROPAGATION_DELAY_DEEP_1_PORT_0)
-    ) link_deep_1_port_0 (
-        .up_rx_n(fanout_rx_n[0][1]),
-        .up_rx_p(fanout_rx_p[0][1]),
-        .up_tx_n(fanout_tx_n[0][1]),
-        .up_tx_p(fanout_tx_p[0][1]),
-        .down_rx_n(evr_rx_n[1][0]),
-        .down_rx_p(evr_rx_p[1][0]),
-        .down_tx_n(evr_tx_n[1][0]),
-        .down_tx_p(evr_tx_p[1][0])
-    );*/
+    typedef link_conf_t HSSM_link_conf_arr_t[HSSM_CNT];
+    function HSSM_link_conf_arr_t get_all_HSSMs(link_conf_t conf [LINKS_SIZE]);
+        link_conf_t     flat_confs [HSSM_CNT];
+        link_conf_arr_t level_devices;
+        int             level;
+        int             src_ptr;
+        int             dest_ptr;
 
-initial begin
-    #500ms;
-    $stop();
-end
+        dest_ptr = 0;
+        for(level = 0; level < TOPO_ID_MAX_LEVEL; level ++) begin
+            level_devices = get_devices_on_level(conf, level);
+            src_ptr = 0;
+            while(level_devices[src_ptr] != '{'0, 0ns, 0, HSSR, '{}}) begin
+                if(level_devices[src_ptr].device_type == HSSM) begin
+                    flat_confs[dest_ptr] = level_devices[src_ptr];
+                    dest_ptr++;
+                end
+                src_ptr++;
+            end
+        end
+        return flat_confs;
+    endfunction
+
+    function int get_level_up_ind(link_conf_t HSSM_confs[HSSM_CNT], link_conf_t conf);
+        topo_id_t search_id;
+        search_id = conf.topo_id >> TOPO_ID_LEVEL_W;
+        foreach(HSSM_confs[i]) begin
+            if(HSSM_confs[i].topo_id == search_id) 
+                return i;
+        end
+        $error("HSSM not found!");
+    endfunction
+    function int get_level_up_port(link_conf_t conf);
+        return conf.topo_id[TOPO_ID_LEVEL_W : 0] - 1;
+    endfunction
+
+    function int get_HSSR_ind(link_conf_t HSSR_confs[HSSR_CNT], link_conf_t conf);
+        topo_id_t search_id;
+        search_id = conf.topo_id;
+        foreach(HSSR_confs[i]) begin
+            if(HSSR_confs[i].topo_id == search_id) begin
+                return i;
+            end
+        end
+        $error("HSSR not found!");
+    endfunction
+    function int get_HSSM_ind(link_conf_t HSSM_confs[HSSM_CNT], link_conf_t conf);
+        topo_id_t search_id;
+        search_id = conf.topo_id;
+        foreach(HSSM_confs[i]) begin
+            if(HSSM_confs[i].topo_id == search_id) begin
+                return i;
+            end
+        end
+        $error("HSSM not found!");
+    endfunction
+
+    logic hssm_rx_n [HSSM_CNT][gtx::HSSM_PORT_N];
+    logic hssm_rx_p [HSSM_CNT][gtx::HSSM_PORT_N];
+    logic hssm_tx_n [HSSM_CNT][gtx::HSSM_PORT_N];
+    logic hssm_tx_p [HSSM_CNT][gtx::HSSM_PORT_N];
+
+    logic hssr_rx_n [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic hssr_rx_p [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic hssr_tx_n [HSSR_CNT][gtx::HSSR_PORT_N];
+    logic hssr_tx_p [HSSR_CNT][gtx::HSSR_PORT_N];
+
+    generate
+    for(genvar i = 0; i < HSSM_CNT; i ++) begin : HSSM_insts
+        HSSM_board_emulator #(
+            .REFCLK_OFFSET(HSSM_confs[i].delay - $rtoi(HSSM_confs[i].delay / 5714ps) * 5714ps)
+        ) HSSM_emulator_i (
+            .sfp_rx_n(hssm_rx_n[i]),
+            .sfp_rx_p(hssm_rx_p[i]),
+            .sfp_tx_n(hssm_tx_n[i]),
+            .sfp_tx_p(hssm_tx_p[i])
+        );
+    end
+    for(genvar i = 0; i < HSSR_CNT; i ++) begin : HSSR_insts
+        HSSR_board_emulator #(
+            .REFCLK_OFFSET(HSSR_confs[i].delay - $rtoi(HSSM_confs[i].delay / 5714ps) * 5714ps)
+        ) HSSR_emulator_i (
+            .sfp_rx_n(hssr_rx_n[i]),
+            .sfp_rx_p(hssr_rx_p[i]),
+            .sfp_tx_n(hssr_tx_n[i]),
+            .sfp_tx_p(hssr_tx_p[i])
+        );
+    end
+    endgenerate
+
+    parameter link_conf_t HSSM_confs [HSSM_CNT] = get_all_HSSMs(LINKS);
+    parameter link_conf_t HSSR_confs [HSSR_CNT] = get_all_HSSRs(LINKS);
+
+    generate
+    for(genvar i = 0; i < HSSM_CNT; i ++) begin : HSSM_connections
+        if(HSSM_confs[i].topo_id != '0) begin
+            localparam up_ind  = get_level_up_ind(HSSM_confs, HSSM_confs[i]);
+            localparam up_port = get_level_up_port(HSSM_confs[i]);
+            link_emulator #(
+                .PROPAGATION_DELAY(HSSM_confs[i].delay),
+                .ASYMMETRIC(HSSM_confs[i].asymmetric_delay)
+            ) link_emulator_i (
+                .up_rx_n(hssm_rx_n[up_ind][up_port]),
+                .up_rx_p(hssm_rx_p[up_ind][up_port]),
+                .up_tx_n(hssm_tx_n[up_ind][up_port]),
+                .up_tx_p(hssm_tx_p[up_ind][up_port]),
+                .down_rx_n(hssm_rx_n[i][0]),
+                .down_rx_p(hssm_rx_p[i][0]),
+                .down_tx_n(hssm_tx_n[i][0]),
+                .down_tx_p(hssm_tx_p[i][0])
+            );
+        end
+    end
+    for(genvar i = 0; i < HSSR_CNT; i ++) begin : HSSR_connections
+        localparam up_ind  = get_level_up_ind(HSSM_confs, HSSR_confs[i]);
+        localparam up_port = get_level_up_port(HSSR_confs[i]);
+        link_emulator #(
+            .PROPAGATION_DELAY(HSSR_confs[i].delay),
+            .ASYMMETRIC(HSSR_confs[i].asymmetric_delay)
+        ) link_emulator_i (
+            .up_rx_n(hssm_rx_n[up_ind][up_port]),
+            .up_rx_p(hssm_rx_p[up_ind][up_port]),
+            .up_tx_n(hssm_tx_n[up_ind][up_port]),
+            .up_tx_p(hssm_tx_p[up_ind][up_port]),
+            .down_rx_n(hssr_rx_n[i][0]),
+            .down_rx_p(hssr_rx_p[i][0]),
+            .down_tx_n(hssr_tx_n[i][0]),
+            .down_tx_p(hssr_tx_p[i][0])
+        );
+    end
+    endgenerate
+
+    NetworkConfiguration network_conf;
+    initial begin
+        link_conf_t links_confs [string];
+        string module_name;
+        int up_port;
+        foreach(HSSR_confs[i]) begin
+            module_name = $sformatf("topTB.HSSR_insts[%0d].HSSR_emulator_i.DUT_HSSR.PS_wrapper_i", i);
+            links_confs[module_name] = HSSR_confs[i];
+        end
+        foreach(HSSM_confs[i]) begin
+            module_name = $sformatf("topTB.HSSM_insts[%0d].HSSM_emulator_i.DUT_HSSM.PS_wrapper_i", i);
+            links_confs[module_name] = HSSM_confs[i];
+            foreach(LINKS[j]) begin
+                if(LINKS[j].topo_id != 0 && get_level_up_ind(HSSM_confs, LINKS[j]) == i) begin
+                    up_port = get_level_up_port(LINKS[j]);
+                    links_confs[module_name].ports_used = {links_confs[module_name].ports_used, up_port};
+                end
+            end
+        end
+        network_conf = Globals::get_network_configuration();
+        network_conf.set_links_conf(links_confs);
+        network_conf.set_max_sub_delay(MAX_SUBTREE_DELAY);
+        network_conf.finalize();
+    end
+
+    initial begin
+        #500ms;
+        $stop();
+    end
 endmodule
 
-module HSSM_board_emulator(
+module HSSM_board_emulator #(
+    parameter REFCLK_OFFSET = 0ns
+)(
     input  logic       sfp_rx_n[gtx::HSSM_PORT_N],
     input  logic       sfp_rx_p[gtx::HSSM_PORT_N],
     output logic       sfp_tx_n[gtx::HSSM_PORT_N],
     output logic       sfp_tx_p[gtx::HSSM_PORT_N]
 );
-    localparam REFCLK_OFFSET = 0;
-
     logic     SYS_CLK;
     logic     REFCLK;
     logic     DM_CLK;
@@ -136,13 +287,13 @@ module HSSM_board_emulator(
         .sys_clk (SYS_CLK)
     );
     sys_clk_gen #(
-        .halfcycle (2857), // 2857 ps = 125 MHz
+        .halfcycle (2857), // 2857 ps = 175 MHz
         .offset    (REFCLK_OFFSET)
     ) REFCLK_gen (
         .sys_clk (REFCLK)
     );
     sys_clk_gen #(
-        .halfcycle (2856), // 2857 ps = 125 MHz
+        .halfcycle (2856), // 2857 ps = 175 MHz
         .offset    (0)
     ) DM_CLK_gen (
         .sys_clk (DM_CLK)
@@ -150,7 +301,7 @@ module HSSM_board_emulator(
 
     logic SFP_RX_LOSS[gtx::HSSM_PORT_N] = '{1, 1, 1, 1};
     generate
-    for(genvar i = 0; i < gtx::HSSR_PORT_N; i ++) begin
+    for(genvar i = 0; i < gtx::HSSM_PORT_N; i ++) begin
         initial begin 
             repeat (5000) @(posedge sfp_rx_p[i]);
             SFP_RX_LOSS[i] <= 0;
@@ -164,6 +315,16 @@ module HSSM_board_emulator(
         PLL_LOL_N <= 1;
     end
 
+    logic SFP_TX_N[gtx::HSSM_PORT_N], SFP_TX_P[gtx::HSSM_PORT_N];
+    logic SFP_TX_DIS[gtx::HSSM_PORT_N];
+
+    generate
+    for(genvar i = 0; i < gtx::HSSM_PORT_N; i ++) begin
+        assign sfp_tx_p[i] = SFP_TX_DIS[i] ? 0 : SFP_TX_P[i];
+        assign sfp_tx_n[i] = SFP_TX_DIS[i] ? 0 : SFP_TX_N[i];
+    end
+    endgenerate
+
     topHSSM DUT_HSSM(
         .SYS_CLK_n(~SYS_CLK),
         .SYS_CLK_p(SYS_CLK),
@@ -172,8 +333,9 @@ module HSSM_board_emulator(
 
         .SFP_RX_N(sfp_rx_p),
         .SFP_RX_P(sfp_rx_n),
-        .SFP_TX_N(sfp_tx_n),
-        .SFP_TX_P(sfp_tx_p),
+        .SFP_TX_N(SFP_TX_N),
+        .SFP_TX_P(SFP_TX_P),
+        .SFP_TX_DIS(SFP_TX_DIS),
 
         .SFP_RX_LOS(SFP_RX_LOSS),
         
@@ -184,50 +346,9 @@ module HSSM_board_emulator(
     );
 endmodule
 
-/*
-module Fanout_board_emulator(
-    input  logic       sfp_rx_n[gtx::FANOUT_PORT_N],
-    input  logic       sfp_rx_p[gtx::FANOUT_PORT_N],
-    output logic       sfp_tx_n[gtx::FANOUT_PORT_N],
-    output logic       sfp_tx_p[gtx::FANOUT_PORT_N]
-);
-    localparam REFCLK_OFFSET = 0;
-    logic     sysclk;
-    logic     REFCLK_SFP;
-    logic     RXCLK;
-    sys_clk_gen
-    #(
-        .halfcycle (2500), // 2500 ps = 200 MHz on board system clock
-        .offset    (0)
-    ) CLK_GEN1 (
-        .sys_clk (sysclk)
-    );
-    sys_clk_gen
-    #(
-        .halfcycle (4000), // 4000 ps = 125 MHz
-        .offset    (REFCLK_OFFSET)
-    ) REFCLK_SFP_gen1 (
-        .sys_clk (REFCLK_SFP)
-    );
-
-    topFanout DUT_FANOUT(
-        .sysclk_n(~sysclk),
-        .sysclk_p(sysclk),
-        .REFCLK_SFP_n(~REFCLK_SFP),
-        .REFCLK_SFP_p(REFCLK_SFP),
-        .RXCLK_p(RXCLK),
-        .REFCLK_FROM_RX_n(~RXCLK),
-        .REFCLK_FROM_RX_p(RXCLK),
-
-        .sfp_rx_n(sfp_rx_n),
-        .sfp_rx_p(sfp_rx_p),
-        .sfp_tx_n(sfp_tx_n),
-        .sfp_tx_p(sfp_tx_p)
-    );
-endmodule
-*/
-
-module HSSR_board_emulator(
+module HSSR_board_emulator#(
+    parameter REFCLK_OFFSET = 0ns
+)(
     input  logic       sfp_rx_n[gtx::HSSR_PORT_N],
     input  logic       sfp_rx_p[gtx::HSSR_PORT_N],
     output logic       sfp_tx_n[gtx::HSSR_PORT_N],
@@ -246,8 +367,8 @@ module HSSR_board_emulator(
     logic      SYS_CLK;
     sys_clk_gen
     #(
-        .halfcycle (2857), // 2857 ps = 125 MHz
-        .offset    (0)
+        .halfcycle (2857), // 2857 ps = 175 MHz
+        .offset    (REFCLK_OFFSET)
     ) REFCLK_SFP_gen (
         .sys_clk (REFCLK_SFP)
     );
@@ -307,6 +428,16 @@ module HSSR_board_emulator(
 
     logic SER, SRCLK, RCLK;
 
+    logic SFP_TX_N[gtx::HSSR_PORT_N], SFP_TX_P[gtx::HSSR_PORT_N];
+    logic SFP_TX_DIS[gtx::HSSR_PORT_N];
+
+    generate
+    for(genvar i = 0; i < gtx::HSSR_PORT_N; i ++) begin
+        assign sfp_tx_p[i] = SFP_TX_DIS[i] ? 0 : SFP_TX_P[i];
+        assign sfp_tx_n[i] = SFP_TX_DIS[i] ? 0 : SFP_TX_N[i];
+    end
+    endgenerate
+
     topHSSR DUT_HSSR(
         .REFCLK_SFP_n(~REFCLK_SFP),
         .REFCLK_SFP_p(REFCLK_SFP),
@@ -322,8 +453,9 @@ module HSSR_board_emulator(
 
         .SFP_RX_N(sfp_rx_p),
         .SFP_RX_P(sfp_rx_n),
-        .SFP_TX_N(sfp_tx_p),
-        .SFP_TX_P(sfp_tx_n),
+        .SFP_TX_N(SFP_TX_P),
+        .SFP_TX_P(SFP_TX_N),
+        .SFP_TX_DIS(SFP_TX_DIS),
         .SFP_RX_LOS(SFP_RX_LOSS),
         .START_p(START_p),
         .START_n(START_n),
