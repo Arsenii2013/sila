@@ -33,26 +33,27 @@ class ev_map_generator#(
 
     function new (
         virtual virtual_clock_if clk_if,
+        addr_t base,
         axi_transaction_pkg::item_mailbox_t req_mailbox,
         axi_transaction_pkg::item_mailbox_t resp_mailbox,
         int resp_channel
     );
-        super.new(clk_if, req_mailbox, resp_mailbox, resp_channel);
+        super.new(clk_if, base, req_mailbox, resp_mailbox, resp_channel);
         entrys_num = 0;
     endfunction
 
     local task _write_map(input int entry, input ev_t ev, input single_map_t map [MAX_GENERATORS]);
         import ev_map_generator_pkg::*;
-        write(BASE + entry * 'h10 + 'h00, data_t'(ev));
-        write(BASE + entry * 'h10 + 'h04, {single_map_to_logic(map[7]), single_map_to_logic(map[6]), 
+        write(entry * 'h10 + 'h00, data_t'(ev));
+        write(entry * 'h10 + 'h04, {single_map_to_logic(map[7]), single_map_to_logic(map[6]), 
                                            single_map_to_logic(map[5]), single_map_to_logic(map[4]), 
                                            single_map_to_logic(map[3]), single_map_to_logic(map[2]), 
                                            single_map_to_logic(map[1]), single_map_to_logic(map[0])});
-        write(BASE + entry * 'h10 + 'h08, {single_map_to_logic(map[15]), single_map_to_logic(map[14]), 
+        write(entry * 'h10 + 'h08, {single_map_to_logic(map[15]), single_map_to_logic(map[14]), 
                                            single_map_to_logic(map[13]), single_map_to_logic(map[12]), 
                                            single_map_to_logic(map[11]), single_map_to_logic(map[10]), 
                                            single_map_to_logic(map[9]), single_map_to_logic(map[8])});
-        write(BASE + entry * 'h10 + 'h0C, {single_map_to_logic(map[23]), single_map_to_logic(map[22]), 
+        write(entry * 'h10 + 'h0C, {single_map_to_logic(map[23]), single_map_to_logic(map[22]), 
                                            single_map_to_logic(map[21]), single_map_to_logic(map[20]), 
                                            single_map_to_logic(map[19]), single_map_to_logic(map[18]), 
                                            single_map_to_logic(map[17]), single_map_to_logic(map[16])});
@@ -61,11 +62,11 @@ class ev_map_generator#(
     local task _read_map(input int entry, output ev_t ev, output single_map_t map [MAX_GENERATORS]);
         import ev_map_generator_pkg::*;
         data_t rd_data1, rd_data2, rd_data3;
-        read(BASE + entry * 'h10 + 'h00, rd_data1);
+        read(entry * 'h10 + 'h00, rd_data1);
         ev = rd_data1;
-        read(BASE + entry * 'h10 + 'h04, rd_data1);
-        read(BASE + entry * 'h10 + 'h08, rd_data2);
-        read(BASE + entry * 'h10 + 'h0C, rd_data3);
+        read(entry * 'h10 + 'h04, rd_data1);
+        read(entry * 'h10 + 'h08, rd_data2);
+        read(entry * 'h10 + 'h0C, rd_data3);
         map[0]  = logic_to_single_map(rd_data1[3 :0 ]); map[1]  = logic_to_single_map(rd_data1[7 :4 ]); 
         map[2]  = logic_to_single_map(rd_data1[11:8 ]); map[3]  = logic_to_single_map(rd_data1[15:12]); 
         map[4]  = logic_to_single_map(rd_data1[19:16]); map[5]  = logic_to_single_map(rd_data1[23:20]); 

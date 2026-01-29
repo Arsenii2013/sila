@@ -5,9 +5,7 @@ typedef struct{
 } seq_item_t;
 endpackage
 
-class ev_seq_generator#(
-    parameter BASE  = 'h0
-) extends axi_generator;
+class ev_seq_generator extends axi_generator;
 
     local int entrys_num;
     typedef event_generator_pkg::timestamp_t  timestamp_t;
@@ -16,24 +14,25 @@ class ev_seq_generator#(
 
     function new (
         virtual virtual_clock_if clk_if,
+        addr_t base,
         axi_transaction_pkg::item_mailbox_t req_mailbox,
         axi_transaction_pkg::item_mailbox_t resp_mailbox,
         int resp_channel
     );
-        super.new(clk_if, req_mailbox, resp_mailbox, resp_channel);
+        super.new(clk_if, base, req_mailbox, resp_mailbox, resp_channel);
         entrys_num = 0;
     endfunction
 
     local task write_event(input int entry, input timestamp_t timestamp, input ev_t ev);
-        write(BASE + entry * 'h10 + 'h00, timestamp[31:0]);
-        write(BASE + entry * 'h10 + 'h04, timestamp[63:32]);
-        write(BASE + entry * 'h10 + 'h08, {8'h0, ev});
+        write(entry * 'h10 + 'h00, timestamp[31:0]);
+        write(entry * 'h10 + 'h04, timestamp[63:32]);
+        write(entry * 'h10 + 'h08, {8'h0, ev});
     endtask
 
     task read_event(input int entry, output timestamp_t timestamp, output ev_t ev);
-        read(BASE + entry * 'h10 + 'h00, timestamp[31:0]);
-        read(BASE + entry * 'h10 + 'h04, timestamp[63:32]);
-        read(BASE + entry * 'h10 + 'h08, ev);
+        read(entry * 'h10 + 'h00, timestamp[31:0]);
+        read(entry * 'h10 + 'h04, timestamp[63:32]);
+        read(entry * 'h10 + 'h08, ev);
     endtask
 
     task add_event(input timestamp_t timestamp, input ev_t ev);

@@ -18,9 +18,7 @@ typedef struct{
 
 endpackage
 
-class gen_map_generator#(
-    parameter BASE  = 'h0
-) extends axi_generator;
+class gen_map_generator extends axi_generator;
 
     localparam MAX_DIFF_IOS = gen_map_generator_pkg::MAX_DIFF_IOS;
     local int entrys_num;
@@ -29,18 +27,19 @@ class gen_map_generator#(
 
     function new (
         virtual virtual_clock_if clk_if,
+        addr_t base,
         axi_transaction_pkg::item_mailbox_t req_mailbox,
         axi_transaction_pkg::item_mailbox_t resp_mailbox,
         int resp_channel
     );
-        super.new(clk_if, req_mailbox, resp_mailbox, resp_channel);
+        super.new(clk_if, base, req_mailbox, resp_mailbox, resp_channel);
         entrys_num = 0;
     endfunction
 
     local task _write_map(input int entry, input single_map_t map [MAX_DIFF_IOS]);
         import gen_map_generator_pkg::*;
 
-        write(BASE + entry * 'h4 + 'h00, {single_map_to_logic(map[15]), single_map_to_logic(map[14]), 
+        write(entry * 'h4 + 'h00, {single_map_to_logic(map[15]), single_map_to_logic(map[14]), 
                                            single_map_to_logic(map[13]), single_map_to_logic(map[12]), 
                                            single_map_to_logic(map[11]), single_map_to_logic(map[10]), 
                                            single_map_to_logic(map[9 ]), single_map_to_logic(map[8 ]),
@@ -53,7 +52,7 @@ class gen_map_generator#(
     local task _read_map(input int entry, output single_map_t map [MAX_DIFF_IOS]);
         import gen_map_generator_pkg::*;
         data_t rd_data;
-        read(BASE + entry * 'h4 + 'h00, rd_data);
+        read(entry * 'h4 + 'h00, rd_data);
         map[0]  = logic_to_single_map(rd_data[1 :0 ]); map[1]  = logic_to_single_map(rd_data[3 :2 ]); 
         map[2]  = logic_to_single_map(rd_data[5 :4 ]); map[3]  = logic_to_single_map(rd_data[7 :6 ]); 
         map[4]  = logic_to_single_map(rd_data[9 :8 ]); map[5]  = logic_to_single_map(rd_data[11:10]); 
