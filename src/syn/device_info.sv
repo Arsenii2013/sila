@@ -34,7 +34,6 @@ module device_info #(
     case (DEVICE)
     "HSSM"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__HSSM;
     "HSSR"    : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__HSSR;
-    "Fanout" : assign hwif_in.device_type.device_type.next = device_info_axi_core_pkg::device_info_axi_core__device_type_encoding__FANOUT;
     endcase
     endgenerate
     assign hwif_in.fw_version.major.next        = device_info_pkg::FW_MAJOR;

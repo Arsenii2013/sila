@@ -284,7 +284,11 @@ module topHSSR(
 
     logic sfp_tx_dis_inv;
     stable_m #(
-        .LEN(2**25 - 1)
+        `ifndef SYNTHESIS
+            .LEN(1023)
+        `else
+            .LEN(2**25 - 1)
+        `endif
     ) SFP_TX_DIS_stable (
         .clk(evr_gtx_if[0].rx_clk),
         .in(evr_gtx_if[0].aligned),
@@ -366,8 +370,8 @@ module topHSSR(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_reset[HSSR_reset_params::HSSR]),
-        .mmr(mmr[HSSR_axi_params::HSSR]),
+        .app_rst(app_reset[HSSR_reset_params::EVR]),
+        .mmr(mmr[HSSR_axi_params::EVR]),
         
         .ev(ev), 
         .trig('0),

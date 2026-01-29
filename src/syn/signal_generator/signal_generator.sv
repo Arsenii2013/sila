@@ -7,16 +7,25 @@ localparam signal_gen_ctrl_axi_core__output_src_t_e CLEAR_EVAL     = signal_gen_
 localparam signal_gen_ctrl_axi_core__output_src_t_e GENERATOR_EVAL = signal_gen_ctrl_axi_core__output_src_t__GENERATOR;
 localparam signal_gen_ctrl_axi_core__trig_src_t_e   EVENT_EVAL     = signal_gen_ctrl_axi_core__trig_src_t__EVENT;
 localparam signal_gen_ctrl_axi_core__trig_src_t_e   PERIOD_EVAL    = signal_gen_ctrl_axi_core__trig_src_t__PERIOD;
+localparam signal_gen_ctrl_axi_core__polarity_t_e   POSITIVE_EVAL  = signal_gen_ctrl_axi_core__polarity_t__POSITIVE;
+localparam signal_gen_ctrl_axi_core__polarity_t_e   NEGATIVE_EVAL  = signal_gen_ctrl_axi_core__polarity_t__NEGATIVE;
 
-localparam OUT_SET       = unsigned'(SET_EVAL);
-localparam OUT_CLEAR     = unsigned'(CLEAR_EVAL);
-localparam OUT_GENERATOR = unsigned'(GENERATOR_EVAL);
-localparam TRIG_EVENT    = unsigned'(EVENT_EVAL);
-localparam TRIG_PERIOD   = unsigned'(PERIOD_EVAL);
+localparam unsigned OUT_SET             = unsigned'(SET_EVAL);
+localparam unsigned OUT_CLEAR           = unsigned'(CLEAR_EVAL);
+localparam unsigned OUT_GENERATOR       = unsigned'(GENERATOR_EVAL);
+localparam unsigned TRIG_EVENT          = unsigned'(EVENT_EVAL);
+localparam unsigned TRIG_PERIOD         = unsigned'(PERIOD_EVAL);
+localparam unsigned POLARITY_POSITIVE   = unsigned'(POSITIVE_EVAL);
+localparam unsigned POLARITY_NEGATIVE   = unsigned'(NEGATIVE_EVAL);
 
 localparam PERIOD_W = 64;
 localparam DELAY_W  = 64;
 localparam WIDTH_W  = 64;
+
+typedef enum logic [$bits(signal_gen_ctrl_axi_core__polarity_t_e)-1:0] {
+    POSITIVE    = POLARITY_POSITIVE,
+    NEGATIVE    = POLARITY_NEGATIVE
+} polarity_t;
 
 typedef enum logic [$bits(signal_gen_ctrl_axi_core__trig_src_t_e)-1:0] {
     EVENT      = TRIG_EVENT,
@@ -53,7 +62,7 @@ module signal_generator #(
     period_t        period[N];
     delay_t         delay[N];
     width_t         width[N];
-    logic           polarity[N];
+    polarity_t      polarity[N];
     trig_source_t   trig_source[N];
     out_source_t output_source[N];
 
@@ -116,9 +125,9 @@ module signal_generator #(
         assign cnt_reset_ena[j] = (hwif_out.gen_regs[j].gen_cr.cnt_reset_ena.value || 
                                    hwif_out.gen_regs[j].gen_cr_s.cnt_reset_ena.value) && 
                                   ~hwif_out.gen_regs[j].gen_cr_c.cnt_reset_ena.value;
-        assign polarity[j]      = (hwif_out.gen_regs[j].gen_cr.polarity.value || 
-                                   hwif_out.gen_regs[j].gen_cr_s.polarity.value) && 
-                                  ~hwif_out.gen_regs[j].gen_cr_c.polarity.value;
+        assign polarity[j]      = polarity_t'((hwif_out.gen_regs[j].gen_cr.polarity.value || 
+                                               hwif_out.gen_regs[j].gen_cr_s.polarity.value) && 
+                                              ~hwif_out.gen_regs[j].gen_cr_c.polarity.value);
         assign trig_source[j]   = trig_source_t'((hwif_out.gen_regs[j].gen_cr.trig_src.value | 
                                                   hwif_out.gen_regs[j].gen_cr_s.trig_src.value) & 
                                                  ~hwif_out.gen_regs[j].gen_cr_c.trig_src.value);
