@@ -30,6 +30,11 @@ addrmap signal_gen_ctrl_axi_core{
 
     `define SIGNAL_GEN_N 16
 
+    enum polarity_t {
+        POSITIVE = 0;
+        NEGATIVE;
+    };
+
     enum trig_src_t {
         EVENT = 0;
         PERIOD;
@@ -119,7 +124,7 @@ addrmap signal_gen_ctrl_axi_core{
                 Разрешение cnt_reset от таблицы маппинга.
             ";
             } cnt_reset_ena = 0;
-            field {sw=rw; hw=rw;
+            field {sw=rw; hw=rw; encode=polarity_t;
             desc = "
                 Полярность выхода.
             ";
@@ -168,7 +173,7 @@ addrmap signal_gen_ctrl_axi_core{
                 Разрешение cnt_reset от таблицы маппинга.
             ";
             } cnt_reset_ena = 0;
-            field {sw=w; hw=rw;
+            field {sw=w; hw=rw; encode=polarity_t;
             desc = "
                 Полярность выхода.
             ";
@@ -217,7 +222,7 @@ addrmap signal_gen_ctrl_axi_core{
                 Разрешение cnt_reset от таблицы маппинга.
             ";
             } cnt_reset_ena = 0;
-            field {sw=w; hw=rw;
+            field {sw=w; hw=rw; encode=polarity_t;
             desc = "
                 Полярность выхода.
             ";

@@ -6,7 +6,7 @@ addrmap i2c_mux_axi_core{
     enum select_t {
         SI570 = 0;
         PLL1;
-        Pll2;
+        PLL2;
         SFP0;
         SFP1;
         SFP2;

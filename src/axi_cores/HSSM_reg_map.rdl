@@ -22,7 +22,7 @@ addrmap HSSM_reg_map {
 
     enum device_numbers{
         DEVICE_INFO = 0;
-        HSSM;
+        EVG;
         TIMESTAMPER;
         EV_SEQ_CTRL;
         <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
@@ -34,7 +34,7 @@ addrmap HSSM_reg_map {
     };
 
     device_info_axi_core device_info  @ device_numbers::DEVICE_INFO    * `MMR_BLOCK_SIZE;
-    link_csr_axi_core    evg_ctrl     @ device_numbers::HSSM            * `MMR_BLOCK_SIZE;
+    link_csr_axi_core    evg_ctrl     @ device_numbers::EVG            * `MMR_BLOCK_SIZE;
     timestamper_axi_core timestamper  @ device_numbers::TIMESTAMPER    * `MMR_BLOCK_SIZE;
     ev_seq_ctrl_axi_core ev_seq_ctrl  @ device_numbers::EV_SEQ_CTRL    * `MMR_BLOCK_SIZE;
     <% for( $i = 0; $i < $EV_SEQ_N_PERL; $i += 1 ) { %>
