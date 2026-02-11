@@ -2,6 +2,7 @@
 
 package HSSM_board_pkg;
     localparam LED_N                   = 4;
+    localparam EXTIN_N                = 4;
 endpackage
 
 module topHSSM(
@@ -70,6 +71,10 @@ module topHSSM(
     output logic       PLL_IN_SEL1,
     input  logic       PLL_LOL_N,
 
+    //------------EXT-IN-------------\\
+    output logic       EXTIN_p      [HSSM_board_pkg::EXTIN_N],
+    output logic       EXTIN_n      [HSSM_board_pkg::EXTIN_N],
+
     //-------------LEDs--------------\\
     output logic       LED          [HSSM_board_pkg::LED_N],
     output logic       SFP_LED_LINK [gtx::HSSM_PORT_N],
@@ -123,6 +128,7 @@ module topHSSM(
     );
 
     evn::ev_t ev;
+    logic     is_head;
     
     device_info #(
         .DEVICE("HSSM")
@@ -249,21 +255,22 @@ module topHSSM(
         .tx_p(SFP_TX_P),
         .gtx_if(evg_gtx_if)
     );
-    logic pll_lol_sync;
+    logic pll_lol_sync, pll_lol_stable;
     xpm_cdc_sync_rst pll_lol_cdc_inst (
         .dest_rst(pll_lol_sync),
         .dest_clk(app_clk),
         .src_rst(!PLL_LOL_N)
     );
-    logic sfp_tx_dis_inv;
     stable_m #(
         .LEN(1023)
     ) SFP_TX_DIS_stable (
         .clk(app_clk),
         .in(!pll_lol_sync),
-        .out(sfp_tx_dis_inv)
+        .out(pll_lol_stable)
     );
-    assign SFP_TX_DIS = '{default : !sfp_tx_dis_inv};
+
+    wire disaple_down_ports = is_head ? 0 : !evg_gtx_if[0].aligned;
+    assign SFP_TX_DIS = '{0: !pll_lol_stable, default : !pll_lol_stable || disaple_down_ports};
     assign SFP_RS0    = 1;
     assign SFP_RS1    = 1;
 
@@ -282,8 +289,17 @@ module topHSSM(
         .in(0),
         .out(pll_rst)
     );
-    assign PLL_RST_N    = !pll_rst;
-    assign PLL_IN_SEL0 = 1;
+    assign PLL_RST_N   = !pll_rst;
+    
+    logic gtx_aligned_stable;
+    stable_m #(
+        .LEN(1023)
+    ) PLL_IN_SEL0_stable (
+        .clk(evg_gtx_if[0].rx_clk),
+        .in(evg_gtx_if[0].aligned),
+        .out(gtx_aligned_stable)
+    );
+    assign PLL_IN_SEL0 = is_head || !gtx_aligned_stable;
     assign PLL_IN_SEL1 = 0;
 
     logic local_clk;
@@ -312,6 +328,7 @@ module topHSSM(
         .I(clk_fb_buf)
     );
 
+    evn::ev_t ev_generated;
     evg #(
         .PORT_N(GTX_PORTS)
     ) evg_i (
@@ -322,10 +339,13 @@ module topHSSM(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(app_reset[HSSM_reset_params::HSSM]),
-        .mmr(mmr[HSSM_axi_params::HSSM]),
+        .app_rst(app_reset[HSSM_reset_params::EVG]),
+        .mmr(mmr[HSSM_axi_params::EVG]),
+
+        .is_head(is_head),
         
-        .ev(ev), 
+        .ev_in(ev_generated),
+        .ev_out(ev), 
         .trig()
     );
     /*gtx_if_ila gtx_if_ila_i(
@@ -341,7 +361,7 @@ module topHSSM(
         .mmr_ctrl(mmr[HSSM_axi_params::EV_SEQ_CTRL]),
         .mmr_mem(mmr[HSSM_axi_params::EV_SEQ_0 +: HSSM_axi_params::EV_SEQ_N]),
 
-        .ev(ev)
+        .ev(ev_generated)
     );
 
     logic sfp_aligned[gtx::HSSM_PORT_N];
@@ -378,7 +398,7 @@ module HSSM_pretty_leds(
     assign SFP_LED_LINK = sfp_aligned;
     logic sfp_act;
     pf_m #(
-        .WIDTH(12500000),
+        .WIDTH(10000000),
         .POR("OFF")
     ) sfp_led_act_pf_i (
         .clk(app_clk),
@@ -391,15 +411,15 @@ module HSSM_pretty_leds(
     end
     endgenerate
 
-    assign LED[0] = 1;
+    assign LED[1] = 1;
 
     blink #(
-        .FREQ_HZ(125000000),
+        .FREQ_HZ(100000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
         .reset(app_reset),
         .clk(app_clk),
-        .led(LED[1]),
+        .led(LED[0]),
         .sync(ev != 0)
     );
 

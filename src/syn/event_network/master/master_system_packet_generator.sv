@@ -2,6 +2,7 @@
 `include "system_stream_if.svh"
 
 module master_system_packet_generator(
+    input  logic           tx_clk,
     input  logic           app_clk,
     input  logic           app_rst,
     input  evn::topo_id_t  topo_id,
@@ -22,10 +23,45 @@ module master_system_packet_generator(
     // в этом случае сразу же сгенерируется запрос на новый пакет
     import evn::*;
 
+    logic send_topo_id_sync, send_meas_delay_sync, send_tgt_delay_sync, send_up_delay_sync;
+
+    xpm_cdc_pulse send_topo_id_sunchronizer_i(
+        .dest_clk(tx_clk),
+        .dest_pulse(send_topo_id_sync),
+        .dest_rst(app_rst),
+        .src_clk(app_clk),
+        .src_pulse(send_topo_id),
+        .src_rst(app_rst)
+    );
+    xpm_cdc_pulse send_meas_sunchronizer_i(
+        .dest_clk(tx_clk),
+        .dest_pulse(send_meas_delay_sync),
+        .dest_rst(app_rst),
+        .src_clk(app_clk),
+        .src_pulse(send_meas_delay),
+        .src_rst(app_rst)
+    );
+    xpm_cdc_pulse send_tgt_delay_sunchronizer_i(
+        .dest_clk(tx_clk),
+        .dest_pulse(send_tgt_delay_sync),
+        .dest_rst(app_rst),
+        .src_clk(app_clk),
+        .src_pulse(send_tgt_delay),
+        .src_rst(app_rst)
+    );
+    xpm_cdc_pulse send_up_delay_sunchronizer_i(
+        .dest_clk(tx_clk),
+        .dest_pulse(send_up_delay_sync),
+        .dest_rst(app_rst),
+        .src_clk(app_clk),
+        .src_pulse(send_up_delay),
+        .src_rst(app_rst)
+    );
+
     system_stream_if system_stream[4]();
 
     system_stream_mux4 packet_mux (
-        .app_clk(app_clk),
+        .app_clk(tx_clk),
         .app_rst(app_rst),
         .in(system_stream),
         .out(out)
@@ -39,7 +75,7 @@ module master_system_packet_generator(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param('{topo_id}),
-        .send_packet(send_topo_id),
+        .send_packet(send_topo_id_sync),
         .out(system_stream[0])
     );
 
@@ -51,7 +87,7 @@ module master_system_packet_generator(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param('{meas_delay, meas_delay_st}),
-        .send_packet(send_meas_delay),
+        .send_packet(send_meas_delay_sync),
         .out(system_stream[1])
     );
 
@@ -63,7 +99,7 @@ module master_system_packet_generator(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param('{tgt_delay}),
-        .send_packet(send_tgt_delay),
+        .send_packet(send_tgt_delay_sync),
         .out(system_stream[2])
     );
 
@@ -75,7 +111,7 @@ module master_system_packet_generator(
         .app_clk(app_clk),
         .app_rst(app_rst),
         .param('{up_delay}),
-        .send_packet(send_up_delay),
+        .send_packet(send_up_delay_sync),
         .out(system_stream[3])
     );
 

@@ -94,6 +94,11 @@ set_property -dict {PACKAGE_PIN AF29 IOSTANDARD LVCMOS33} [get_ports PLL_IN_SEL0
 set_property -dict {PACKAGE_PIN AB24 IOSTANDARD LVCMOS33} [get_ports PLL_IN_SEL1]
 set_property -dict {PACKAGE_PIN Y22 IOSTANDARD LVCMOS33} [get_ports PLL_LOL_N]
 
+set_property -dict { PACKAGE_PIN B14    IOSTANDARD LVDS } [get_ports { EXTIN_p[0] }];
+set_property -dict { PACKAGE_PIN B15    IOSTANDARD LVDS } [get_ports { EXTIN_p[1] }];
+set_property -dict { PACKAGE_PIN F15    IOSTANDARD LVDS } [get_ports { EXTIN_p[2] }];
+set_property -dict { PACKAGE_PIN E13    IOSTANDARD LVDS } [get_ports { EXTIN_p[3] }];
+
 set_property LOC GTXE2_CHANNEL_X0Y7 [get_cells gtwizard_i/gtwizard_port_0/inst/HSSM_gtwizard_port_0_i/gt0_HSSM_gtwizard_port_0_i/gtxe2_i]
 set_property PACKAGE_PIN AD6 [get_ports {SFP_RX_P[0]}]
 set_property PACKAGE_PIN AD2 [get_ports {SFP_TX_P[0]}]
@@ -121,13 +126,83 @@ set_property -dict {PACKAGE_PIN AJ29 IOSTANDARD LVCMOS33} [get_ports PHY1_RST]
 
 # 5 - время пересинхронизации valid сигнала
 # 1024 - период измерения sample. 1018 = 1024 - 5 - 1
-set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_inst[*].link_master_i/measure_i/sampler_i/sample_reg[*]/C}]
-set_multicycle_path -hold  1018 -from [get_pins {evg_i/link_master_inst[*].link_master_i/measure_i/sampler_i/sample_reg[*]/C}]
-set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_inst[*].link_master_i/sync_measure_i/sampler_i/sample_reg[*]/C}]
-set_multicycle_path -hold  1018 -from [get_pins {evg_i/link_master_inst[*].link_master_i/sync_measure_i/sampler_i/sample_reg[*]/C}]
-set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_inst[*].link_master_i/system_packet_reciever_i/sub_delay_rx_fsm/param_reg[0][*]/C}]
-set_multicycle_path -hold  1018 -from [get_pins {evg_i/link_master_inst[*].link_master_i/system_packet_reciever_i/sub_delay_rx_fsm/param_reg[0][*]/C}]
-set_false_path -to [get_pins evg_i/BUFGCTRL_inst/S0]
-set_false_path -to [get_pins evg_i/BUFGCTRL_inst/S1]
+set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/sample_reg[*]/C}]
+set_multicycle_path -hold  1018 -from [get_pins {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/sample_reg[*]/C}]
+set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_insts[*].link_master_i/system_packet_reciever_i/sub_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  1018 -from [get_pins {evg_i/link_master_insts[*].link_master_i/system_packet_reciever_i/sub_delay_rx_fsm/param_reg[0][*]/C}]
+set_false_path -to [get_pins evg_i/BUFGMUX_CTRL_inst/S0]
+set_false_path -to [get_pins evg_i/BUFGMUX_CTRL_inst/S1]
 
-set_clock_groups -name exclusive_local_clk -physically_exclusive -group local_clk -group gtwizard_i/gtwizard_port_0/inst/HSSM_gtwizard_port_0_i/gt0_HSSM_gtwizard_port_0_i/gtxe2_i/TXOUTCLK
+set_clock_groups -name exclusive_local_clk -physically_exclusive \ 
+-group [get_clocks local_clk] \
+-group [get_clocks gtwizard_i/gtwizard_port_0/inst/HSSM_gtwizard_port_0_i/gt0_HSSM_gtwizard_port_0_i/gtxe2_i/TXOUTCLK]
+
+
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/dc_control_i/sampler_i/sample_reg[*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/topo_id_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/topo_id_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[1][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/meas_delay_rx_fsm/param_reg[1][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/up_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -setup 5 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/tgt_delay_rx_fsm/param_reg[0][*]/C}]
+set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_slave_i/system_packet_reciever_i/tgt_delay_rx_fsm/param_reg[0][*]/C}]
+
+set_case_analysis 0 [get_pins evg_i/BUFGMUX_CTRL_inst/S0]
+set_case_analysis 1 [get_pins evg_i/BUFGMUX_CTRL_inst/S1]
+
+set SAMPLERS_SKEW 0.1
+
+set_bus_skew \
+-from \
+[ list \
+    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+] \
+-to \
+[ list \
+    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
+    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
+] \
+$SAMPLERS_SKEW
+
+set_bus_skew \
+-from \
+[ list \
+    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+] \
+-to \
+[ list \
+    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
+    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
+] \
+$SAMPLERS_SKEW
+set_bus_skew \
+-from \
+[ list \
+    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+] \
+-to \
+[ list \
+    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
+    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
+] \
+$SAMPLERS_SKEW
+set_bus_skew \
+-from \
+[ list \
+    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+] \
+-to \
+[ list \
+    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
+    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
+] \
+$SAMPLERS_SKEW
+#report_timing -through  [get_nets {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/*_expand}] -delay_type min_max -max_paths 10 -sort_by group -input_pins -routable_nets -name {[get_nets {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/*_expand}]}
