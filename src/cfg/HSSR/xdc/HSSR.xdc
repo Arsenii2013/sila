@@ -25,9 +25,9 @@ set_property -dict { PACKAGE_PIN D15    IOSTANDARD LVDS } [get_ports { FPGA_OUTC
 create_clock -period 5.714 -name fpga_outclk -waveform {1.000 3.857} [get_ports FPGA_OUTCLK_p]
 # памерял осциллографом задержку сигнала в джиттер клинере относительно DC_CLK
 
-set_property -dict { PACKAGE_PIN W18    IOSTANDARD LVCMOS33 } [get_ports { SER }];
-set_property -dict { PACKAGE_PIN AF19   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
-set_property -dict { PACKAGE_PIN W19    IOSTANDARD LVCMOS33 } [get_ports { RCLK }];
+set_property -dict { PACKAGE_PIN AB22    IOSTANDARD LVCMOS33 } [get_ports { SER }];
+set_property -dict { PACKAGE_PIN AA20   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
+set_property -dict { PACKAGE_PIN AB21    IOSTANDARD LVCMOS33 } [get_ports { RCLK }];
 
 set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_n }];
 set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_p }];
