@@ -488,7 +488,7 @@ module HSSR_pretty_leds(
 
     assign SFP_LED_LINK = sfp_aligned;
     pf_m #(
-        .WIDTH(12500000),
+        .WIDTH(10000000),
         .POR("OFF")
     ) sfp_led_act_pf_i (
         .clk(app_clk),
@@ -496,15 +496,15 @@ module HSSR_pretty_leds(
         .out(SFP_LED_ACT)
     );
 
-    assign LED[0] = 1;
+    assign LED[1] = 1;
 
     blink #(
-        .FREQ_HZ(125000000),
+        .FREQ_HZ(100000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
         .reset(app_reset),
         .clk(app_clk),
-        .led(LED[1]),
+        .led(LED[0]),
         .sync(ev != 0)
     );
 
@@ -515,7 +515,7 @@ module HSSR_pretty_leds(
             diff_inputs_ored |= diff_inputs[i];
     end
     pf_m #(
-        .WIDTH(12500000),
+        .WIDTH(10000000),
         .POR("OFF")
     ) led2_pf_i (
         .clk(app_clk),
