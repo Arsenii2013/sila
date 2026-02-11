@@ -15,7 +15,6 @@ typedef struct{
 endpackage
 
 class diff_io_generator#(
-    parameter BASE  = 'h0,
     parameter OUTPUT_N = 16
 ) extends axi_generator;
 
@@ -48,24 +47,25 @@ class diff_io_generator#(
 
     function new (
         virtual virtual_clock_if clk_if,
+        addr_t base,
         axi_transaction_pkg::item_mailbox_t req_mailbox,
         axi_transaction_pkg::item_mailbox_t resp_mailbox,
         int resp_channel
     );
-        super.new(clk_if, req_mailbox, resp_mailbox, resp_channel);
+        super.new(clk_if, base, req_mailbox, resp_mailbox, resp_channel);
     endfunction
 
     task get_outputs_all(output logic [OUTPUT_N-1:0] outs);
-        read(BASE + SR, outs);
+        read(SR, outs);
     endtask
     task check_outputs_all(input logic [OUTPUT_N-1:0] outs);
-        verify(BASE + SR, outs);
+        verify(SR, outs);
     endtask
     task get_output(input int unsigned out_n, output logic out);
-        read(BASE + reg_by_offs(out_n, OUT_SR_OFFS), out);
+        read(reg_by_offs(out_n, OUT_SR_OFFS), out);
     endtask
     task check_output(input int unsigned out_n, input logic out);
-        verify(BASE + reg_by_offs(out_n, OUT_SR_OFFS), out);
+        verify(reg_by_offs(out_n, OUT_SR_OFFS), out);
     endtask
 
     task set_cfg(input int unsigned out_n, input cfg_t cfg);
@@ -78,18 +78,18 @@ class diff_io_generator#(
             wr_word = 1;
         wr_word |= cfg.mode << 1;
 
-        write(BASE + reg_by_offs(out_n, OUT_CR_C_OFFS), mask);
-        write(BASE + reg_by_offs(out_n, OUT_CR_S_OFFS), wr_word);
+        write(reg_by_offs(out_n, OUT_CR_C_OFFS), mask);
+        write(reg_by_offs(out_n, OUT_CR_S_OFFS), wr_word);
     endtask
     task get_cfg(input int unsigned out_n, output cfg_t cfg);
         data_t rd_word;
-        read(BASE + reg_by_offs(out_n, OUT_CR_OFFS), rd_word);
+        read(reg_by_offs(out_n, OUT_CR_OFFS), rd_word);
         cfg.polarity = polarity_t'(rd_word[0]);
         cfg.mode = mode_t'(rd_word[8:1]);
     endtask
 
     task set_rough_delay_adj(input int unsigned out_n, input rough_delay_adj_t rough_adj);
-        write(BASE + reg_by_offs(out_n, ROUGH_DELAY_ADJ_OFFS), rough_adj);
+        write(reg_by_offs(out_n, ROUGH_DELAY_ADJ_OFFS), rough_adj);
     endtask
     task set_rough_delay_adj_time(input int unsigned out_n, input realtime rough_adj);
         assert(rough_adj < ROUGH_DELAY_ADJ_TAP * 2 ** ROUGH_DELAY_ADJ_W + ROUGH_DELAY_ADJ_MIN)
@@ -106,7 +106,7 @@ class diff_io_generator#(
     endtask
 
     task set_precise_delay_adj(input int unsigned out_n, input precise_delay_adj_t precise_adj);
-        write(BASE + reg_by_offs(out_n, PRECISE_DELAY_ADJ_OFFS), precise_adj);
+        write(reg_by_offs(out_n, PRECISE_DELAY_ADJ_OFFS), precise_adj);
     endtask
     task set_precise_delay_adj_time(input int unsigned out_n, input realtime precise_adj);
         assert(precise_adj < PRECISE_DELAY_ADJ_TAP * 2 ** PRECISE_DELAY_ADJ_W + PRECISE_DELAY_ADJ_MIN)

@@ -58,6 +58,12 @@ addrmap link_csr_axi_core{
             Включение компенсации задержки.
         ";
         } dc_ena = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Режим головного мастера.
+        ";
+        } head_mode = 0;
     } cr;
 
     reg {
@@ -72,6 +78,12 @@ addrmap link_csr_axi_core{
             Включение компенсации задержки.
         ";
         } dc_ena = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Режим головного мастера.
+        ";
+        } head_mode = 0;
     } cr_s;
 
     reg {
@@ -86,6 +98,12 @@ addrmap link_csr_axi_core{
             Включение компенсации задержки.
         ";
         } dc_ena = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Режим головного мастера.
+        ";
+        } head_mode = 0;
     } cr_c;
 
     reg {

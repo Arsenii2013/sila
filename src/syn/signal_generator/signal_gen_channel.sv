@@ -1,18 +1,18 @@
-module signal_gen_channel(
-    input  logic                 app_clk,
-    input  logic                 app_rst,
+module signal_gen_channel import signal_generator_pkg::*; (
+    input  logic        app_clk,
+    input  logic        app_rst,
 
-    input  logic                 set,
-    input  logic                 clear,
-    input  logic                 trigger,
-    input  logic                 cnt_reset,
+    input  logic        set,
+    input  logic        clear,
+    input  logic        trigger,
+    input  logic        cnt_reset,
 
-    input  signal_generator_pkg::delay_t  delay,
-    input  signal_generator_pkg::width_t  width,
-    input  signal_generator_pkg::period_t period,
-    input  logic                 polarity,
+    input  delay_t      delay,
+    input  width_t      width,
+    input  period_t     period,
+    input  polarity_t   polarity,
 
-    output logic                 gen_out,
+    output logic        gen_out,
 
 
     input  signal_generator_pkg::trig_source_t trig_src,
@@ -70,10 +70,10 @@ module signal_gen_channel(
 // Output multiplexer and polarity
     always_comb begin
     case (out_src)
-        FORCE_SET   : gen_out = polarity ? 0 : 1;
-        FORCE_CLEAR : gen_out = polarity ? 1 : 0;
-        GENERATOR   : gen_out = polarity ? !gen_out_iternal : gen_out_iternal;
-        default     : gen_out = polarity ? 1 : 0;
+        FORCE_SET   : gen_out = polarity == POSITIVE ? 0 : 1;
+        FORCE_CLEAR : gen_out = polarity == POSITIVE ? 1 : 0;
+        GENERATOR   : gen_out = polarity == POSITIVE ? !gen_out_iternal : gen_out_iternal;
+        default     : gen_out = polarity == POSITIVE ? 1 : 0;
     endcase
     end
 

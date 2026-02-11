@@ -31,6 +31,8 @@ localparam MAX_COMPENSATION = 2 ** 12; // должна быть степенью
 
 localparam TOPO_ID_W        = 32;
 typedef logic [TOPO_ID_W               -1: 0] topo_id_t;
+localparam TOPO_ID_LEVEL_W  = 4;
+localparam TOPO_ID_MAX_LEVEL = TOPO_ID_W / TOPO_ID_LEVEL_W;
 
 localparam EVENT_W          = 24;
 typedef logic [EVENT_W                 -1: 0] ev_t;

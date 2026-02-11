@@ -22,11 +22,13 @@ module link_master
     import evn::*;
 
 // Event
-    logic ev_valid;
-    assign ev_valid = ev != '0;
+    // разбить крит. путь
+    ev_t ev_reg;
+    logic ev_valid_reg;
+    always_ff @(posedge app_clk) ev_reg       <= ev;
+    always_ff @(posedge app_clk) ev_valid_reg <= ev != '0;
     
 
-    assign trig = is_trigger(gtx_if.rx_data, gtx_if.rx_is_k) ? trig_t'(gtx_if.rx_data) : '0;
 
 // Beacon
     // Во избежание неопределенности измерения задержки из-за включения приемника
@@ -41,7 +43,7 @@ module link_master
     logic beacon_ready = 0;
     beacon_cnt_t beacon_cnt = MAX_DELAY;
 
-    always_ff @(posedge app_clk) begin
+    always_ff @(posedge gtx_if.tx_clk) begin
         if(app_rst) begin
             beacon_cnt   <= link_data.link_delay_st[0] ? BEACON_PERIOD : MAX_DELAY;
             beacon_valid <= 0;
@@ -65,7 +67,7 @@ module link_master
     logic alignment_ready = 0;
     alignment_cnt_t alignment_cnt = ALIGNMENT_PERIOD;
 
-    always_ff @(posedge app_clk) begin
+    always_ff @(posedge gtx_if.tx_clk) begin
         if(alignment_cnt == 0) begin
             alignment_cnt   <= ALIGNMENT_PERIOD;
             alignment_valid <= 1;
@@ -133,6 +135,7 @@ module link_master
     system_stream_if system_stream_in();
     master_system_packet_generator system_packet_generator_i(
         .app_clk(app_clk),
+        .tx_clk(gtx_if.tx_clk),
         .app_rst(app_rst),
         .topo_id(link_data.topo_id),
         .send_topo_id(link_data.topo_id_upd || device_connected),
@@ -159,76 +162,50 @@ module link_master
     assign system_stream_in.tvalid = is_packet(gtx_if.rx_data, gtx_if.rx_is_k);
 
 // Mux
-    gtx::data_t tx_data_app_clk;
-    gtx::is_k_t tx_is_k_app_clk;
-    always_ff @(posedge app_clk) begin
+    // хоть события и подразумеваются сгенерированными генераторами/пересинхронизованными приемником
+    // на app_clk, но app_clk переключается между local и tx_clk и подразумеваестя, что пока
+    // он на local_clk, события не валидны. А с tx_clk на tx_clk пересинхронизовывать не нужно.
+    always_ff @(posedge gtx_if.tx_clk) begin
         beacon_ready    <= 0;
         alignment_ready <= 0;
-        tx_data_app_clk         <= '0;
-        tx_is_k_app_clk      <= '0;
+        gtx_if.tx_data <= '0;
+        gtx_if.tx_is_k <= '0;
 
-        if(ev_valid) begin
-            tx_data_app_clk <= {EVENT_COMMA, ev};
-            tx_is_k_app_clk <= 'h8;
+        if(ev_valid_reg) begin
+            gtx_if.tx_data <= {EVENT_COMMA, ev_reg};
+            gtx_if.tx_is_k <= 'h8;
         end else if(beacon_valid && ~beacon_ready) begin
-            tx_data_app_clk <= BEACON_WORD;
-            tx_is_k_app_clk <= BEACON_IS_K;
+            gtx_if.tx_data <= BEACON_WORD;
+            gtx_if.tx_is_k <= BEACON_IS_K;
             beacon_ready    <= 1;
         end else if(system_stream_out.tvalid) begin
-            tx_data_app_clk <= system_stream_out.tdata;
-            tx_is_k_app_clk <= system_stream_out.tisk;
+            gtx_if.tx_data <= system_stream_out.tdata;
+            gtx_if.tx_is_k <= system_stream_out.tisk;
         end else if(alignment_valid && ~alignment_ready) begin
-            tx_data_app_clk <= ALIGNMENT_WORD;
-            tx_is_k_app_clk <= ALIGNMENT_IS_K;
+            gtx_if.tx_data <= ALIGNMENT_WORD;
+            gtx_if.tx_is_k <= ALIGNMENT_IS_K;
             alignment_ready <= 1;
         end else begin
-            tx_data_app_clk <= '0;
-            tx_is_k_app_clk <= '0;
+            gtx_if.tx_data <= '0;
+            gtx_if.tx_is_k <= '0;
         end
     end
-    assign system_stream_out.tready = !ev_valid && !beacon_valid;
+    assign system_stream_out.tready = !ev_valid_reg && !beacon_valid;
 
-    logic fifo_rst_busy;
-    logic rd_rst_busy, wr_rst_busy;
-    assign fifo_rst_busy = rd_rst_busy || wr_rst_busy;
-    logic rd_rst_busy_rd_clk;
-    xpm_cdc_async_rst rd_rst_busy_sunchronizer_i(
-        .dest_clk(app_rst),
-        .dest_arst(rd_rst_busy),
-        .src_arst(rd_rst_busy_rd_clk)
+    fifo_wrapper #(
+        .DEPTH(16)
+    ) fifo_i (
+        .app_rst(app_rst),
+        .app_clk(app_clk),
+        .rx_clk(gtx_if.rx_clk),
+
+        .data_in(is_trigger(gtx_if.rx_data, gtx_if.rx_is_k) ? trig_t'(gtx_if.rx_data) : '0),
+        .isk_in('0),
+        .data_out(trig),
+
+        .fifo_inc(0),
+        .fifo_dec(0)
     );
-    xpm_fifo_async #(
-        .CASCADE_HEIGHT(0),
-        .CDC_SYNC_STAGES(2),
-        .FIFO_MEMORY_TYPE("auto"),
-        .FIFO_READ_LATENCY(1),
-        .FIFO_WRITE_DEPTH(16),
-        .READ_DATA_WIDTH(36),
-        .READ_MODE("std"),
-        .RELATED_CLOCKS(0),
-        .SIM_ASSERT_CHK(1),
-        .WRITE_DATA_WIDTH(36),
-
-        `ifdef SYNTHESIS
-            .DOUT_RESET_VALUE($sformatf("%h", {ALIGNMENT_WORD, ALIGNMENT_IS_K}))
-        `else
-            .DOUT_RESET_VALUE(0)
-        `endif
-    ) tx_data_syncronizer (
-        .rd_clk(gtx_if.tx_clk),
-        .rd_en(!fifo_rst_busy),
-        .dout({gtx_if.tx_data, gtx_if.tx_is_k}),
-
-        .wr_clk(app_clk),
-        .wr_en(!fifo_rst_busy),
-        .din({tx_data_app_clk, tx_is_k_app_clk}),
-
-        .rst(app_rst),
-        .rd_rst_busy(rd_rst_busy_rd_clk),
-        .wr_rst_busy(wr_rst_busy)
-    );
-
-
 
 // Delay measurement
     logic fifo_rst_busy_rd_clk;
@@ -238,26 +215,8 @@ module link_master
         .src_arst(fifo_rst_busy)
     );
 
-    delay_t fifo_delay, link_delay;
-    link_delay_st_t fifo_delay_st, link_delay_st;
-
-    delay_measure #(
-        .INT_W(DELAY_INT_W),
-        .FRAC_W(DELAY_FRAC_W)
-    ) sync_measure_i (
-        .app_clk(app_clk),
-        .app_rst(app_rst),
-        
-        .start(!fifo_rst_busy && is_beacon(tx_data_app_clk, tx_is_k_app_clk)),
-        .start_clk(app_clk),
-        .stop(!fifo_rst_busy_rd_clk && is_beacon(gtx_if.tx_data, gtx_if.tx_is_k)),
-        .stop_clk(gtx_if.tx_clk),
-        .measure_clk(beacon_clk),
-
-        .delay_upd(),
-        .delay(fifo_delay),
-        .delay_status(fifo_delay_st)
-    );
+    delay_t link_delay;
+    link_delay_st_t link_delay_st;
 
     delay_measure #(
         .INT_W(DELAY_INT_W),
@@ -282,6 +241,6 @@ module link_master
         .dest_arst(link_data.link_up),
         .src_arst(gtx_if.aligned)
     );
-    assign link_data.link_delay = link_delay + (fifo_delay << 1) + (1 << DELAY_FRAC_W);
-    assign link_data.link_delay_st = fifo_delay_st < link_delay_st ? fifo_delay_st : link_delay_st;
+    assign link_data.link_delay = link_delay + (2 << DELAY_FRAC_W);
+    assign link_data.link_delay_st = link_delay_st;
 endmodule

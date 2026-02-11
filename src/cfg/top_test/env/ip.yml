@@ -1,11 +1,7 @@
 sources:
     - ip/axi_register_slice.yml
-    - ip/EVR_gtwizard_port_0.yml
-    - ip/EVG_gtwizard_port_0.yml
-    - ip/EVG_gtwizard_port_1.yml
-    - ip/EVG_gtwizard_port_2.yml
-    - ip/EVG_gtwizard_port_3.yml
-    - ip/Fanout_gtwizard_port_0.yml
-    - ip/Fanout_gtwizard_port_1.yml
-    - ip/Fanout_gtwizard_port_2.yml
-    - ip/Fanout_gtwizard_port_3.yml
+    - ip/HSSR_gtwizard_port_0.yml
+    - ip/HSSM_gtwizard_port_0.yml
+    - ip/HSSM_gtwizard_port_1.yml
+    - ip/HSSM_gtwizard_port_2.yml
+    - ip/HSSM_gtwizard_port_3.yml

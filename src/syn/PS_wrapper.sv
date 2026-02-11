@@ -21,7 +21,7 @@ module PS_wrapper_sv #(
     parameter GP0_ADDR_W   = 32,
     parameter GP0_DATA_W   = 32,
     parameter MMR_DEV_CNT2 = 1,
-    parameter SIM_DEVICE   = "EVG"
+    parameter SIM_DEVICE   = "HSSM"
 )
 (
     `ifdef SYNTHESIS
@@ -168,396 +168,72 @@ module PS_wrapper_sv #(
         peripheral_reset   <= 0;
     end
 
-    axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_iternal();
-    assign GP_0_awaddr = GP_0_iternal.awaddr;
-    assign GP_0_slice.awprot = GP_0_iternal.awprot;
-    assign GP_0_slice.awvalid = GP_0_iternal.awvalid;
-    assign GP_0_iternal.awready = GP_0_slice.awready;
-    assign GP_0_slice.wdata = GP_0_iternal.wdata;
-    assign GP_0_slice.wstrb = GP_0_iternal.wstrb;
-    assign GP_0_slice.wvalid = GP_0_iternal.wvalid;
-    assign GP_0_iternal.wready = GP_0_slice.wready;
-    assign GP_0_iternal.bresp = GP_0_slice.bresp;
-    assign GP_0_iternal.bvalid = GP_0_slice.bvalid;
-    assign GP_0_slice.bready = GP_0_iternal.bready;
-    assign GP_0_araddr = GP_0_iternal.araddr;
-    assign GP_0_slice.arprot = GP_0_iternal.arprot;
-    assign GP_0_slice.arvalid = GP_0_iternal.arvalid;
-    assign GP_0_iternal.arready = GP_0_slice.arready;
-    assign GP_0_iternal.rdata = GP_0_slice.rdata;
-    assign GP_0_iternal.rresp = GP_0_slice.rresp;
-    assign GP_0_iternal.rvalid = GP_0_slice.rvalid;
-    assign GP_0_slice.rready = GP_0_iternal.rready;
+    axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_internal();
+    assign GP_0_awaddr = GP_0_internal.awaddr;
+    assign GP_0_slice.awprot = GP_0_internal.awprot;
+    assign GP_0_slice.awvalid = GP_0_internal.awvalid;
+    assign GP_0_internal.awready = GP_0_slice.awready;
+    assign GP_0_slice.wdata = GP_0_internal.wdata;
+    assign GP_0_slice.wstrb = GP_0_internal.wstrb;
+    assign GP_0_slice.wvalid = GP_0_internal.wvalid;
+    assign GP_0_internal.wready = GP_0_slice.wready;
+    assign GP_0_internal.bresp = GP_0_slice.bresp;
+    assign GP_0_internal.bvalid = GP_0_slice.bvalid;
+    assign GP_0_slice.bready = GP_0_internal.bready;
+    assign GP_0_araddr = GP_0_internal.araddr;
+    assign GP_0_slice.arprot = GP_0_internal.arprot;
+    assign GP_0_slice.arvalid = GP_0_internal.arvalid;
+    assign GP_0_internal.arready = GP_0_slice.arready;
+    assign GP_0_internal.rdata = GP_0_slice.rdata;
+    assign GP_0_internal.rresp = GP_0_slice.rresp;
+    assign GP_0_internal.rvalid = GP_0_slice.rvalid;
+    assign GP_0_slice.rready = GP_0_internal.rready;
 
     virtual_clock_if clk_if (app_clk, peripheral_reset);
-    axi_transaction_pkg::item_mailbox_t req_mbx = new(), resp_mbx = new();
-    axi_driver #(
-        .AW(axi_params::GP0_ADDR_W),
-        .DW(axi_params::GP0_DATA_W)
-    ) driver;
-    axi_generator generic_generator;
 
     i2c_driver I2C_0_driver(
         .clk(peripheral_clock),
         .I2C(I2C_0)
     );
 
-    `define BASE_FROM_NUMBER(number) (GP_0_BASE_ADDR + 2**GP0_ADDR_W / MMR_DEV_CNT2 * (number))
+    typedef Tester #(.GP_0_BASE_ADDR(32'h4000_0000))     TesterParametrized;
+    typedef HSSRTester #(.GP_0_BASE_ADDR(32'h4000_0000)) HSSRTesterParametrized;
+    typedef HSSMTester #(.GP_0_BASE_ADDR(32'h4000_0000)) HSSMTesterParametrized;
 
-    evn::topo_id_t topo_id = '0;
-    `define display_key $root.topTB.display_key
-    genvar gen_i;
-    generate 
-    if(SIM_DEVICE == "EVG") begin
-        initial begin
-            wait(app_aresetn === 1);
-            #1us;
-            forever begin
-                for(int i = 0; i < 4; i ++) begin
-                    generic_generator.write(`BASE_FROM_NUMBER(EVG_axi_params::I2C_MUX) + 'h4, i);
-                    driver.sync();
-                    repeat(10) I2C_0_driver.write($urandom, $urandom);
-                end
-            end
+    TesterParametrized tester;
+    HSSRTesterParametrized hssr_tester;
+    HSSMTesterParametrized hssm_tester;
+
+    TesterParametrized::device_type_t device_type;
+    initial begin
+        tester = new(clk_if, GP_0_internal, $sformatf("%m"));
+        wait(app_aresetn === 1);
+        #1us;
+        tester.get_device_type(device_type);
+        tester = null;
+        case (device_type)
+        TesterParametrized::HSSR : begin
+            hssr_tester = new(clk_if, GP_0_internal, $sformatf("%m"));
+            tester = hssr_tester;
         end
-
-        typedef enum{
-            GENERIC_RD_CH = 0,
-            EVG_RD_CH,
-            EV_SEQ_0_RD_CH,
-            EV_SEQ_1_RD_CH,
-            EV_SEQ_CTRL_RD_CH
-        } rd_ch_enum;
-
-        link_csr_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EVG))
-        ) EVG_generator_i;
-
-        for(gen_i = 0; gen_i < EVG_axi_params::EV_SEQ_N; gen_i++) begin : ev_seq_generator_i
-            ev_seq_generator #(
-                .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EV_SEQ_0 + gen_i))
-            ) inst;
+        TesterParametrized::HSSM :begin
+            hssm_tester = new(clk_if, GP_0_internal, $sformatf("%m"));
+            tester = hssm_tester;
         end
-
-        ev_seq_ctrl_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVG_axi_params::EV_SEQ_CTRL)),
-            .SEQ_N(EVG_axi_params::EV_SEQ_N)
-        ) ev_seq_ctrl_generator_i;
-
-        initial begin
-            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
-            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
-            EVG_generator_i = new(clk_if, req_mbx, resp_mbx, EVG_RD_CH, $sformatf("Head EVG with topo id \t%x\t", topo_id));
-            ev_seq_generator_i[0].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_0_RD_CH);
-            ev_seq_generator_i[1].inst = new(clk_if, req_mbx, resp_mbx, EV_SEQ_1_RD_CH);
-            ev_seq_ctrl_generator_i = new(clk_if, req_mbx, resp_mbx, EV_SEQ_CTRL_RD_CH);
-
-            wait(app_aresetn === 1);
-            #50us;
-            fork
-            EVG_test();
-            periodic_dump();
-            join
-        end
-
-        localparam MAX_SUBTREE_DELAY  = $root.topTB.MAX_SUBTREE_DELAY;
-        localparam int PORTS_USED [2] = '{0, 1};
-        task automatic EVG_test();
-            $timeformat(-3, 5, " ms");
-
-            ev_seq_generator_i[0].inst.write_seq('{
-                '{0,    'h1},
-                '{1,    'h2},
-                '{2,    'h3},
-                '{3,    'h4},
-                '{10,   'h10},
-                '{20,   'h20},
-                '{40,   'h40},
-                '{80,   'h80},
-                '{8000, 'h1234},
-                '{8001, event_generator_pkg::END_OF_SEQ}
-            });
-            ev_seq_ctrl_generator_i.setup('{
-                '{event_generator_pkg::PROG, event_generator_pkg::RECYCLE},
-                '{event_generator_pkg::PROG, event_generator_pkg::SINGLE}
-            });
-            driver.sync();
-
-            ev_seq_ctrl_generator_i.enable(0);
-            ev_seq_ctrl_generator_i.sw_trig(0);
-            EVG_generator_i.set_tgt_delay((EVG_generator_i.time_to_delay_t(MAX_SUBTREE_DELAY) 
-                                        & ~((1 << evn::DELAY_FRAC_W) - 1)) // зануляем дробную часть
-                                        + (10 << evn::DELAY_FRAC_W));       // + 10 тактов
-
-            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
-            #10us;
-            `display_key.get();
-            $display("EVG Head Get INITIAL state at %t\n", $realtime);
-            EVG_generator_i.dump();
-            `display_key.put();
-
-            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
-            #10us;
-            `display_key.get();
-            $display("EVG Head Get ONE_CYCLE state at %t\n", $realtime);
-            EVG_generator_i.dump();
-            `display_key.put();
-
-            EVG_generator_i.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
-            #10us;
-            `display_key.get();
-            $display("EVG Head Get FINE state at %t\n", $realtime);
-            EVG_generator_i.dump();
-            `display_key.put();
-        endtask
-
-        task periodic_dump();
-            forever begin
-                `display_key.get();
-                $display("Periodic Dump Head EVG");
-                EVG_generator_i.dump();
-                `display_key.put();
-                #1ms;
-            end
-        endtask
+        endcase
+        tester.run();
     end
 
-
-    if(SIM_DEVICE == "Fanout") begin
-        typedef enum{
-            GENERIC_RD_CH = 0,
-            EVR_RD_CH
-        } rd_ch_enum;
-
-        link_csr_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EVR))
-        ) Fanout_generator_i;
-
-        initial begin
-            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
-            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
-
-            Fanout_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("Fanout with topo id \t%x\t", topo_id));
-
-            wait(app_aresetn === 1);
-            #50us;
-            fork
-            Fanout_test();
-            periodic_dump();
-            join
-        end
-
-
-        localparam int PORTS_USED [2] = '{0, 1};
-        task automatic Fanout_test();
-            $timeformat(-3, 5, " ms");
-
-            generic_generator.write(`BASE_FROM_NUMBER(Fanout_axi_params::SFP_CONTROL) + 'h10, 'b1110);
-            Fanout_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
-            generic_generator.write(`BASE_FROM_NUMBER(Fanout_axi_params::SFP_CONTROL) + 'h10, '0);
-
-            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::INITIAL, 10us);
-            #10us;
-            Fanout_generator_i.get_topo_id(topo_id);
-            Fanout_generator_i.name = $sformatf("Fanout with topo id \t%x\t", topo_id);
-            #10us;
-            `display_key.get();
-            $display("Get Fanout with topo id %x INITIAL state at %t\n", topo_id, $realtime);
-            Fanout_generator_i.dump();
-            `display_key.put();
-
-            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::ONE_CYCLE, 1ms);
-            #10us;
-            `display_key.get();
-            $display("Get Fanout with topo id %x ONE_CYCLE state at %t\n", topo_id, $realtime);
-            Fanout_generator_i.dump();
-            `display_key.put();
-            
-            Fanout_generator_i.wait_delay_statuses(PORTS_USED, evn::FINE, 100ms);
-            #10us;
-            `display_key.get();
-            $display("Get Fanout with topo id %x FINE state at %t\n", topo_id, $realtime);
-            Fanout_generator_i.dump();
-            `display_key.put();
-        endtask
-
-        task periodic_dump();
-            forever begin
-                `display_key.get();
-                $display("Periodic Dump FANOUT with topo id %x \t", topo_id);
-                Fanout_generator_i.dump();
-                `display_key.put();
-                #1ms;
+    initial begin
+        wait(app_aresetn === 1);
+        #10us;
+        forever begin
+            for(int i = 0; i < 4; i ++) begin
+                tester.select_I2C_mux(TesterParametrized::i2c_mux_sel_t'(i));
+                repeat(10) I2C_0_driver.write($urandom, $urandom);
             end
-        endtask
+        end
     end
-
-    if(SIM_DEVICE == "EVR") begin
-        initial begin
-            wait(app_aresetn === 1);
-            #1us;
-            forever begin
-                for(int i = 0; i < 4; i ++) begin
-                    generic_generator.write(`BASE_FROM_NUMBER(EVR_axi_params::I2C_MUX) + 'h4, i);
-                    driver.sync();
-                    repeat(10) I2C_0_driver.write($urandom, $urandom);
-                end
-            end
-        end
-
-        typedef enum{
-            GENERIC_RD_CH = 0,
-            EVR_RD_CH,
-            SIG_GEN_RD_CH,
-            EV_MAP_RD_CH,
-            GEN_MAP_RD_CH,
-            DIFF_IO_RD_CH
-        } rd_ch_enum;
-
-        link_csr_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EVR))
-        ) EVR_generator_i;
-
-        signal_generator_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::SIG_GEN_CTRL)),
-            .GEN_N(EVR_axi_params::SIG_GEN_N)
-        ) signal_generator_generator_i;
-
-        ev_map_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::EV_MAP))
-        ) ev_map_generator_i;
-
-        gen_map_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::SIG_GEN_MAP))
-        ) gen_map_generator_i;
-
-        diff_io_generator #(
-            .BASE(`BASE_FROM_NUMBER(EVR_axi_params::DIFF_IO))
-        ) diff_io_generator_i;
-
-
-        initial begin
-            driver = new(clk_if, GP_0_iternal, req_mbx, resp_mbx);
-            generic_generator = new(clk_if, req_mbx, resp_mbx, GENERIC_RD_CH);
-
-            EVR_generator_i = new(clk_if, req_mbx, resp_mbx, EVR_RD_CH, $sformatf("EVR with topo id \t%x\t", topo_id));
-            signal_generator_generator_i = new(clk_if, req_mbx, resp_mbx, SIG_GEN_RD_CH);
-            ev_map_generator_i = new(clk_if, req_mbx, resp_mbx, EV_MAP_RD_CH);
-            gen_map_generator_i = new(clk_if, req_mbx, resp_mbx, GEN_MAP_RD_CH);
-            diff_io_generator_i = new(clk_if, req_mbx, resp_mbx, DIFF_IO_RD_CH);
-
-            wait(app_aresetn === 1);
-            #50us;
-            fork
-            EVR_test();
-            periodic_dump();
-            join
-        end
-
-
-        task automatic EVR_test();
-            $timeformat(-5, 5, " ms");
-            /*diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(1, '{diff_io_pkg::NEGATIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GATE});
-            diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::FLIP_FLOP});
-            diff_io_generator_i.set_cfg(4, '{diff_io_pkg::POSITIVE, diff_io_pkg::CLK});
-            diff_io_generator_i.set_cfg(5, '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_CLEAR});
-            diff_io_generator_i.set_cfg(6, '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_SET});
-
-            gen_map_generator_i.write_mapping('{
-                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:1} }},
-                '{map: '{'{o1:1, o2:0}, '{o1:1, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
-                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:1, o2:0}}},
-                '{map: '{'{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:0}, '{o1:0, o2:1}}}
-            });*/
-            diff_io_generator_i.set_cfg(0, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(1, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(2, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(3, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(4, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(5, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(6, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(7, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(8, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(9, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(10, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(11, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(12, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(13, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(14, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_cfg(15, '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR});
-            diff_io_generator_i.set_precise_delay_adj(0, 0);
-            diff_io_generator_i.set_precise_delay_adj(1, 10);
-            diff_io_generator_i.set_precise_delay_adj(2, 20);
-            diff_io_generator_i.set_precise_delay_adj(3, 40);
-            diff_io_generator_i.set_precise_delay_adj(4, 80);
-            diff_io_generator_i.set_precise_delay_adj(5, 160);
-            diff_io_generator_i.set_precise_delay_adj(6, 320);
-            diff_io_generator_i.set_precise_delay_adj(7, 640);
-    
-            gen_map_generator_i.write_mapping('{
-                '{map: '{16{'{o1:0, o2:0}}}},
-                '{map: '{16{'{o1:1, o2:0}}}}
-            });
-
-            signal_generator_generator_i.set_cfg(0, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
-            signal_generator_generator_i.set_cfg(1, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
-            signal_generator_generator_i.set_delay(1, 100);
-            signal_generator_generator_i.set_width(1, 100);
-            signal_generator_generator_i.set_cfg(2, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::PERIOD});
-            signal_generator_generator_i.set_period(2, 10);
-            signal_generator_generator_i.set_delay(2, 2);
-            signal_generator_generator_i.set_width(2, 2);
-            signal_generator_generator_i.set_cfg(3, '{'{default:1}, 0, signal_generator_pkg::GENERATOR, signal_generator_pkg::EVENT});
-            signal_generator_generator_i.set_delay(3, 1000);
-            signal_generator_generator_i.set_width(3, 100);
-
-            ev_map_generator_i.write_mapping('{
-                '{ev: 'h1,    map: '{'{set  :1, default:0},     '{           default:0},    '{cnt_reset:1, default:0}}},
-                '{ev: 'h20,   map: '{'{         default:0},     '{trigger:1, default:0},    '{             default:0}, '{trigger:1, default:0}}},
-                '{ev: 'h80,   map: '{'{clear:1, default:0}                                                           }},
-                '{ev: 'h1234, map: '{'{         default:0},     '{trigger:1, default:0},    '{             default:0}, '{trigger:1, default:0}}}
-            });
-            driver.sync();
-
-            EVR_generator_i.wait_delay_status(0, evn::INITIAL, 10us);
-            #10us;
-            EVR_generator_i.enable_dc();
-            EVR_generator_i.get_topo_id(topo_id);
-            EVR_generator_i.name = $sformatf("EVR with topo id \t%x\t", topo_id);
-            #10us;
-            `display_key.get();
-            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
-            EVR_generator_i.dump();
-            `display_key.put();
-
-            EVR_generator_i.wait_delay_status(0, evn::ONE_CYCLE, 1ms);
-            #10us;
-            `display_key.get();
-            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
-            EVR_generator_i.dump();
-            `display_key.put();
-            
-            EVR_generator_i.wait_delay_status(0, evn::FINE, 100ms);
-            #10us;
-            `display_key.get();
-            $display("Get EVR with topo id %x INITIAL state at %t\n", topo_id, $realtime);
-            EVR_generator_i.dump();
-            `display_key.put();
-        endtask
-
-        task periodic_dump();
-            forever begin
-                `display_key.get();
-                $display("Periodic Dump EVR with topo id %x", topo_id);
-                EVR_generator_i.dump();
-                `display_key.put();
-                #1ms;
-            end
-        endtask
-    end
-    endgenerate
 
     initial begin
         #500ms;

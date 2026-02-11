@@ -1,0 +1,8 @@
+
+sources:
+    - ip/axi_memory.yml
+    - ip/axi_register_slice.yml
+    - ip/HSSM_gtwizard_port_0.yml
+    - ip/HSSM_gtwizard_port_1.yml
+    - ip/HSSM_gtwizard_port_2.yml
+    - ip/HSSM_gtwizard_port_3.yml

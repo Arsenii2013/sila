@@ -1,4 +1,6 @@
-module link_slave
+module link_slave #(
+    parameter string DC_ENABLE = "YES"
+)
 (
     input  logic            beacon_clk, // измерительный клок
     output logic            dc_clk,     // клок, фазу которого модуль будет подкручивать
@@ -38,8 +40,9 @@ module link_slave
     );
 
 // Trigger
+    evn::trig_t trig_sync;
     logic trig_valid;
-    assign trig_valid = trig != '0;
+    assign trig_valid = trig_sync != '0;
     
 // Beacon
     logic beacon_pulse;
@@ -130,6 +133,12 @@ module link_slave
         .out(system_stream_out)
     );
 
+// Link state
+    xpm_cdc_async_rst link_up_cdc_i(
+        .dest_clk(app_clk),
+        .dest_arst(link_data.link_up),
+        .src_arst(gtx_if.aligned)
+    );
 
 // Mux
     always_ff @(posedge gtx_if.tx_clk) begin
@@ -160,82 +169,119 @@ module link_slave
 
     assign system_stream_out.tready = !trig_valid && !beacon_valid;
 
-// Delay compensation
-    logic mmcm_locked;
+
     logic fifo_rst_busy;
+    logic rd_rst_busy, wr_rst_busy;
+    assign fifo_rst_busy = rd_rst_busy || wr_rst_busy;
+    logic rd_rst_busy_rd_clk;
 
-    gtx::data_t fifo_in_data;
-    gtx::data_t fifo_out_data;
-    gtx::is_k_t fifo_in_isk;
-    gtx::is_k_t fifo_out_isk;
-    logic fifo_inc, fifo_dec, pll_ph_inc, pll_ph_dec;
+    xpm_cdc_async_rst rd_rst_busy_sunchronizer_i(
+        .dest_clk(app_rst),
+        .dest_arst(rd_rst_busy),
+        .src_arst(rd_rst_busy_rd_clk)
+    );
+    xpm_fifo_async #(
+        .CASCADE_HEIGHT(0),
+        .CDC_SYNC_STAGES(2),
+        .FIFO_MEMORY_TYPE("auto"),
+        .FIFO_READ_LATENCY(1),
+        .FIFO_WRITE_DEPTH(16),
+        .READ_DATA_WIDTH(36),
+        .READ_MODE("std"),
+        .RELATED_CLOCKS(0),
+        .SIM_ASSERT_CHK(1),
+        .WRITE_DATA_WIDTH(36),
+        .DOUT_RESET_VALUE(0)
+    ) trig_syncronizer (
+        .rd_clk(gtx_if.tx_clk),
+        .rd_en(!fifo_rst_busy),
+        .dout(trig_sync),
 
-    assign fifo_in_data = gtx_if.rx_data;
-    assign fifo_in_isk  = gtx_if.rx_is_k ;
-    assign ev = is_event(fifo_out_data, fifo_out_isk) ? ev_t'(fifo_out_data) : '0;
+        .wr_clk(app_clk),
+        .wr_en(!fifo_rst_busy),
+        .din(trig),
 
-    fifo_wrapper #(
-        .DEPTH(MAX_COMPENSATION)
-    ) fifo_i (
-        .app_rst(app_rst || !mmcm_locked),
-        .app_clk(app_clk),
-        .rx_clk(gtx_if.rx_clk),
-
-        .data_in(fifo_in_data),
-        .isk_in(fifo_in_isk),
-        .data_out(fifo_out_data),
-        .isk_out(fifo_out_isk),
-
-        .fifo_inc(fifo_inc),
-        .fifo_dec(fifo_dec),
-
-        .rst_busy(fifo_rst_busy)
+        .rst(app_rst),
+        .rd_rst_busy(rd_rst_busy_rd_clk),
+        .wr_rst_busy(wr_rst_busy)
     );
 
-    mmcm_wrapper mmcm_i(
-        .clk_in1(gtx_if.rx_clk),
-        .clk_in2(0),
-        .clk_in_sel(1),
+// Delay compensation
+    generate
+    if (DC_ENABLE == "YES") begin
+        logic mmcm_locked;
+        logic fifo_rst_busy;
+
+        gtx::data_t fifo_in_data;
+        gtx::data_t fifo_out_data;
+        gtx::is_k_t fifo_in_isk;
+        gtx::is_k_t fifo_out_isk;
+        logic fifo_inc, fifo_dec, pll_ph_inc, pll_ph_dec;
+
+        assign fifo_in_data = gtx_if.rx_data;
+        assign fifo_in_isk  = gtx_if.rx_is_k;
+        assign ev = is_event(fifo_out_data, fifo_out_isk) ? ev_t'(fifo_out_data) : '0;
+
+        fifo_wrapper #(
+            .DEPTH(MAX_COMPENSATION)
+        ) fifo_i (
+            .app_rst(app_rst || !mmcm_locked),
+            .app_clk(app_clk),
+            .rx_clk(gtx_if.rx_clk),
+
+            .data_in(fifo_in_data),
+            .isk_in(fifo_in_isk),
+            .data_out(fifo_out_data),
+            .isk_out(fifo_out_isk),
+
+            .fifo_inc(fifo_inc),
+            .fifo_dec(fifo_dec),
+
+            .rst_busy(fifo_rst_busy)
+        );
+
+        mmcm_wrapper mmcm_i(
+            .clk_in1(gtx_if.rx_clk),
+            .clk_in2(0),
+            .clk_in_sel(1),
+            
+            .clk_out1(dc_clk),
+
+            .app_clk(app_clk),
+            .ph_inc(pll_ph_inc),
+            .ph_dec(pll_ph_dec),
+
+            .reset(!gtx_if.aligned),
+            .locked(mmcm_locked)
+        );
+
+        dc_control #(
+            .INT_W(DELAY_INT_W),
+            .FRAC_W(DELAY_FRAC_W)
+        ) dc_control_i (
+            .app_clk(app_clk),
+            .app_rst(app_rst || !mmcm_locked),
+            .dc_ena(link_data.delay_comp_ena),
+            .fifo_rst_busy(fifo_rst_busy),
+
+            .start(is_beacon(fifo_in_data, fifo_in_isk)),
+            .start_clk(gtx_if.rx_clk),
+            .stop(is_beacon(fifo_out_data, fifo_out_isk)),
+            .measure_clk(beacon_clk),
+
+            .fifo_inc(fifo_inc),
+            .fifo_dec(fifo_dec),
+            .pll_ph_inc(pll_ph_inc),
+            .pll_ph_dec(pll_ph_dec),
         
-        .clk_out1(dc_clk),
-
-        .app_clk(app_clk),
-        .ph_inc(pll_ph_inc),
-        .ph_dec(pll_ph_dec),
-
-        .reset(!gtx_if.aligned),
-        .locked(mmcm_locked)
-    );
-
-    dc_control #(
-        .INT_W(DELAY_INT_W),
-        .FRAC_W(DELAY_FRAC_W)
-    ) dc_control_i (
-        .app_clk(app_clk),
-        .app_rst(app_rst || !mmcm_locked),
-        .dc_ena(link_data.delay_comp_ena),
-        .fifo_rst_busy(fifo_rst_busy),
-
-        .start(is_beacon(fifo_in_data, fifo_in_isk)),
-        .start_clk(gtx_if.rx_clk),
-        .stop(is_beacon(fifo_out_data, fifo_out_isk)),
-        .measure_clk(beacon_clk),
-
-        .fifo_inc(fifo_inc),
-        .fifo_dec(fifo_dec),
-        .pll_ph_inc(pll_ph_inc),
-        .pll_ph_dec(pll_ph_dec),
-    
-        .dc_status(link_data.delay_comp_st),
-        .delay_req(link_data.tgt_delay - link_data.up_delay - link_data.link_delay),
-        .delay_req_upd(link_data.tgt_delay_upd),
-        
-        .delay_comp(link_data.delay_comp)
-    );
-
-    xpm_cdc_async_rst link_up_cdc_i(
-        .dest_clk(app_clk),
-        .dest_arst(link_data.link_up),
-        .src_arst(gtx_if.aligned)
-    );
+            .dc_status(link_data.delay_comp_st),
+            .delay_req(link_data.tgt_delay - link_data.up_delay - link_data.link_delay),
+            .delay_req_upd(link_data.tgt_delay_upd),
+            
+            .delay_comp(link_data.delay_comp)
+        );
+    end else begin
+        assign ev = is_event(gtx_if.rx_data, gtx_if.rx_is_k) ? ev_t'(gtx_if.rx_data) : '0;
+    end
+    endgenerate
 endmodule

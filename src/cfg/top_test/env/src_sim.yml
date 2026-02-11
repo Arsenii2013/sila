@@ -1,9 +1,8 @@
 
 sources:
     - src/syn/top.svh
-    - src/syn/topEVG.svh
-    - src/syn/topEVR.svh
-    - src/syn/topFanout.svh
+    - src/syn/topHSSM.svh
+    - src/syn/topHSSR.svh
     - src/syn/gtx.svh
     - src/syn/gtwizard_wrapper.sv
     - src/syn/event_network/common/evn.svh
@@ -68,15 +67,18 @@ sources:
     - src/syn/i2c_mux.sv
     - src/syn/device_info.sv
     - src/syn/timestamper.sv
-    - src/syn/sfp_control.sv
     - src/syn/event_comparator.sv
     - src/syn/axi_register_slice_wrapper.sv
+    - src/sim/network_configuration.sv
+    - src/sim/globals.sv
+    - src/sim/tester.sv
+    - src/sim/HSSMTester.sv
+    - src/sim/HSSRTester.sv
     - src/syn/PS_wrapper.sv
     - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv
-    - src/syn/topEVR.sv
-    - src/syn/topEVG.sv
-    - src/syn/topFanout.sv
+    - src/syn/topHSSR.sv
+    - src/syn/topHSSM.sv
     - src/sim/link_emulator.sv
     - src/lib/ic/MC100EP195B.sv
     - src/sim/topTB.sv

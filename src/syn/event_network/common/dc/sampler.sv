@@ -119,7 +119,7 @@ module sampler #(
         .SIM_ASSERT_CHK(1),
         .WRITE_DATA_WIDTH(18),
         .PROG_FULL_THRESH(BEACON_CNT_MAX)
-    ) xpm_fifo_async_inst (
+    ) xpm_fifo_sync_inst (
         .rd_en(fifo_rst_done && stop_sync && ~no_beacons),
         .dout(sample_cnt),
 
@@ -196,8 +196,10 @@ module beacon_cdc(
 );
     logic       stop_expand;
     logic [1:0] stop_cnt = '0;
+    logic       stop_sync_expanded;
+    logic       stop_sync_expanded_prev;
 
-    assign stop_expand = stop_cnt != 'b0;
+    always_ff @(posedge stop_clk) stop_expand <= stop_cnt != 'b0;
 
     always_ff @(posedge stop_clk) begin
         if(stop) 
@@ -207,20 +209,26 @@ module beacon_cdc(
                 stop_cnt <= stop_cnt - 1;         
     end
 
-    xpm_cdc_pulse stop_sunchronizer_i(
+    xpm_cdc_single #(
+        .SRC_INPUT_REG(0)
+    ) stop_sunchronizer_i (
         .dest_clk(measure_clk),
-        .dest_pulse(stop_sync),
-        .dest_rst(1'b0),
+        .dest_out(stop_sync_expanded),
         .src_clk(stop_clk),
-        .src_pulse(stop_expand),
-        .src_rst(1'b0)
+        .src_in(stop_expand)
     );
+
+    always_ff @(posedge measure_clk) stop_sync_expanded_prev <= stop_sync_expanded;
+    assign stop_sync = stop_sync_expanded && !stop_sync_expanded_prev;
 
 
     logic       start_expand;
     logic [1:0] start_cnt = '0;
+    logic       start_sync_expanded;
+    logic       start_sync_expanded_prev;
 
-    assign start_expand = start_cnt != 'b0;
+
+    always_ff @(posedge start_clk) start_expand <= start_cnt != 'b0;
 
     always_ff @(posedge start_clk) begin
         if(start) 
@@ -230,12 +238,15 @@ module beacon_cdc(
                 start_cnt <= start_cnt - 1;         
     end
 
-    xpm_cdc_pulse start_sunchronizer_i(
+    xpm_cdc_single #(
+        .SRC_INPUT_REG(0)
+    ) start_sunchronizer_i (
         .dest_clk(measure_clk),
-        .dest_pulse(start_sync),
-        .dest_rst(1'b0),
+        .dest_out(start_sync_expanded),
         .src_clk(start_clk),
-        .src_pulse(start_expand),
-        .src_rst(1'b0)
+        .src_in(start_expand)
     );
+
+    always_ff @(posedge measure_clk) start_sync_expanded_prev <= start_sync_expanded;
+    assign start_sync = start_sync_expanded && !start_sync_expanded_prev;
 endmodule
