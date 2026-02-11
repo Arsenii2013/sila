@@ -61,7 +61,7 @@ module i2c_mux #(
         .SCL(PLL1_SCL),
         .SDA(PLL1_SDA)
     );
-    generate if(DEVICE == "EVR") begin
+    generate if(DEVICE == "HSSR") begin
     I2C_oibuf PLL2_iobuf(
         .i2c(PLL2_tri),
         .SCL(PLL2_SCL),

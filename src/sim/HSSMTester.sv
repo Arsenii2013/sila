@@ -27,7 +27,7 @@ class HSSMTester #(
     endfunction
 
     task select_I2C_mux(i2c_mux_sel_t sel);
-        generic_generator.write(base_from_device_number(HSSM_axi_params::I2C_MUX) + 'h10, sel);
+        generic_generator.write(base_from_device_number(HSSM_axi_params::I2C_MUX) + 'h4, sel);
         driver.sync();
     endtask
 

@@ -453,8 +453,8 @@ module HSSR_board_emulator#(
 
         .SFP_RX_N(sfp_rx_p),
         .SFP_RX_P(sfp_rx_n),
-        .SFP_TX_N(SFP_TX_P),
-        .SFP_TX_P(SFP_TX_N),
+        .SFP_TX_N(SFP_TX_N),
+        .SFP_TX_P(SFP_TX_P),
         .SFP_TX_DIS(SFP_TX_DIS),
         .SFP_RX_LOS(SFP_RX_LOSS),
         .START_p(START_p),
