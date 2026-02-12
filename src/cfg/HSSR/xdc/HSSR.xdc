@@ -25,9 +25,38 @@ set_property -dict { PACKAGE_PIN D15    IOSTANDARD LVDS } [get_ports { FPGA_OUTC
 create_clock -period 5.714 -name fpga_outclk -waveform {1.000 3.857} [get_ports FPGA_OUTCLK_p]
 # памерял осциллографом задержку сигнала в джиттер клинере относительно DC_CLK
 
-set_property -dict { PACKAGE_PIN AB22    IOSTANDARD LVCMOS33 } [get_ports { SER }];
-set_property -dict { PACKAGE_PIN AA20   IOSTANDARD LVCMOS33 } [get_ports { SRCLK }];
-set_property -dict { PACKAGE_PIN AB21    IOSTANDARD LVCMOS33 } [get_ports { RCLK }];
+set_property -dict { PACKAGE_PIN W18     IOSTANDARD LVCMOS33 } [get_ports { IO[0]  }];
+set_property -dict { PACKAGE_PIN W19     IOSTANDARD LVCMOS33 } [get_ports { IO[1]  }];
+set_property -dict { PACKAGE_PIN AF19    IOSTANDARD LVCMOS33 } [get_ports { IO[2]  }];
+set_property -dict { PACKAGE_PIN AF20    IOSTANDARD LVCMOS33 } [get_ports { IO[3]  }];
+set_property -dict { PACKAGE_PIN AA22    IOSTANDARD LVCMOS33 } [get_ports { IO[4]  }];
+set_property -dict { PACKAGE_PIN AA23    IOSTANDARD LVCMOS33 } [get_ports { IO[5]  }];
+set_property -dict { PACKAGE_PIN AF23    IOSTANDARD LVCMOS33 } [get_ports { IO[6]  }];
+set_property -dict { PACKAGE_PIN AE23    IOSTANDARD LVCMOS33 } [get_ports { IO[7]  }];
+set_property -dict { PACKAGE_PIN AE22    IOSTANDARD LVCMOS33 } [get_ports { IO[8]  }];
+set_property -dict { PACKAGE_PIN AF22    IOSTANDARD LVCMOS33 } [get_ports { IO[9]  }];
+set_property -dict { PACKAGE_PIN AC22    IOSTANDARD LVCMOS33 } [get_ports { IO[10] }];
+set_property -dict { PACKAGE_PIN AC21    IOSTANDARD LVCMOS33 } [get_ports { IO[11] }];
+set_property -dict { PACKAGE_PIN AD21    IOSTANDARD LVCMOS33 } [get_ports { IO[12] }];
+set_property -dict { PACKAGE_PIN AD20    IOSTANDARD LVCMOS33 } [get_ports { IO[13] }];
+set_property -dict { PACKAGE_PIN AB22    IOSTANDARD LVCMOS33 } [get_ports { IO[14] }];
+set_property -dict { PACKAGE_PIN AB21    IOSTANDARD LVCMOS33 } [get_ports { IO[15] }];
+set_property -dict { PACKAGE_PIN AA20    IOSTANDARD LVCMOS33 } [get_ports { IO[16] }];
+set_property -dict { PACKAGE_PIN AB20    IOSTANDARD LVCMOS33 } [get_ports { IO[17] }];
+set_property -dict { PACKAGE_PIN AF18    IOSTANDARD LVCMOS33 } [get_ports { IO[18] }];
+set_property -dict { PACKAGE_PIN AE18    IOSTANDARD LVCMOS33 } [get_ports { IO[19] }];
+set_property -dict { PACKAGE_PIN AE21    IOSTANDARD LVCMOS33 } [get_ports { IO[20] }];
+set_property -dict { PACKAGE_PIN AE20    IOSTANDARD LVCMOS33 } [get_ports { IO[21] }];
+set_property -dict { PACKAGE_PIN AC19    IOSTANDARD LVCMOS33 } [get_ports { IO[22] }];
+set_property -dict { PACKAGE_PIN AC18    IOSTANDARD LVCMOS33 } [get_ports { IO[23] }];
+set_property -dict { PACKAGE_PIN AF17    IOSTANDARD LVCMOS33 } [get_ports { IO[24] }];
+set_property -dict { PACKAGE_PIN AE17    IOSTANDARD LVCMOS33 } [get_ports { IO[25] }];
+set_property -dict { PACKAGE_PIN AF15    IOSTANDARD LVCMOS33 } [get_ports { IO[26] }];
+set_property -dict { PACKAGE_PIN AF14    IOSTANDARD LVCMOS33 } [get_ports { IO[27] }];
+set_property -dict { PACKAGE_PIN AD14    IOSTANDARD LVCMOS33 } [get_ports { IO[28] }];
+set_property -dict { PACKAGE_PIN AC14    IOSTANDARD LVCMOS33 } [get_ports { IO[29] }];
+set_property -dict { PACKAGE_PIN Y17     IOSTANDARD LVCMOS33 } [get_ports { IO[30] }];
+set_property -dict { PACKAGE_PIN AA17    IOSTANDARD LVCMOS33 } [get_ports { IO[31] }];
 
 set_property -dict { PACKAGE_PIN C7   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_n }];
 set_property -dict { PACKAGE_PIN C8   IOSTANDARD DIFF_SSTL15 } [get_ports { SYS_CLK_p }];

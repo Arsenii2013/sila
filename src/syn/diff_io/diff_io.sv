@@ -1,7 +1,8 @@
 `include "diff_io.svh"
 
 module diff_io #(
-    parameter unsigned OUTPUT_N = 16,
+    parameter unsigned OUTPUT_N     = 16,
+    parameter unsigned DUPLICATE_N  = 8,
     parameter diff_io_pkg::polarity_t     STATIC_POLARITY [OUTPUT_N] = '{default: diff_io_pkg::POSITIVE},
     parameter diff_io_pkg::diff_io_mode_t DIFF_IO_MODES   [OUTPUT_N] = '{default: diff_io_pkg::COMMON}
 )(
@@ -17,6 +18,7 @@ module diff_io #(
 
     inout  logic    IO_P[OUTPUT_N],
     inout  logic    IO_N[OUTPUT_N],
+    inout  logic    IO_D[DUPLICATE_N],
 
     output logic    SER,
     output logic    SRCLK,
@@ -40,11 +42,13 @@ module diff_io #(
     genvar output_i;
     generate
     for(output_i = 0; output_i < OUTPUT_N; output_i++ ) begin : outputs
-        localparam STATIC_DELAY_TAPS = DIFF_IO_MODES[output_i] == COMMON ? 31 : 0;
+        localparam STATIC_DELAY_TAPS = 10;
         single_output #(
             .STATIC_ODELAY_TAPS(STATIC_DELAY_TAPS),
             .ODELAY_GROUP(ODELAY_GROUP),
-            .STATIC_POLARITY(STATIC_POLARITY[output_i])
+            .STATIC_POLARITY(STATIC_POLARITY[output_i]),
+            .DIFF_OUT(1),
+            .USE_ODELAY(1)
         ) single_output_inst (
             .app_clk(app_clk),
             .clear_clk(clear_clk),
@@ -58,6 +62,27 @@ module diff_io #(
             .IO_P(IO_P[output_i]),
             .IO_N(IO_N[output_i])
         );
+        if(output_i < DUPLICATE_N) begin
+            single_output #(
+                .STATIC_ODELAY_TAPS(STATIC_DELAY_TAPS),
+                .ODELAY_GROUP(ODELAY_GROUP),
+                .STATIC_POLARITY(POSITIVE),
+                .DIFF_OUT(0),
+                .USE_ODELAY(0)
+            ) duplicate_output_inst (
+                .app_clk(app_clk),
+                .clear_clk(clear_clk),
+                .app_rst(app_rst),
+
+                .o1(o1[output_i]),
+                .o2(o2[output_i]),
+                .in(),
+                .mode(modes[output_i]),
+                .polarity(polarites[output_i]),
+                .IO_P(IO_D[output_i]),
+                .IO_N()
+            );
+        end
         assign in_logic[output_i] = STATIC_POLARITY[output_i] == POSITIVE ? inputs[output_i] : !inputs[output_i];
     end
     endgenerate
