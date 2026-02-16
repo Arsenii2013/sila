@@ -32,6 +32,7 @@ module sampler #(
     logic stop_sync;
     logic start_sync;
 
+    (* KEEP_HIERARCHY = "YES" *)
     beacon_cdc beacon_cdc_i(
         .start(start),
         .start_clk(start_clk),
@@ -194,11 +195,13 @@ module beacon_cdc(
     output logic start_sync,
     output logic stop_sync
 );
+    (* RLOC = "X0Y0", HU_SET = "h0" *) 
     logic       stop_expand;
     logic [1:0] stop_cnt = '0;
     logic       stop_sync_expanded;
     logic       stop_sync_expanded_prev;
 
+    (* RLOC = "X0Y0", HU_SET = "h0" *)
     always_ff @(posedge stop_clk) stop_expand <= stop_cnt != 'b0;
 
     always_ff @(posedge stop_clk) begin
@@ -209,25 +212,26 @@ module beacon_cdc(
                 stop_cnt <= stop_cnt - 1;         
     end
 
-    xpm_cdc_single #(
-        .SRC_INPUT_REG(0)
-    ) stop_sunchronizer_i (
-        .dest_clk(measure_clk),
-        .dest_out(stop_sync_expanded),
-        .src_clk(stop_clk),
-        .src_in(stop_expand)
-    );
+    (* RLOC = "X0Y1", HU_SET = "h0", ASYNC_REG = "TRUE" *) 
+    logic stop_syncstage_ff[4];
+    always_ff @(posedge measure_clk) stop_syncstage_ff[0] <= stop_expand;
+    always_ff @(posedge measure_clk) stop_syncstage_ff[1] <= stop_syncstage_ff[0];
+    always_ff @(posedge measure_clk) stop_syncstage_ff[2] <= stop_syncstage_ff[1];
+    always_ff @(posedge measure_clk) stop_syncstage_ff[3] <= stop_syncstage_ff[2];
+    assign stop_sync_expanded = stop_syncstage_ff[3];
 
     always_ff @(posedge measure_clk) stop_sync_expanded_prev <= stop_sync_expanded;
     assign stop_sync = stop_sync_expanded && !stop_sync_expanded_prev;
 
 
+    (* RLOC = "X1Y0", HU_SET = "h0" *) 
     logic       start_expand;
     logic [1:0] start_cnt = '0;
     logic       start_sync_expanded;
     logic       start_sync_expanded_prev;
 
 
+    (* RLOC = "X1Y0", HU_SET = "h0" *) 
     always_ff @(posedge start_clk) start_expand <= start_cnt != 'b0;
 
     always_ff @(posedge start_clk) begin
@@ -238,14 +242,13 @@ module beacon_cdc(
                 start_cnt <= start_cnt - 1;         
     end
 
-    xpm_cdc_single #(
-        .SRC_INPUT_REG(0)
-    ) start_sunchronizer_i (
-        .dest_clk(measure_clk),
-        .dest_out(start_sync_expanded),
-        .src_clk(start_clk),
-        .src_in(start_expand)
-    );
+    (* RLOC = "X1Y1", HU_SET = "h0", ASYNC_REG = "TRUE" *) 
+    logic start_syncstage_ff[4];
+    always_ff @(posedge measure_clk) start_syncstage_ff[0] <= start_expand;
+    always_ff @(posedge measure_clk) start_syncstage_ff[1] <= start_syncstage_ff[0];
+    always_ff @(posedge measure_clk) start_syncstage_ff[2] <= start_syncstage_ff[1];
+    always_ff @(posedge measure_clk) start_syncstage_ff[3] <= start_syncstage_ff[2];
+    assign start_sync_expanded = start_syncstage_ff[3];
 
     always_ff @(posedge measure_clk) start_sync_expanded_prev <= start_sync_expanded;
     assign start_sync = start_sync_expanded && !start_sync_expanded_prev;
