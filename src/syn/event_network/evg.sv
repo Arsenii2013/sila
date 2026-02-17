@@ -49,7 +49,7 @@ module evg#(
     ev_t    ev_mux;
     // объеденяются события от сети и от логики
     // триггер для разбиения крит. пути
-    always_ff @(posedge app_clk) ev_mux <= ev_in | ev_upstream;
+    always_ff @(posedge app_clk) ev_mux <= is_head ? ev_in : ev_upstream;
     assign ev_out = ev_mux;
 
     delay_t tgt_delay_axi, tgt_delay;
@@ -157,7 +157,7 @@ module evg#(
                 masters_data[i].topo_id         = (slave_data.topo_id << TOPO_ID_LEVEL_W) + i + 1;
                 masters_data[i].topo_id_upd     = slave_data.topo_id_upd;
                 masters_data[i].up_delay        = slave_data.up_delay + slave_data.link_delay + 
-                                                    delay_t'(2 << DELAY_FRAC_W) + delay_t'('hC8B);
+                                                  delay_t'(4 << DELAY_FRAC_W);
                 masters_data[i].up_delay_upd    = slave_data.up_delay_upd || slave_data.link_delay_upd;
                 if(i == 0) begin
                     sub_delay_iternal[i]        = '0;
@@ -257,7 +257,7 @@ module evg_axi_core#(
     assign hwif_in.up_delay.up_delay.next     = is_head ? '0                       : slave_data.up_delay + slave_data.link_delay;
     assign hwif_in.sub_delay.sub_delay.next   = slave_data.sub_delay; // это значение правильное вне зависимости от is_head
     assign hwif_in.tgt_delay.tgt_delay.next   = is_head ? tgt_delay : slave_data.tgt_delay;
-    assign hwif_in.delay_comp.delay_comp.next = '0;
+    assign hwif_in.delay_comp.delay_comp.next = slave_data.delay_comp;
     assign tgt_delay                          = hwif_out.tgt_delay.tgt_delay.value;
     assign tgt_delay_upd                      = hwif_out.tgt_delay.tgt_delay.swmod;
 
