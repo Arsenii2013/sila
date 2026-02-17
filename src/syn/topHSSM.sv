@@ -72,8 +72,8 @@ module topHSSM(
     input  logic       PLL_LOL_N,
 
     //------------EXT-IN-------------\\
-    output logic       EXTIN_p      [HSSM_board_pkg::EXTIN_N],
-    output logic       EXTIN_n      [HSSM_board_pkg::EXTIN_N],
+    input  logic       EXTIN_p      [HSSM_board_pkg::EXTIN_N],
+    input  logic       EXTIN_n      [HSSM_board_pkg::EXTIN_N],
 
     //-------------LEDs--------------\\
     output logic       LED          [HSSM_board_pkg::LED_N],

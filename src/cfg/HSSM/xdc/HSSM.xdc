@@ -154,55 +154,15 @@ set_multicycle_path -hold  4 -from [get_pins {evg_i/link_master_insts[0].link_sl
 set_case_analysis 0 [get_pins evg_i/BUFGMUX_CTRL_inst/S0]
 set_case_analysis 1 [get_pins evg_i/BUFGMUX_CTRL_inst/S1]
 
-set SAMPLERS_SKEW 0.1
-
-set_bus_skew \
--from \
-[ list \
-    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
-    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
-] \
--to \
-[ list \
-    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
-    [get_pins evg_i/link_master_insts[0].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
-] \
-$SAMPLERS_SKEW
-
-set_bus_skew \
--from \
-[ list \
-    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
-    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
-] \
--to \
-[ list \
-    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
-    [get_pins evg_i/link_master_insts[1].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
-] \
-$SAMPLERS_SKEW
-set_bus_skew \
--from \
-[ list \
-    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
-    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
-] \
--to \
-[ list \
-    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
-    [get_pins evg_i/link_master_insts[2].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
-] \
-$SAMPLERS_SKEW
-set_bus_skew \
--from \
-[ list \
-    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
-    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
-] \
--to \
-[ list \
-    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_sunchronizer_i/syncstages_ff_reg[0]/D] \
-    [get_pins evg_i/link_master_insts[3].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_sunchronizer_i/syncstages_ff_reg[0]/D] \
-] \
-$SAMPLERS_SKEW
-#report_timing -through  [get_nets {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/*_expand}] -delay_type min_max -max_paths 10 -sort_by group -input_pins -routable_nets -name {[get_nets {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/*_expand}]}
+set_false_path \
+-from [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+-to [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_syncstage_ff_reg[0]/D]
+set_max_delay 5.714 -datapath_only \
+-from [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_expand_reg/C] \
+-to [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/start_syncstage_ff_reg[0]/D]
+set_false_path \
+-from [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+-to [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_syncstage_ff_reg[0]/D]
+set_max_delay 5.714 -datapath_only \
+-from [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_expand_reg/C] \
+-to [get_pins evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/beacon_cdc_i/stop_syncstage_ff_reg[0]/D]
