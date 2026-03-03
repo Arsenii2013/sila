@@ -15,8 +15,7 @@ function logic is_alignment(gtx::data_t data, gtx::is_k_t is_k);
     return data == ALIGNMENT_WORD && is_k == ALIGNMENT_IS_K;
 endfunction
 
-localparam HSSM_PORT_N    = 4;
-localparam FANOUT_PORT_N = 4;
+localparam HSSM_PORT_N    = 8;
 localparam HSSR_PORT_N    = 1;
 `define PORT_N(DEVICE) \
     ((DEVICE == "HSSM") ? gtx::HSSM_PORT_N : ((DEVICE == "HSSM") ? gtx::HSSR_PORT_N: 0))

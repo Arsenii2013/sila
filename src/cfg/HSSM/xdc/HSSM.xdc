@@ -120,6 +120,7 @@ set_property PACKAGE_PIN U8 [get_ports REFCLK_p]
 set_property PACKAGE_PIN U7 [get_ports REFCLK_n]
 create_clock -period 5.714 -name REFCLK -waveform {0.000 2.857} -add [get_ports REFCLK_p]
 set_property LOC GTXE2_COMMON_X0Y1 [get_cells gtwizard_i/common0_i/gtxe2_common_i]
+set_property LOC GTXE2_COMMON_X0Y3 [get_cells gtwizard_i/common1_i/gtxe2_common_i]
 
 set_property -dict {PACKAGE_PIN AJ28 IOSTANDARD LVCMOS33} [get_ports PHY0_RST]
 set_property -dict {PACKAGE_PIN AJ29 IOSTANDARD LVCMOS33} [get_ports PHY1_RST]

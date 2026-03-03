@@ -20,10 +20,6 @@ module gtwizard_wrapper#(
     output logic        tx_n[PORT_N],
     output logic        tx_p[PORT_N],
 
-    output logic        beacon_clk,  // Временно для Fanout на основе ax7z100b
-    input  logic        refclk_rx_n, // Временно для Fanout на основе ax7z100b
-    input  logic        refclk_rx_p, // Временно для Fanout на основе ax7z100b
-
     gtx_if.gtx          gtx_if[PORT_N]
 );
     //import gxt::*;
@@ -32,8 +28,6 @@ module gtwizard_wrapper#(
     logic wa_rst_req[N] = '{default: 0};
     logic wa_rst_req_sync[N];
 //Resetdone logic
-    logic refclk_rx;
-
     logic  txfsmresetdone[N];
     logic  rxfsmresetdone[N];
     logic   data_valid_in[N];
@@ -175,6 +169,7 @@ module gtwizard_wrapper#(
     logic txoutclk [N];
     logic rxoutclk [N];
     logic qplllock, qpllrefclklost, qpllreset, qplloutclk, qplloutrefclk;
+    logic qpll1lock, qpll1refclklost, qpll1outclk, qpll1outrefclk;
     logic gt_qpllreset [N];
 
     generate 
@@ -612,6 +607,350 @@ module gtwizard_wrapper#(
         .gt0_qplloutclk_in(qplloutclk),
         .gt0_qplloutrefclk_in(qplloutrefclk)
     );
+
+    HSSM_gtwizard_port_4 gtwizard_port_4
+    (
+        .sysclk_in                      (sysclk),
+        .soft_reset_tx_in               (soft_reset),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[4] || sfp_loss[4]),
+        .dont_reset_on_data_error_in    ('0),
+        .gt0_tx_fsm_reset_done_out      (txfsmresetdone[4]),
+        .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[4]),
+        .gt0_data_valid_in              (data_valid_in[4]),
+
+        .gt0_drpaddr_in                 ('0),
+        .gt0_drpclk_in                  (sysclk),
+        .gt0_drpdi_in                   ('0),
+        .gt0_drpdo_out                  (),
+        .gt0_drpen_in                   ('0),
+        .gt0_drprdy_out                 (),
+        .gt0_drpwe_in                   ('0),
+   
+        //------------------------- Digital Monitor Ports --------------------------
+        .gt0_dmonitorout_out            (),
+        //------------------- RX Initialization and Reset Ports --------------------
+        .gt0_eyescanreset_in            ('0),
+        .gt0_rxuserrdy_in               ('b1),
+        //------------------------ RX Margin Analysis Ports ------------------------
+        .gt0_eyescandataerror_out       (),
+        .gt0_eyescantrigger_in          ('0),
+        //---------------- Receive Ports - FPGA RX interface Ports -----------------
+        .gt0_rxdata_out                 (gtx_if[4].rx_data),
+        //---------------- Receive Ports - RX 8B/10B Decoder Ports -----------------
+        .gt0_rxdisperr_out              (),
+        .gt0_rxnotintable_out           (),
+        //------------------------- Receive Ports - RX AFE -------------------------
+        .gt0_gtxrxp_in                  (rx_p[4]),
+        //---------------------- Receive Ports - RX AFE Ports ----------------------
+        .gt0_gtxrxn_in                  (rx_n[4]),
+        //---------------- Receive Ports - FPGA RX Interface Ports -----------------
+        .gt0_rxusrclk_in                (gtx_if[4].rx_clk),
+        .gt0_rxusrclk2_in               (gtx_if[4].rx_clk),
+        //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
+        //------------------- Receive Ports - RX Equalizer Ports -------------------
+        .gt0_rxdfelpmreset_in           ('0),
+        .gt0_rxmonitorout_out           (),
+        .gt0_rxmonitorsel_in            ('0),
+        //------------- Receive Ports - RX Fabric Output Control Ports -------------
+        .gt0_rxoutclk_out               (rxoutclk[4]),
+        .gt0_rxoutclkfabric_out         (),
+        //----------- Receive Ports - RX Initialization and Reset Ports ------------
+        .gt0_gtrxreset_in               ('0),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[4] || sfp_loss[4]),
+        //-------------------- Receive Ports - RX gearbox ports --------------------
+        .gt0_rxslide_in                 (rxslide[4]),
+        //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
+        .gt0_rxcharisk_out              (gtx_if[4].rx_is_k),
+        //------------ Receive Ports -RX Initialization and Reset Ports ------------
+        .gt0_rxresetdone_out            (rxresetdone[4]),
+        //------------------- TX Initialization and Reset Ports --------------------
+        .gt0_gttxreset_in               ('0),
+        .gt0_txuserrdy_in               ('b1),
+        //---------------- Transmit Ports - TX Data Path interface -----------------
+        .gt0_txdata_in                  (gtx_if[4].tx_data),
+        //-------------- Transmit Ports - TX Driver and OOB signaling --------------
+        .gt0_gtxtxn_out                 (tx_n[4]),
+        .gt0_gtxtxp_out                 (tx_p[4]),
+        //---------------- Transmit Ports - FPGA TX Interface Ports ----------------
+        .gt0_txusrclk_in                (gtx_if[4].tx_clk),
+        .gt0_txusrclk2_in               (gtx_if[4].tx_clk),
+        //--------- Transmit Ports - TX Fabric Clock Output Control Ports ----------
+        .gt0_txoutclk_out               (txoutclk[4]),
+        .gt0_txoutclkfabric_out         (),
+        .gt0_txoutclkpcs_out            (),
+        //------------------- Transmit Ports - TX Gearbox Ports --------------------
+        .gt0_txcharisk_in               (gtx_if[4].tx_is_k),
+        //----------- Transmit Ports - TX Initialization and Reset Ports -----------
+        .gt0_txresetdone_out            (txresetdone[4]),
+    //--------------- Transmit Ports - TX Polarity Control Ports ---------------
+        .gt0_txpolarity_in              (1),
+
+        .gt0_qplllock_in(qpll1lock),
+        .gt0_qpllrefclklost_in(qpll1refclklost),
+        .gt0_qpllreset_out(gt_qpllreset[4]),
+        .gt0_qplloutclk_in(qpll1outclk),
+        .gt0_qplloutrefclk_in(qpll1outrefclk)
+    );
+
+    HSSM_gtwizard_port_5 gtwizard_port_5
+    (
+        .sysclk_in                      (sysclk),
+        .soft_reset_tx_in               (soft_reset),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[5] || sfp_loss[5]),
+        .dont_reset_on_data_error_in    ('0),
+        .gt0_tx_fsm_reset_done_out      (txfsmresetdone[5]),
+        .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[5]),
+        .gt0_data_valid_in              (data_valid_in[5]),
+
+        .gt0_drpaddr_in                 ('0),
+        .gt0_drpclk_in                  (sysclk),
+        .gt0_drpdi_in                   ('0),
+        .gt0_drpdo_out                  (),
+        .gt0_drpen_in                   ('0),
+        .gt0_drprdy_out                 (),
+        .gt0_drpwe_in                   ('0),
+   
+        //------------------------- Digital Monitor Ports --------------------------
+        .gt0_dmonitorout_out            (),
+        //------------------- RX Initialization and Reset Ports --------------------
+        .gt0_eyescanreset_in            ('0),
+        .gt0_rxuserrdy_in               ('b1),
+        //------------------------ RX Margin Analysis Ports ------------------------
+        .gt0_eyescandataerror_out       (),
+        .gt0_eyescantrigger_in          ('0),
+        //---------------- Receive Ports - FPGA RX interface Ports -----------------
+        .gt0_rxdata_out                 (gtx_if[5].rx_data),
+        //---------------- Receive Ports - RX 8B/10B Decoder Ports -----------------
+        .gt0_rxdisperr_out              (),
+        .gt0_rxnotintable_out           (),
+        //------------------------- Receive Ports - RX AFE -------------------------
+        .gt0_gtxrxp_in                  (rx_p[5]),
+        //---------------------- Receive Ports - RX AFE Ports ----------------------
+        .gt0_gtxrxn_in                  (rx_n[5]),
+        //---------------- Receive Ports - FPGA RX Interface Ports -----------------
+        .gt0_rxusrclk_in                (gtx_if[5].rx_clk),
+        .gt0_rxusrclk2_in               (gtx_if[5].rx_clk),
+        //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
+        //------------------- Receive Ports - RX Equalizer Ports -------------------
+        .gt0_rxdfelpmreset_in           ('0),
+        .gt0_rxmonitorout_out           (),
+        .gt0_rxmonitorsel_in            ('0),
+        //------------- Receive Ports - RX Fabric Output Control Ports -------------
+        .gt0_rxoutclk_out               (rxoutclk[5]),
+        .gt0_rxoutclkfabric_out         (),
+        //----------- Receive Ports - RX Initialization and Reset Ports ------------
+        .gt0_gtrxreset_in               ('0),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[5] || sfp_loss[5]),
+        //-------------------- Receive Ports - RX gearbox ports --------------------
+        .gt0_rxslide_in                 (rxslide[5]),
+        //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
+        .gt0_rxcharisk_out              (gtx_if[5].rx_is_k),
+        //------------ Receive Ports -RX Initialization and Reset Ports ------------
+        .gt0_rxresetdone_out            (rxresetdone[5]),
+        //------------------- TX Initialization and Reset Ports --------------------
+        .gt0_gttxreset_in               ('0),
+        .gt0_txuserrdy_in               ('b1),
+        //---------------- Transmit Ports - TX Data Path interface -----------------
+        .gt0_txdata_in                  (gtx_if[5].tx_data),
+        //-------------- Transmit Ports - TX Driver and OOB signaling --------------
+        .gt0_gtxtxn_out                 (tx_n[5]),
+        .gt0_gtxtxp_out                 (tx_p[5]),
+        //---------------- Transmit Ports - FPGA TX Interface Ports ----------------
+        .gt0_txusrclk_in                (gtx_if[5].tx_clk),
+        .gt0_txusrclk2_in               (gtx_if[5].tx_clk),
+        //--------- Transmit Ports - TX Fabric Clock Output Control Ports ----------
+        .gt0_txoutclk_out               (txoutclk[5]),
+        .gt0_txoutclkfabric_out         (),
+        .gt0_txoutclkpcs_out            (),
+        //------------------- Transmit Ports - TX Gearbox Ports --------------------
+        .gt0_txcharisk_in               (gtx_if[5].tx_is_k),
+        //----------- Transmit Ports - TX Initialization and Reset Ports -----------
+        .gt0_txresetdone_out            (txresetdone[5]),
+    //--------------- Transmit Ports - TX Polarity Control Ports ---------------
+        .gt0_txpolarity_in              (1),
+
+        .gt0_qplllock_in(qpll1lock),
+        .gt0_qpllrefclklost_in(qpll1refclklost),
+        .gt0_qpllreset_out(gt_qpllreset[5]),
+        .gt0_qplloutclk_in(qpll1outclk),
+        .gt0_qplloutrefclk_in(qpll1outrefclk)
+    );
+
+    HSSM_gtwizard_port_6 gtwizard_port_6
+    (
+        .sysclk_in                      (sysclk),
+        .soft_reset_tx_in               (soft_reset),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[6] || sfp_loss[6]),
+        .dont_reset_on_data_error_in    ('0),
+        .gt0_tx_fsm_reset_done_out      (txfsmresetdone[6]),
+        .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[6]),
+        .gt0_data_valid_in              (data_valid_in[6]),
+
+        .gt0_drpaddr_in                 ('0),
+        .gt0_drpclk_in                  (sysclk),
+        .gt0_drpdi_in                   ('0),
+        .gt0_drpdo_out                  (),
+        .gt0_drpen_in                   ('0),
+        .gt0_drprdy_out                 (),
+        .gt0_drpwe_in                   ('0),
+   
+        //------------------------- Digital Monitor Ports --------------------------
+        .gt0_dmonitorout_out            (),
+        //------------------- RX Initialization and Reset Ports --------------------
+        .gt0_eyescanreset_in            ('0),
+        .gt0_rxuserrdy_in               ('b1),
+        //------------------------ RX Margin Analysis Ports ------------------------
+        .gt0_eyescandataerror_out       (),
+        .gt0_eyescantrigger_in          ('0),
+        //---------------- Receive Ports - FPGA RX interface Ports -----------------
+        .gt0_rxdata_out                 (gtx_if[6].rx_data),
+        //---------------- Receive Ports - RX 8B/10B Decoder Ports -----------------
+        .gt0_rxdisperr_out              (),
+        .gt0_rxnotintable_out           (),
+        //------------------------- Receive Ports - RX AFE -------------------------
+        .gt0_gtxrxp_in                  (rx_p[6]),
+        //---------------------- Receive Ports - RX AFE Ports ----------------------
+        .gt0_gtxrxn_in                  (rx_n[6]),
+        //---------------- Receive Ports - FPGA RX Interface Ports -----------------
+        .gt0_rxusrclk_in                (gtx_if[6].rx_clk),
+        .gt0_rxusrclk2_in               (gtx_if[6].rx_clk),
+        //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
+        //------------------- Receive Ports - RX Equalizer Ports -------------------
+        .gt0_rxdfelpmreset_in           ('0),
+        .gt0_rxmonitorout_out           (),
+        .gt0_rxmonitorsel_in            ('0),
+        //------------- Receive Ports - RX Fabric Output Control Ports -------------
+        .gt0_rxoutclk_out               (rxoutclk[6]),
+        .gt0_rxoutclkfabric_out         (),
+        //----------- Receive Ports - RX Initialization and Reset Ports ------------
+        .gt0_gtrxreset_in               ('0),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[6] || sfp_loss[6]),
+        //-------------------- Receive Ports - RX gearbox ports --------------------
+        .gt0_rxslide_in                 (rxslide[6]),
+        //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
+        .gt0_rxcharisk_out              (gtx_if[6].rx_is_k),
+        //------------ Receive Ports -RX Initialization and Reset Ports ------------
+        .gt0_rxresetdone_out            (rxresetdone[6]),
+        //------------------- TX Initialization and Reset Ports --------------------
+        .gt0_gttxreset_in               ('0),
+        .gt0_txuserrdy_in               ('b1),
+        //---------------- Transmit Ports - TX Data Path interface -----------------
+        .gt0_txdata_in                  (gtx_if[6].tx_data),
+        //-------------- Transmit Ports - TX Driver and OOB signaling --------------
+        .gt0_gtxtxn_out                 (tx_n[6]),
+        .gt0_gtxtxp_out                 (tx_p[6]),
+        //---------------- Transmit Ports - FPGA TX Interface Ports ----------------
+        .gt0_txusrclk_in                (gtx_if[6].tx_clk),
+        .gt0_txusrclk2_in               (gtx_if[6].tx_clk),
+        //--------- Transmit Ports - TX Fabric Clock Output Control Ports ----------
+        .gt0_txoutclk_out               (txoutclk[6]),
+        .gt0_txoutclkfabric_out         (),
+        .gt0_txoutclkpcs_out            (),
+        //------------------- Transmit Ports - TX Gearbox Ports --------------------
+        .gt0_txcharisk_in               (gtx_if[6].tx_is_k),
+        //----------- Transmit Ports - TX Initialization and Reset Ports -----------
+        .gt0_txresetdone_out            (txresetdone[6]),
+    //--------------- Transmit Ports - TX Polarity Control Ports ---------------
+        .gt0_txpolarity_in              (1),
+
+        .gt0_qplllock_in(qpll1lock),
+        .gt0_qpllrefclklost_in(qpll1refclklost),
+        .gt0_qpllreset_out(gt_qpllreset[6]),
+        .gt0_qplloutclk_in(qpll1outclk),
+        .gt0_qplloutrefclk_in(qpll1outrefclk)
+    );
+
+    HSSM_gtwizard_port_7 gtwizard_port_7
+    (
+        .sysclk_in                      (sysclk),
+        .soft_reset_tx_in               (soft_reset),
+        .soft_reset_rx_in               (soft_reset || wa_rst_req_sync[7] || sfp_loss[7]),
+        .dont_reset_on_data_error_in    ('0),
+        .gt0_tx_fsm_reset_done_out      (txfsmresetdone[7]),
+        .gt0_rx_fsm_reset_done_out      (rxfsmresetdone[7]),
+        .gt0_data_valid_in              (data_valid_in[7]),
+
+        .gt0_drpaddr_in                 ('0),
+        .gt0_drpclk_in                  (sysclk),
+        .gt0_drpdi_in                   ('0),
+        .gt0_drpdo_out                  (),
+        .gt0_drpen_in                   ('0),
+        .gt0_drprdy_out                 (),
+        .gt0_drpwe_in                   ('0),
+   
+        //------------------------- Digital Monitor Ports --------------------------
+        .gt0_dmonitorout_out            (),
+        //------------------- RX Initialization and Reset Ports --------------------
+        .gt0_eyescanreset_in            ('0),
+        .gt0_rxuserrdy_in               ('b1),
+        //------------------------ RX Margin Analysis Ports ------------------------
+        .gt0_eyescandataerror_out       (),
+        .gt0_eyescantrigger_in          ('0),
+        //---------------- Receive Ports - FPGA RX interface Ports -----------------
+        .gt0_rxdata_out                 (gtx_if[7].rx_data),
+        //---------------- Receive Ports - RX 8B/10B Decoder Ports -----------------
+        .gt0_rxdisperr_out              (),
+        .gt0_rxnotintable_out           (),
+        //------------------------- Receive Ports - RX AFE -------------------------
+        .gt0_gtxrxp_in                  (rx_p[7]),
+        //---------------------- Receive Ports - RX AFE Ports ----------------------
+        .gt0_gtxrxn_in                  (rx_n[7]),
+        //---------------- Receive Ports - FPGA RX Interface Ports -----------------
+        .gt0_rxusrclk_in                (gtx_if[7].rx_clk),
+        .gt0_rxusrclk2_in               (gtx_if[7].rx_clk),
+        //----------------- Receive Ports - RX Buffer Bypass Ports -----------------
+        // .gt0_rxphmonitor_out            (),
+        // .gt0_rxphslipmonitor_out        (),
+        //------------------- Receive Ports - RX Equalizer Ports -------------------
+        .gt0_rxdfelpmreset_in           ('0),
+        .gt0_rxmonitorout_out           (),
+        .gt0_rxmonitorsel_in            ('0),
+        //------------- Receive Ports - RX Fabric Output Control Ports -------------
+        .gt0_rxoutclk_out               (rxoutclk[7]),
+        .gt0_rxoutclkfabric_out         (),
+        //----------- Receive Ports - RX Initialization and Reset Ports ------------
+        .gt0_gtrxreset_in               ('0),
+        .gt0_rxpmareset_in              (wa_rst_req_sync[7] || sfp_loss[7]),
+        //-------------------- Receive Ports - RX gearbox ports --------------------
+        .gt0_rxslide_in                 (rxslide[7]),
+        //----------------- Receive Ports - RX8B/10B Decoder Ports -----------------
+        .gt0_rxcharisk_out              (gtx_if[7].rx_is_k),
+        //------------ Receive Ports -RX Initialization and Reset Ports ------------
+        .gt0_rxresetdone_out            (rxresetdone[7]),
+        //------------------- TX Initialization and Reset Ports --------------------
+        .gt0_gttxreset_in               ('0),
+        .gt0_txuserrdy_in               ('b1),
+        //---------------- Transmit Ports - TX Data Path interface -----------------
+        .gt0_txdata_in                  (gtx_if[7].tx_data),
+        //-------------- Transmit Ports - TX Driver and OOB signaling --------------
+        .gt0_gtxtxn_out                 (tx_n[7]),
+        .gt0_gtxtxp_out                 (tx_p[7]),
+        //---------------- Transmit Ports - FPGA TX Interface Ports ----------------
+        .gt0_txusrclk_in                (gtx_if[7].tx_clk),
+        .gt0_txusrclk2_in               (gtx_if[7].tx_clk),
+        //--------- Transmit Ports - TX Fabric Clock Output Control Ports ----------
+        .gt0_txoutclk_out               (txoutclk[7]),
+        .gt0_txoutclkfabric_out         (),
+        .gt0_txoutclkpcs_out            (),
+        //------------------- Transmit Ports - TX Gearbox Ports --------------------
+        .gt0_txcharisk_in               (gtx_if[7].tx_is_k),
+        //----------- Transmit Ports - TX Initialization and Reset Ports -----------
+        .gt0_txresetdone_out            (txresetdone[7]),
+    //--------------- Transmit Ports - TX Polarity Control Ports ---------------
+        .gt0_txpolarity_in              (1),
+
+        .gt0_qplllock_in(qpll1lock),
+        .gt0_qpllrefclklost_in(qpll1refclklost),
+        .gt0_qpllreset_out(gt_qpllreset[7]),
+        .gt0_qplloutclk_in(qpll1outclk),
+        .gt0_qplloutrefclk_in(qpll1outrefclk)
+    );
     end
     endgenerate
 
@@ -633,14 +972,6 @@ module gtwizard_wrapper#(
         .CEB             ('0),
         .I               (refclk_p),
         .IB              (refclk_n)
-    );
-    IBUFDS_GTE2 ibufds_instQ0_CLK0  
-    (
-        .O               (refclk_rx),
-        .ODIV2           (),
-        .CEB             ('0),
-        .I               (refclk_rx_p),
-        .IB              (refclk_rx_n)
     );
     genvar l;
     generate
@@ -670,6 +1001,23 @@ module gtwizard_wrapper#(
         .QPLLREFCLKLOST_OUT(qpllrefclklost),    
         .QPLLRESET_IN(qpllreset || commonreset)
     );
+
+    generate
+    if(DEVICE == "HSSM") begin
+        gtwizard_0_common common1_i
+        (
+            .QPLLREFCLKSEL_IN(3'b010),
+            .GTREFCLK0_IN('0),
+            .GTREFCLK1_IN(refclk),
+            .QPLLLOCK_OUT(qpll1lock),
+            .QPLLLOCKDETCLK_IN(sysclk),
+            .QPLLOUTCLK_OUT(qpll1outclk),
+            .QPLLOUTREFCLK_OUT(qpll1outrefclk),
+            .QPLLREFCLKLOST_OUT(qpll1refclklost),    
+            .QPLLRESET_IN(qpllreset || commonreset)
+        );
+    end
+    endgenerate
 
     gtwizard_0_common_reset # 
     (

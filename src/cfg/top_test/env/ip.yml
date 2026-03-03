@@ -5,3 +5,7 @@ sources:
     - ip/HSSM_gtwizard_port_1.yml
     - ip/HSSM_gtwizard_port_2.yml
     - ip/HSSM_gtwizard_port_3.yml
+    - ip/HSSM_gtwizard_port_4.yml
+    - ip/HSSM_gtwizard_port_5.yml
+    - ip/HSSM_gtwizard_port_6.yml
+    - ip/HSSM_gtwizard_port_7.yml
