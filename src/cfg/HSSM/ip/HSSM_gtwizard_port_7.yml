@@ -31,8 +31,8 @@ config:
     gt0_val_tx_int_datawidth : 40
     gt0_val_tx_line_rate : 7
     gt0_val_tx_reference_clock : "175.000"
-    gt5_val_rx_refclk : "REFCLK1_Q2"
-    gt5_val_tx_refclk : "REFCLK1_Q2"
+    gt15_val_rx_refclk : "REFCLK1_Q2"
+    gt15_val_tx_refclk : "REFCLK1_Q2"
     gt_val_rx_pll : "QPLL"
     gt_val_tx_pll : "QPLL"
     identical_val_rx_line_rate : 7
@@ -46,5 +46,5 @@ config:
     gt0_val_txbuf_en : "false"
     gt0_val_txoutclk_source : "true"
     gt0_val_port_txpolarity : "true"
-    gt5_val : "true"
+    gt15_val : "true"
     gt0_val : "false"

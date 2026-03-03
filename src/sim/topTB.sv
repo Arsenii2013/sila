@@ -15,8 +15,8 @@ module topTB(
 
     parameter int         LINKS_SIZE          = 4;
     parameter link_conf_t LINKS [LINKS_SIZE]  = 
-        '{'{'h0, 0ns, 0, HSSM, '{}}, '{'h1, 2700ns, 0, HSSR, '{}}, 
-                                      '{'h2, 461ns,  0, HSSM, '{}}, '{'h22, 1241.45ns, 1, HSSR, '{}}};
+        '{'{'h0, 0ns, 0, HSSM, '{}}, '{'h8, 2700.4ns, 1, HSSR, '{}}, 
+                                      '{'h2, 461ns,  1, HSSM, '{}}, '{'h25, 1241.45ns, 1, HSSR, '{}}};
     
     localparam realtime MAX_SUBTREE_DELAY = 1231.56ns * 2; // алгоритмически сложно считать
 
@@ -299,7 +299,7 @@ module HSSM_board_emulator #(
         .sys_clk (DM_CLK)
     );
 
-    logic SFP_RX_LOSS[gtx::HSSM_PORT_N] = '{1, 1, 1, 1};
+    logic SFP_RX_LOSS[gtx::HSSM_PORT_N] = '{default: 1};
     generate
     for(genvar i = 0; i < gtx::HSSM_PORT_N; i ++) begin
         initial begin 

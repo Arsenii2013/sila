@@ -325,13 +325,6 @@ module topHSSR(
 
     logic dc_clk;
 
-    xpm_cdc_async_rst PLLS_LOL_cdc_inst (
-        .dest_arst(jc_clk_invalid),
-
-        .dest_clk(app_clk),
-        .src_arst(!evr_gtx_if[0].aligned || !PLL1_LOL_N || !PLL2_LOL_N)
-    );
-
     logic local_clk;
     logic clk_fb_buf;
     logic clk_fb;
@@ -365,7 +358,7 @@ module topHSSR(
         .local_clk(local_clk),
         .dc_clk(dc_clk),
         .jc_clk(clear_clk),
-        .jc_clk_valid(!jc_clk_invalid),
+        .jc_clk_valid(evr_gtx_if[0].aligned && PLL1_LOL_N && PLL2_LOL_N),
         .gtx_if(evr_gtx_if),
 
         //------Application signals-------

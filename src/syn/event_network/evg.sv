@@ -245,7 +245,7 @@ module evg_axi_core#(
     assign hwif_in.port_sr[0].delay_comp_st.next  = is_head ? '0                            : slave_data.delay_comp_st;
     genvar i;
     generate
-    for(i = 1; i < PORT_N - 1; i++) begin
+    for(i = 1; i < PORT_N; i++) begin
         assign hwif_in.port_sr[i].link_up.next        = masters_data[i].link_up;
         assign hwif_in.port_sr[i].link_delay_st.next  = masters_data[i].link_delay_st;
         assign hwif_in.port_sr[i].delay_comp_st.next  = '0;
