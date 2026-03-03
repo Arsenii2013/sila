@@ -355,12 +355,7 @@ module HSSR_board_emulator#(
     output logic       sfp_tx_p[gtx::HSSR_PORT_N],
     inout  logic       START[HSSR_board_pkg::START_N]
 );
-    import HSSR_board_pkg::START_N;
-    import HSSR_board_pkg::START_POLARITY;
-    import HSSR_board_pkg::START_MODES;
-    import HSSR_board_pkg::polarity_t;
-    import HSSR_board_pkg::POSITIVE;
-    import HSSR_board_pkg::NEGATIVE;
+    import HSSR_board_pkg::*;
 
     // On SOM clock generators
     logic      REFCLK_SFP;
@@ -425,8 +420,9 @@ module HSSR_board_emulator#(
 
     tri0 START_p[START_N];
     tri1 START_n[START_N];
+    wire IO[IO_N];
 
-    logic SER, SRCLK, RCLK;
+    wire SER = IO[14], SRCLK = IO[16], RCLK = IO[15];
 
     logic SFP_TX_N[gtx::HSSR_PORT_N], SFP_TX_P[gtx::HSSR_PORT_N];
     logic SFP_TX_DIS[gtx::HSSR_PORT_N];
@@ -465,9 +461,7 @@ module HSSR_board_emulator#(
         .PLL1_LOL_N(PLL1_LOL_N),
         .PLL2_LOL_N(PLL2_LOL_N),
 
-        .SER(SER),
-        .RCLK(RCLK),
-        .SRCLK(SRCLK)
+        .IO(IO)
     );
 
     localparam int unsigned PRECISE_CNT   = 8;

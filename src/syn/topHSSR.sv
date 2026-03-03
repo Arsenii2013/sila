@@ -25,6 +25,8 @@ package HSSR_board_pkg;
           COMMON,  COMMON,  COMMON,  COMMON};
 
     localparam LED_N                   = 4;
+
+    localparam IO_N                    = 32;
 endpackage
 
 module topHSSR(
@@ -102,9 +104,7 @@ module topHSSR(
     //-----------Outputs-------------\\
     inout  logic       START_p      [HSSR_board_pkg::START_N],
     inout  logic       START_n      [HSSR_board_pkg::START_N],
-    output logic       SER,
-    output logic       SRCLK,
-    output logic       RCLK,
+    inout  logic       IO           [HSSR_board_pkg::IO_N],
 
     //-------------LEDs--------------\\
     output logic       LED          [HSSR_board_pkg::LED_N],
@@ -432,6 +432,7 @@ module topHSSR(
     logic diff_inputs [HSSR_axi_params::DIFF_IO_N];
     diff_io #(
         .OUTPUT_N(HSSR_board_pkg::START_N),
+        .DUPLICATE_N(8),
         .STATIC_POLARITY(HSSR_board_pkg::START_POLARITY),
         .DIFF_IO_MODES(HSSR_board_pkg::START_MODES)
     ) diff_io_i (
@@ -447,11 +448,19 @@ module topHSSR(
 
         .IO_P(START_p),
         .IO_N(START_n),
+        .IO_D('{IO[12], IO[13], IO[17], IO[18], IO[19], IO[20], IO[21], IO[22]}),
 
-        .SER(SER),
-        .RCLK(RCLK),
-        .SRCLK(SRCLK)
+        .SER(IO[14]),
+        .RCLK(IO[15]),
+        .SRCLK(IO[16])
     );
+
+
+    // SerDes
+    assign IO[9]  = 0;
+    assign IO[10] = 1;
+    assign IO[11] = !IO[5];
+    
 
     HSSR_pretty_leds HSSR_pretty_leds_i(
         .app_clk(app_clk),
@@ -481,7 +490,7 @@ module HSSR_pretty_leds(
 
     assign SFP_LED_LINK = sfp_aligned;
     pf_m #(
-        .WIDTH(12500000),
+        .WIDTH(10000000),
         .POR("OFF")
     ) sfp_led_act_pf_i (
         .clk(app_clk),
@@ -489,15 +498,15 @@ module HSSR_pretty_leds(
         .out(SFP_LED_ACT)
     );
 
-    assign LED[0] = 1;
+    assign LED[1] = 1;
 
     blink #(
-        .FREQ_HZ(125000000),
+        .FREQ_HZ(100000000),
         .LED_PERIOD_NS(500000000)
     ) blink1 (
         .reset(app_reset),
         .clk(app_clk),
-        .led(LED[1]),
+        .led(LED[0]),
         .sync(ev != 0)
     );
 
@@ -508,7 +517,7 @@ module HSSR_pretty_leds(
             diff_inputs_ored |= diff_inputs[i];
     end
     pf_m #(
-        .WIDTH(12500000),
+        .WIDTH(10000000),
         .POR("OFF")
     ) led2_pf_i (
         .clk(app_clk),

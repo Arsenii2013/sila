@@ -1,12 +1,14 @@
 
 module single_output #(
-    parameter diff_io_pkg::odelay_taps_t    STATIC_ODELAY_TAPS = 0, 
+    parameter diff_io_pkg::odelay_taps_t    STATIC_ODELAY_TAPS  = 0, 
     // задержка в ODELAY, в точных каналах = 0, 
     // в обычных для уравнивания с точными ~= 2.2 нс.
     // При IDELAYCTRL REFCLK = 200 МГц один тап = 78 пс.
     // Тогда задержка либо 28 тапов = 2.18 нс, либо 29 = 2.26 нс
-    parameter                               ODELAY_GROUP = "",
-    parameter diff_io_pkg::polarity_t       STATIC_POLARITY = diff_io_pkg::POSITIVE
+    parameter                               ODELAY_GROUP        = "",
+    parameter diff_io_pkg::polarity_t       STATIC_POLARITY     = diff_io_pkg::POSITIVE,
+    parameter unsigned                      DIFF_OUT            = 1,
+    parameter unsigned                      USE_ODELAY          = 1
 )(
     input  diff_io_pkg::mode_t       mode,
     input  diff_io_pkg::polarity_t   polarity,
@@ -46,39 +48,55 @@ module single_output #(
         .src_in(in_async && mode != CLK)
     );
 
+    generate 
+    if (DIFF_OUT > 0) begin
+        IOBUFDS IOBUFDS_inst (
+            .O(in_async),
+            .I(ODELAY_DATAOUT),
+            .IO(IO_P),
+            .IOB(IO_N),
+            .T(tri_val)
+        );
+    end else begin
+        IOBUF IOBUF_inst (
+            .O(in_async),
+            .IO(IO_P),
+            .I(ODELAY_DATAOUT),
+            .T(tri_val)
+        );
+    end 
+    endgenerate
 
-    IOBUFDS IOBUFDS_inst (
-        .O(in_async),
-        .I(ODELAY_DATAOUT),
-        .IO(IO_P),
-        .IOB(IO_N),
-        .T(tri_val)
-    );
-
+    generate
+    if(USE_ODELAY > 0) begin
     (* IODELAY_GROUP = ODELAY_GROUP *)
-    ODELAYE2 #(
-        .CINVCTRL_SEL("FALSE"),
-        .DELAY_SRC("ODATAIN"),
-        .HIGH_PERFORMANCE_MODE("TRUE"),
-        .ODELAY_TYPE("FIXED"),
-        .ODELAY_VALUE(STATIC_ODELAY_TAPS),
-        .PIPE_SEL("FALSE"),
-        .REFCLK_FREQUENCY(200.0),
-        .SIGNAL_PATTERN("DATA")
-    ) ODELAYE2_inst (
-        .CNTVALUEOUT(),
-        .DATAOUT(ODELAY_DATAOUT),
-        .C(clear_clk),
-        .CE(0),
-        .CINVCTRL(0),
-        .CLKIN(0),
-        .CNTVALUEIN('0),
-        .INC(0),
-        .LD(0),
-        .LDPIPEEN(0),
-        .ODATAIN(DDR_Q),
-        .REGRST(app_rst)
-    );
+        ODELAYE2 #(
+            .CINVCTRL_SEL("FALSE"),
+            .DELAY_SRC("ODATAIN"),
+            .HIGH_PERFORMANCE_MODE("TRUE"),
+            .ODELAY_TYPE("FIXED"),
+            .ODELAY_VALUE(STATIC_ODELAY_TAPS),
+            .PIPE_SEL("FALSE"),
+            .REFCLK_FREQUENCY(200.0),
+            .SIGNAL_PATTERN("DATA")
+        ) ODELAYE2_inst (
+            .CNTVALUEOUT(),
+            .DATAOUT(ODELAY_DATAOUT),
+            .C(clear_clk),
+            .CE(0),
+            .CINVCTRL(0),
+            .CLKIN(0),
+            .CNTVALUEIN('0),
+            .INC(0),
+            .LD(0),
+            .LDPIPEEN(0),
+            .ODATAIN(DDR_Q),
+            .REGRST(app_rst)
+        );
+    end else begin
+        assign ODELAY_DATAOUT = DDR_Q;
+    end
+    endgenerate
 
     ODDR #(
         .DDR_CLK_EDGE("SAME_EDGE"),
