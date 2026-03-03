@@ -33,7 +33,7 @@ create_clock -period 5.714 -name dm_clk -waveform {0.000 2.857 } [get_ports DM_C
 set_property PACKAGE_PIN N4  [get_ports {SFP_TX_P[4]}]
 set_property PACKAGE_PIN P6  [get_ports {SFP_RX_P[4]}]
 set_property PACKAGE_PIN P2  [get_ports {SFP_TX_P[5]}]
-set_property PACKAGE_PIN T5  [get_ports {SFP_RX_P[5]}]
+set_property PACKAGE_PIN T6  [get_ports {SFP_RX_P[5]}]
 set_property PACKAGE_PIN R4  [get_ports {SFP_TX_P[6]}]
 set_property PACKAGE_PIN U4  [get_ports {SFP_RX_P[6]}]
 set_property PACKAGE_PIN T2  [get_ports {SFP_TX_P[7]}]

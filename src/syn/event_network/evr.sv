@@ -31,6 +31,12 @@ module evr#(
         .reset_in(app_rst),
         .reset_out(local_app_rst)
     );
+    xpm_cdc_async_rst PLLS_LOL_cdc_inst (
+        .dest_arst(jc_clk_invalid),
+
+        .dest_clk(app_clk),
+        .src_arst(!jc_clk_valid)
+    );
 
     axi_stream_if #(.DW(32)) slave_in_packet();
     axi_stream_if #(.DW(32)) slave_out_packet();
@@ -52,7 +58,7 @@ module evr#(
 
         //------Application signals-------
         .app_clk(app_clk),
-        .app_rst(local_app_rst[0] || !jc_clk_valid),
+        .app_rst(local_app_rst[0] || jc_clk_invalid),
 
         .ev(ev_internal), 
         .trig(trig),
