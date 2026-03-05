@@ -15,6 +15,7 @@ module evg#(
     axi4_lite_if.s          mmr,
 
     output logic            is_head,
+    output logic            rf_in,
     
     input  evn::ev_t        ev_in,
     output evn::ev_t        ev_out,
@@ -207,7 +208,8 @@ module evg#(
         .masters_data(masters_data),
         .tgt_delay(tgt_delay_axi),
         .tgt_delay_upd(tgt_delay_upd_axi),
-        .is_head(is_head)
+        .is_head(is_head),
+        .rf_in(rf_in)
     );
 endmodule
 
@@ -222,7 +224,8 @@ module evg_axi_core#(
     link_data.monitor           masters_data[PORT_N],
     output evn::delay_t         tgt_delay,
     output logic                tgt_delay_upd,
-    output logic                is_head
+    output logic                is_head,
+    output logic                rf_in
 );
     link_csr_axi_core_pkg::link_csr_axi_core__in_t  hwif_in;
     link_csr_axi_core_pkg::link_csr_axi_core__out_t hwif_out;
@@ -235,10 +238,15 @@ module evg_axi_core#(
     assign hwif_in.cr_s.dc_ena.next      = 0;
     assign hwif_in.cr_c.dc_ena.next      = 0;
 
-    assign hwif_in.cr.head_mode.next     = (hwif_out.cr.head_mode.value | hwif_out.cr_s.head_mode.value) & ~hwif_out.cr_c.head_mode.value;
-    assign hwif_in.cr_s.head_mode.next   = 0;
-    assign hwif_in.cr_c.head_mode.next   = 0;
-    assign is_head = hwif_out.cr.head_mode.value;
+    assign hwif_in.cr.root_mode.next     = (hwif_out.cr.root_mode.value | hwif_out.cr_s.root_mode.value) & ~hwif_out.cr_c.root_mode.value;
+    assign hwif_in.cr_s.root_mode.next   = 0;
+    assign hwif_in.cr_c.root_mode.next   = 0;
+    assign is_head = hwif_out.cr.root_mode.value;
+
+    assign hwif_in.cr.rf_in.next         = (hwif_out.cr.rf_in.value | hwif_out.cr_s.rf_in.value) & ~hwif_out.cr_c.rf_in.value;
+    assign hwif_in.cr_s.rf_in.next       = 0;
+    assign hwif_in.cr_c.rf_in.next       = 0;
+    assign rf_in = hwif_out.cr.rf_in.value;
 
     assign hwif_in.port_sr[0].link_up.next        = is_head ? masters_data[0].link_up       : slave_data.link_up;
     assign hwif_in.port_sr[0].link_delay_st.next  = is_head ? masters_data[0].link_delay_st : slave_data.link_delay_st;

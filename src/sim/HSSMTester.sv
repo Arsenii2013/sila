@@ -115,6 +115,8 @@ class HSSMTester #(
             evg_generator_i.set_tgt_delay((evg_generator_i.time_to_delay_t(max_sub_delay) 
                                         & ~((1 << evn::DELAY_FRAC_W) - 1)) // зануляем дробную часть
                                         + (10 << evn::DELAY_FRAC_W));       // + 10 тактов
+            #10us;
+            evg_generator_i.set_rf_in();
         end else begin
             wait_upstream_link();
         end

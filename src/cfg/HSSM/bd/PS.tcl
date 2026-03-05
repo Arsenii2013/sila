@@ -19,6 +19,8 @@
 
   set EMIO_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gpio_rtl:1.0 EMIO_0 ]
 
+  set UART_1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:uart_rtl:1.0 UART_1 ]
+
 
   # Create ports
   set peripheral_aresetn [ create_bd_port -dir O -from 0 -to 0 -type rst peripheral_aresetn ]
@@ -140,7 +142,7 @@
     CONFIG.PCW_EN_EMIO_TTC0 {0} \
     CONFIG.PCW_EN_EMIO_TTC1 {0} \
     CONFIG.PCW_EN_EMIO_UART0 {0} \
-    CONFIG.PCW_EN_EMIO_UART1 {0} \
+    CONFIG.PCW_EN_EMIO_UART1 {1} \
     CONFIG.PCW_EN_EMIO_WDT {0} \
     CONFIG.PCW_EN_EMIO_WP_SDIO0 {0} \
     CONFIG.PCW_EN_EMIO_WP_SDIO1 {0} \
@@ -168,7 +170,7 @@
     CONFIG.PCW_EN_TTC0 {0} \
     CONFIG.PCW_EN_TTC1 {0} \
     CONFIG.PCW_EN_UART0 {1} \
-    CONFIG.PCW_EN_UART1 {0} \
+    CONFIG.PCW_EN_UART1 {1} \
     CONFIG.PCW_EN_USB0 {0} \
     CONFIG.PCW_EN_USB1 {0} \
     CONFIG.PCW_EN_WDT {0} \
@@ -495,7 +497,9 @@ Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#En
     CONFIG.PCW_UART0_HIGHADDR {0xE0000FFF} \
     CONFIG.PCW_UART0_PERIPHERAL_ENABLE {1} \
     CONFIG.PCW_UART0_UART0_IO {MIO 14 .. 15} \
-    CONFIG.PCW_UART1_PERIPHERAL_ENABLE {0} \
+    CONFIG.PCW_UART1_GRP_FULL_ENABLE {0} \
+    CONFIG.PCW_UART1_PERIPHERAL_ENABLE {1} \
+    CONFIG.PCW_UART1_UART1_IO {EMIO} \
     CONFIG.PCW_UART_PERIPHERAL_CLKSRC {IO PLL} \
     CONFIG.PCW_UART_PERIPHERAL_FREQMHZ {100} \
     CONFIG.PCW_UART_PERIPHERAL_VALID {1} \
@@ -611,6 +615,7 @@ Flash#Quad SPI Flash#Quad SPI Flash#UART 0#UART 0#Enet 0#Enet 0#Enet 0#Enet 0#En
   connect_bd_intf_net -intf_net processing_system7_0_GPIO_0 [get_bd_intf_ports EMIO_0] [get_bd_intf_pins processing_system7_0/GPIO_0]
   connect_bd_intf_net -intf_net processing_system7_0_IIC_0 [get_bd_intf_ports I2C_0] [get_bd_intf_pins processing_system7_0/IIC_0]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins axi_protocol_convert_0/S_AXI] [get_bd_intf_pins processing_system7_0/M_AXI_GP0]
+  connect_bd_intf_net -intf_net processing_system7_0_UART_1 [get_bd_intf_ports UART_1] [get_bd_intf_pins processing_system7_0/UART_1]
 
   # Create port connections
   connect_bd_net -net app_aresetn_1 [get_bd_ports app_aresetn] [get_bd_pins axi_protocol_convert_0/aresetn]

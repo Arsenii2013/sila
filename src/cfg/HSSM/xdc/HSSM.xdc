@@ -125,6 +125,10 @@ set_property LOC GTXE2_COMMON_X0Y3 [get_cells gtwizard_i/common1_i/gtxe2_common_
 set_property -dict {PACKAGE_PIN AJ28 IOSTANDARD LVCMOS33} [get_ports PHY0_RST]
 set_property -dict {PACKAGE_PIN AJ29 IOSTANDARD LVCMOS33} [get_ports PHY1_RST]
 
+
+set_property -dict {PACKAGE_PIN AD30 IOSTANDARD LVCMOS33} [get_ports {TIME_UART_TX}]
+set_property -dict {PACKAGE_PIN AG29 IOSTANDARD LVCMOS33} [get_ports {TIME_UART_RX}]
+
 # 5 - время пересинхронизации valid сигнала
 # 1024 - период измерения sample. 1018 = 1024 - 5 - 1
 set_multicycle_path -setup 5    -from [get_pins {evg_i/link_master_insts[*].link_master_i/measure_i/sampler_i/sample_reg[*]/C}]

@@ -6,7 +6,8 @@ class link_csr_generator#(
     localparam CR_S_ADDR            = 32'h8;
     localparam CR_C_ADDR            = 32'hc;
     localparam DC_ENA_OFFS          = 0;
-    localparam HEAD_MODE_OFFS       = 1;
+    localparam ROOT_MODE_OFFS       = 1;
+    localparam RF_IN_OFFS           = 2;
     localparam PORT_SR_0_ADDR       = 32'h10;
     localparam PORT_SR_1_ADDR       = 32'h14;
     localparam PORT_SR_2_ADDR       = 32'h18;
@@ -113,11 +114,20 @@ class link_csr_generator#(
     endtask
 
     task set_head();
-        this.write(CR_S_ADDR, 32'h1 << HEAD_MODE_OFFS);
-        this.verify(CR_ADDR,   32'h1 << HEAD_MODE_OFFS);
+        this.write(CR_S_ADDR, 32'h1 << ROOT_MODE_OFFS);
+        this.verify(CR_ADDR,   32'h1 << ROOT_MODE_OFFS);
     endtask
     task unset_head();
-        this.write(CR_C_ADDR, 32'h1 << HEAD_MODE_OFFS);
+        this.write(CR_C_ADDR, 32'h1 << ROOT_MODE_OFFS);
+        this.verify(CR_ADDR,   32'h0);
+    endtask
+
+    task set_rf_in();
+        this.write(CR_S_ADDR, 32'h1 << RF_IN_OFFS);
+        this.verify(CR_ADDR,   32'h1 << RF_IN_OFFS);
+    endtask
+    task unset_rf_in();
+        this.write(CR_C_ADDR, 32'h1 << RF_IN_OFFS);
         this.verify(CR_ADDR,   32'h0);
     endtask
 
