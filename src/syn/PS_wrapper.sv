@@ -21,7 +21,7 @@ module PS_wrapper_sv #(
     parameter GP0_ADDR_W   = 32,
     parameter GP0_DATA_W   = 32,
     parameter MMR_DEV_CNT2 = 1,
-    parameter SIM_DEVICE   = "HSSM"
+    parameter DEVICE       = "HSSM"
 )
 (
     `ifdef SYNTHESIS
@@ -56,7 +56,9 @@ module PS_wrapper_sv #(
 
     EMIO_tri_state_if.out   EMIO_0[emio_params::EMIO_0_WIDTH],
     axi4_lite_if.m          GP_0,
-    i2c_tri_state_if.master I2C_0
+    i2c_tri_state_if.master I2C_0,
+    input  logic            UART_1_rx, 
+    output logic            UART_1_tx
    );
     axi4_lite_if #(.DW(GP0_DATA_W), .AW(GP0_ADDR_W)) GP_0_slice();
 
@@ -86,66 +88,136 @@ module PS_wrapper_sv #(
         assign EMIO_0[i].t  = EMIO_0_t[i];
     end
     endgenerate
-    PS PS_i   (
-        .DDR_addr(DDR_addr),
-        .DDR_ba(DDR_ba),
-        .DDR_cas_n(DDR_cas_n),
-        .DDR_ck_n(DDR_ck_n),
-        .DDR_ck_p(DDR_ck_p),
-        .DDR_cke(DDR_cke),
-        .DDR_cs_n(DDR_cs_n),
-        .DDR_dm(DDR_dm),
-        .DDR_dq(DDR_dq),
-        .DDR_dqs_n(DDR_dqs_n),
-        .DDR_dqs_p(DDR_dqs_p),
-        .DDR_odt(DDR_odt),
-        .DDR_ras_n(DDR_ras_n),
-        .DDR_reset_n(DDR_reset_n),
-        .DDR_we_n(DDR_we_n),
-        .FIXED_IO_ddr_vrn(FIXED_IO_ddr_vrn),
-        .FIXED_IO_ddr_vrp(FIXED_IO_ddr_vrp),
-        .FIXED_IO_mio(FIXED_IO_mio),
-        .FIXED_IO_ps_clk(FIXED_IO_ps_clk),
-        .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
-        .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
 
-        .GP_0_araddr(GP_0_araddr),
-        .GP_0_arprot(GP_0_slice.arprot),
-        .GP_0_arready(GP_0_slice.arready),
-        .GP_0_arvalid(GP_0_slice.arvalid),
-        .GP_0_awaddr(GP_0_awaddr),
-        .GP_0_awprot(GP_0_slice.awprot),
-        .GP_0_awready(GP_0_slice.awready),
-        .GP_0_awvalid(GP_0_slice.awvalid),
-        .GP_0_bready(GP_0_slice.bready),
-        .GP_0_bresp(GP_0_slice.bresp),
-        .GP_0_bvalid(GP_0_slice.bvalid),
-        .GP_0_rdata(GP_0_slice.rdata),
-        .GP_0_rready(GP_0_slice.rready),
-        .GP_0_rresp(GP_0_slice.rresp),
-        .GP_0_rvalid(GP_0_slice.rvalid),
-        .GP_0_wdata(GP_0_slice.wdata),
-        .GP_0_wready(GP_0_slice.wready),
-        .GP_0_wstrb(GP_0_slice.wstrb),
-        .GP_0_wvalid(GP_0_slice.wvalid),
+    generate 
+    if(DEVICE == "HSSR") begin
+        PS PS_i   (
+            .DDR_addr(DDR_addr),
+            .DDR_ba(DDR_ba),
+            .DDR_cas_n(DDR_cas_n),
+            .DDR_ck_n(DDR_ck_n),
+            .DDR_ck_p(DDR_ck_p),
+            .DDR_cke(DDR_cke),
+            .DDR_cs_n(DDR_cs_n),
+            .DDR_dm(DDR_dm),
+            .DDR_dq(DDR_dq),
+            .DDR_dqs_n(DDR_dqs_n),
+            .DDR_dqs_p(DDR_dqs_p),
+            .DDR_odt(DDR_odt),
+            .DDR_ras_n(DDR_ras_n),
+            .DDR_reset_n(DDR_reset_n),
+            .DDR_we_n(DDR_we_n),
+            .FIXED_IO_ddr_vrn(FIXED_IO_ddr_vrn),
+            .FIXED_IO_ddr_vrp(FIXED_IO_ddr_vrp),
+            .FIXED_IO_mio(FIXED_IO_mio),
+            .FIXED_IO_ps_clk(FIXED_IO_ps_clk),
+            .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
+            .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
 
-        .EMIO_0_tri_i(EMIO_0_i),
-        .EMIO_0_tri_o(EMIO_0_o),
-        .EMIO_0_tri_t(EMIO_0_t),
+            .GP_0_araddr(GP_0_araddr),
+            .GP_0_arprot(GP_0_slice.arprot),
+            .GP_0_arready(GP_0_slice.arready),
+            .GP_0_arvalid(GP_0_slice.arvalid),
+            .GP_0_awaddr(GP_0_awaddr),
+            .GP_0_awprot(GP_0_slice.awprot),
+            .GP_0_awready(GP_0_slice.awready),
+            .GP_0_awvalid(GP_0_slice.awvalid),
+            .GP_0_bready(GP_0_slice.bready),
+            .GP_0_bresp(GP_0_slice.bresp),
+            .GP_0_bvalid(GP_0_slice.bvalid),
+            .GP_0_rdata(GP_0_slice.rdata),
+            .GP_0_rready(GP_0_slice.rready),
+            .GP_0_rresp(GP_0_slice.rresp),
+            .GP_0_rvalid(GP_0_slice.rvalid),
+            .GP_0_wdata(GP_0_slice.wdata),
+            .GP_0_wready(GP_0_slice.wready),
+            .GP_0_wstrb(GP_0_slice.wstrb),
+            .GP_0_wvalid(GP_0_slice.wvalid),
 
-        .I2C_0_scl_i(I2C_0.scl_i),
-        .I2C_0_scl_o(I2C_0.scl_o),
-        .I2C_0_scl_t(I2C_0.scl_t),
-        .I2C_0_sda_i(I2C_0.sda_i),
-        .I2C_0_sda_o(I2C_0.sda_o),
-        .I2C_0_sda_t(I2C_0.sda_t),
+            .EMIO_0_tri_i(EMIO_0_i),
+            .EMIO_0_tri_o(EMIO_0_o),
+            .EMIO_0_tri_t(EMIO_0_t),
 
-        .peripheral_aresetn(peripheral_aresetn),
-        .peripheral_clock(peripheral_clock),
-        .peripheral_reset(peripheral_reset),
-        .app_aresetn(app_aresetn),
-        .app_clk(app_clk)
-    );
+            .I2C_0_scl_i(I2C_0.scl_i),
+            .I2C_0_scl_o(I2C_0.scl_o),
+            .I2C_0_scl_t(I2C_0.scl_t),
+            .I2C_0_sda_i(I2C_0.sda_i),
+            .I2C_0_sda_o(I2C_0.sda_o),
+            .I2C_0_sda_t(I2C_0.sda_t),
+
+            .peripheral_aresetn(peripheral_aresetn),
+            .peripheral_clock(peripheral_clock),
+            .peripheral_reset(peripheral_reset),
+            .app_aresetn(app_aresetn),
+            .app_clk(app_clk)
+        );
+    end 
+    else if(DEVICE == "HSSM") begin
+        PS PS_i   (
+            .DDR_addr(DDR_addr),
+            .DDR_ba(DDR_ba),
+            .DDR_cas_n(DDR_cas_n),
+            .DDR_ck_n(DDR_ck_n),
+            .DDR_ck_p(DDR_ck_p),
+            .DDR_cke(DDR_cke),
+            .DDR_cs_n(DDR_cs_n),
+            .DDR_dm(DDR_dm),
+            .DDR_dq(DDR_dq),
+            .DDR_dqs_n(DDR_dqs_n),
+            .DDR_dqs_p(DDR_dqs_p),
+            .DDR_odt(DDR_odt),
+            .DDR_ras_n(DDR_ras_n),
+            .DDR_reset_n(DDR_reset_n),
+            .DDR_we_n(DDR_we_n),
+            .FIXED_IO_ddr_vrn(FIXED_IO_ddr_vrn),
+            .FIXED_IO_ddr_vrp(FIXED_IO_ddr_vrp),
+            .FIXED_IO_mio(FIXED_IO_mio),
+            .FIXED_IO_ps_clk(FIXED_IO_ps_clk),
+            .FIXED_IO_ps_porb(FIXED_IO_ps_porb),
+            .FIXED_IO_ps_srstb(FIXED_IO_ps_srstb),
+
+            .GP_0_araddr(GP_0_araddr),
+            .GP_0_arprot(GP_0_slice.arprot),
+            .GP_0_arready(GP_0_slice.arready),
+            .GP_0_arvalid(GP_0_slice.arvalid),
+            .GP_0_awaddr(GP_0_awaddr),
+            .GP_0_awprot(GP_0_slice.awprot),
+            .GP_0_awready(GP_0_slice.awready),
+            .GP_0_awvalid(GP_0_slice.awvalid),
+            .GP_0_bready(GP_0_slice.bready),
+            .GP_0_bresp(GP_0_slice.bresp),
+            .GP_0_bvalid(GP_0_slice.bvalid),
+            .GP_0_rdata(GP_0_slice.rdata),
+            .GP_0_rready(GP_0_slice.rready),
+            .GP_0_rresp(GP_0_slice.rresp),
+            .GP_0_rvalid(GP_0_slice.rvalid),
+            .GP_0_wdata(GP_0_slice.wdata),
+            .GP_0_wready(GP_0_slice.wready),
+            .GP_0_wstrb(GP_0_slice.wstrb),
+            .GP_0_wvalid(GP_0_slice.wvalid),
+
+            .EMIO_0_tri_i(EMIO_0_i),
+            .EMIO_0_tri_o(EMIO_0_o),
+            .EMIO_0_tri_t(EMIO_0_t),
+
+            .I2C_0_scl_i(I2C_0.scl_i),
+            .I2C_0_scl_o(I2C_0.scl_o),
+            .I2C_0_scl_t(I2C_0.scl_t),
+            .I2C_0_sda_i(I2C_0.sda_i),
+            .I2C_0_sda_o(I2C_0.sda_o),
+            .I2C_0_sda_t(I2C_0.sda_t),
+
+            .UART_1_rxd(UART_1_rx),
+            .UART_1_txd(UART_1_tx),
+
+            .peripheral_aresetn(peripheral_aresetn),
+            .peripheral_clock(peripheral_clock),
+            .peripheral_reset(peripheral_reset),
+            .app_aresetn(app_aresetn),
+            .app_clk(app_clk)
+        );
+    end
+    endgenerate
     `endif //SYNTHESIS 
 
     `ifndef SYNTHESIS
@@ -234,6 +306,17 @@ module PS_wrapper_sv #(
             end
         end
     end
+
+    generate
+    if(DEVICE == "HSSM") begin
+        initial begin
+            forever begin
+                UART_1_tx = $random;
+                #1us;
+            end
+        end
+    end
+    endgenerate
 
     initial begin
         #500ms;

@@ -71,6 +71,10 @@ module topHSSM(
     output logic       PLL_IN_SEL1,
     input  logic       PLL_LOL_N,
 
+    //-----------TIME-UART-----------\\
+    input  logic       TIME_UART_RX, 
+    output logic       TIME_UART_TX,
+
     //------------EXT-IN-------------\\
     input  logic       EXTIN_p      [HSSM_board_pkg::EXTIN_N],
     input  logic       EXTIN_n      [HSSM_board_pkg::EXTIN_N],
@@ -129,6 +133,7 @@ module topHSSM(
 
     evn::ev_t ev;
     logic     is_head;
+    logic     rf_in;
     
     device_info #(
         .DEVICE("HSSM")
@@ -160,7 +165,7 @@ module topHSSM(
         .GP0_ADDR_W(axi_params::GP0_ADDR_W),
         .GP0_DATA_W(axi_params::GP0_DATA_W),
         .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
-        .SIM_DEVICE("HSSM")
+        .DEVICE("HSSM")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),
@@ -189,6 +194,8 @@ module topHSSM(
         .GP_0(GP_0),
         .I2C_0(I2C_0),
         .EMIO_0(EMIO_0),
+        .UART_1_rx(TIME_UART_RX),
+        .UART_1_tx(TIME_UART_TX),
         
         .peripheral_clock(PS_clk),
         .peripheral_aresetn(PS_aresetn),
@@ -291,16 +298,32 @@ module topHSSM(
     );
     assign PLL_RST_N   = !pll_rst;
     
-    logic gtx_aligned_stable;
+    logic gtx0_aligned_stable;
     stable_m #(
         .LEN(1023)
-    ) PLL_IN_SEL0_stable (
+    ) gtx_aligned_stable_i (
         .clk(evg_gtx_if[0].rx_clk),
         .in(evg_gtx_if[0].aligned),
-        .out(gtx_aligned_stable)
+        .out(gtx0_aligned_stable)
     );
-    assign PLL_IN_SEL0 = is_head || !gtx_aligned_stable;
-    assign PLL_IN_SEL1 = 0;
+    always_comb begin
+        if(is_head) begin
+            if(rf_in) begin
+                PLL_IN_SEL1 = 1;
+                PLL_IN_SEL0 = 0;
+            end else begin
+                PLL_IN_SEL1 = 0;
+                PLL_IN_SEL0 = 1;
+            end
+        end else begin
+            PLL_IN_SEL1 = 0;
+            if(gtx0_aligned_stable) begin
+                PLL_IN_SEL0 = 0;
+            end else begin
+                PLL_IN_SEL0 = 1;
+            end
+        end
+    end
 
     logic local_clk;
     logic clk_fb_buf;
@@ -343,6 +366,7 @@ module topHSSM(
         .mmr(mmr[HSSM_axi_params::EVG]),
 
         .is_head(is_head),
+        .rf_in(rf_in),
         
         .ev_in(ev_generated),
         .ev_out(ev), 

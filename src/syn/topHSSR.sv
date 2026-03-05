@@ -201,7 +201,7 @@ module topHSSR(
         .GP0_ADDR_W(axi_params::GP0_ADDR_W),
         .GP0_DATA_W(axi_params::GP0_DATA_W),
         .MMR_DEV_CNT2(axi_params::MMR_DEV_CNT2),
-        .SIM_DEVICE("HSSR")
+        .DEVICE("HSSR")
     ) PS_wrapper_i (
         `ifdef SYNTHESIS
         .DDR_addr(DDR_addr),

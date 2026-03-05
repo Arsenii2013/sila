@@ -315,6 +315,8 @@ module HSSM_board_emulator #(
         PLL_LOL_N <= 1;
     end
 
+    logic UART_loopback;
+
     logic SFP_TX_N[gtx::HSSM_PORT_N], SFP_TX_P[gtx::HSSM_PORT_N];
     logic SFP_TX_DIS[gtx::HSSM_PORT_N];
 
@@ -341,6 +343,9 @@ module HSSM_board_emulator #(
         
         .DM_CLK_n(DM_CLK),
         .DM_CLK_p(~DM_CLK),
+
+        .TIME_UART_RX(UART_loopback),
+        .TIME_UART_TX(UART_loopback),
 
         .PLL_LOL_N(PLL_LOL_N)
     );
