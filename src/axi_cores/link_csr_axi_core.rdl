@@ -63,7 +63,13 @@ addrmap link_csr_axi_core{
         desc = "
             Режим головного мастера.
         ";
-        } head_mode = 0;
+        } root_mode = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Для головного мастера - переключиться с внутреннего генератора на внешний вход частоты.
+        ";
+        } rf_in = 0;
     } cr;
 
     reg {
@@ -83,7 +89,13 @@ addrmap link_csr_axi_core{
         desc = "
             Режим головного мастера.
         ";
-        } head_mode = 0;
+        } root_mode = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Для головного мастера - переключиться с внутреннего генератора на внешний вход частоты.
+        ";
+        } rf_in = 0;
     } cr_s;
 
     reg {
@@ -103,7 +115,13 @@ addrmap link_csr_axi_core{
         desc = "
             Режим головного мастера.
         ";
-        } head_mode = 0;
+        } root_mode = 0;
+
+        field {sw=rw; hw=rw;
+        desc = "
+            Для головного мастера - переключиться с внутреннего генератора на внешний вход частоты.
+        ";
+        } rf_in = 0;
     } cr_c;
 
     reg {

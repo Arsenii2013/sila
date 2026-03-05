@@ -117,9 +117,9 @@ module evr_axi_core#(
     assign hwif_in.cr_c.dc_ena.next      = 0;
     assign link_data.delay_comp_ena      = (hwif_out.cr.dc_ena.value | hwif_out.cr_s.dc_ena.value) & ~hwif_out.cr_c.dc_ena.value;
 
-    assign hwif_in.cr.head_mode.next     = 0;
-    assign hwif_in.cr_s.head_mode.next   = 0;
-    assign hwif_in.cr_c.head_mode.next   = 0;
+    assign hwif_in.cr.root_mode.next     = 0;
+    assign hwif_in.cr_s.root_mode.next   = 0;
+    assign hwif_in.cr_c.root_mode.next   = 0;
 
     assign hwif_in.port_sr[0].link_up.next        = link_data.link_up;
     assign hwif_in.port_sr[0].link_delay_st.next  = link_data.link_delay_st;
