@@ -300,9 +300,9 @@ module PS_wrapper_sv #(
         wait(app_aresetn === 1);
         #10us;
         forever begin
-            for(int i = 0; i < 4; i ++) begin
+            for(int i = 0; i < 5; i ++) begin
                 tester.select_I2C_mux(TesterParametrized::i2c_mux_sel_t'(i));
-                repeat(10) I2C_0_driver.write($urandom, $urandom);
+                repeat(1) I2C_0_driver.write($urandom, $urandom);
             end
         end
     end

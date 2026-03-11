@@ -254,6 +254,8 @@ module topHSSR(
         .PLL1_SCL(PLL1_SCL),
         .PLL2_SDA(PLL2_SDA),
         .PLL2_SCL(PLL2_SCL),
+        .NST117_SDA(IO[2]),
+        .NST117_SCL(IO[0]),
         .SFP_SDA(SFP_SDA),
         .SFP_SCL(SFP_SCL)
     );
