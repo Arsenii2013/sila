@@ -65,6 +65,7 @@ sources:
     - src/sim/xpm_fifo.sv
 
     - src/syn/i2c_mux.sv
+    - src/syn/system_csr.sv
     - src/syn/device_info.sv
     - src/syn/timestamper.sv
     - src/syn/event_comparator.sv

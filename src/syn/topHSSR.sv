@@ -353,6 +353,7 @@ module topHSSR(
         .I(clk_fb_buf)
     );
 
+    evn::ev_t ev_optic;
     evr #(
         .PORT_N(gtx::HSSR_PORT_N)
     ) evr_i (
@@ -368,10 +369,19 @@ module topHSSR(
         .app_rst(app_reset[HSSR_reset_params::EVR]),
         .mmr(mmr[HSSR_axi_params::EVR]),
         
-        .ev(ev), 
+        .ev(ev_optic), 
         .trig('0),
 
         .delay(delay)
+    );
+
+    system_csr system_csr(
+        .app_clk(app_clk),
+        .app_rst(app_reset[HSSR_reset_params::SYSTEM_CSR]),
+        .mmr(mmr[HSSR_axi_params::SYSTEM_CSR]),
+
+        .ev_in(ev_optic),
+        .ev_out(ev)
     );
 
     ODDRDS DC_CLK_ODDRDS_inst(

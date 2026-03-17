@@ -1,4 +1,5 @@
 
+`include "system_csr_axi_core.rdl"
 `include "device_info_axi_core.rdl"
 `include "link_csr_axi_core.rdl"
 `include "timestamper_axi_core.rdl"
@@ -30,6 +31,7 @@ addrmap HSSR_reg_map {
 
     enum device_numbers{
         DEVICE_INFO = 0;
+        SYSTEM_CSR;
         EVR;
         TIMESTAMPER;
         EV_MAP;
@@ -41,6 +43,7 @@ addrmap HSSR_reg_map {
     };
 
     device_info_axi_core     device_info     @ device_numbers::DEVICE_INFO  * `MMR_BLOCK_SIZE;
+    system_csr_axi_core      system_csr      @ device_numbers::SYSTEM_CSR   * `MMR_BLOCK_SIZE;
     link_csr_axi_core        evr_ctrl        @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
     timestamper_axi_core     timestamper     @ device_numbers::TIMESTAMPER  * `MMR_BLOCK_SIZE;
     ev_map_axi_core          ev_map          @ device_numbers::EV_MAP       * `MMR_BLOCK_SIZE;

@@ -1,0 +1,69 @@
+addrmap system_csr_axi_core{
+    name = "Модуль контрольных регистров устройства";
+
+
+    reg {
+        name = "SR";
+        desc = "
+            резерв
+        ";
+        field {sw=r; hw=w; 
+        desc = "
+            резерв
+        ";
+        } reserved;
+    } sr;
+
+    reg {
+        name = "CR";
+        desc = "
+            резерв
+        ";
+        field {sw=r; hw=rw; 
+        desc = "
+            резерв
+        ";
+        } reserved;
+    } cr;
+
+    reg {
+        name = "CR_S";
+        desc = "
+            резерв
+        ";
+        field {sw=r; hw=rw; 
+        desc = "
+            резерв
+        ";
+        } reserved;
+    } cr_s;
+
+    reg {
+        name = "CR_C";
+        desc = "
+            резерв
+        ";
+        field {sw=r; hw=rw; 
+        desc = "
+            резерв
+        ";
+        } reserved;
+    } cr_c;
+
+    reg {
+        name = "PROG_EV";
+        desc = "
+            Регистр генерации программного события.
+        ";
+        field {sw=rw; hw=r;
+        desc = "
+            Событие которое нужно сгенерировать.
+        ";
+        }  ev[24]            = 0;
+        field {sw=rw; hw=rw;
+        desc = "
+            Сгенерировать событие. Для генерации записать \"1\". После генерации сбрасывается.
+        ";
+        } send              = 0;
+    } prog_ev;
+};

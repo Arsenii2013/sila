@@ -38,6 +38,10 @@ class HSSRTester #(
         driver.sync();
     endtask
 
+    task send_prog_ev(evn::ev_t ev);
+        generic_generator.write(base_from_device_number(HSSR_axi_params::SYSTEM_CSR) + 'h10, ev | 32'h1000000);
+    endtask
+
     function set_name(string new_name);
         super.set_name(new_name);
         evr_generator_i.name = new_name;
@@ -134,6 +138,7 @@ class HSSRTester #(
             periodic_dump();
         join_none
         setup_io();
+        send_prog_ev(24'habcdef);
         wait_upstream_link();
     endtask
 
