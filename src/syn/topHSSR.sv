@@ -238,6 +238,14 @@ module topHSSR(
         .app_clk(app_clk)
     );
 
+    assign EMIO_0[0].i = IO[1];
+    IOBUF power_off_buf_inst (
+        .O(EMIO_0[1].o),
+        .IO(IO[3]),
+        .I(EMIO_0[1].i),
+        .T(EMIO_0[1].t)
+    );
+
     i2c_mux #(
         .SFP_N(gtx::HSSR_PORT_N),
         .DEVICE("HSSR")

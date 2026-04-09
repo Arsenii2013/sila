@@ -2,6 +2,11 @@ set_property -dict {PACKAGE_PIN AE23 IOSTANDARD LVCMOS33} [get_ports {LED[0]}]
 set_property -dict {PACKAGE_PIN AD26 IOSTANDARD LVCMOS33} [get_ports {LED[1]}]
 set_property -dict {PACKAGE_PIN AD23 IOSTANDARD LVCMOS33} [get_ports {LED[2]}]
 set_property -dict {PACKAGE_PIN AC26 IOSTANDARD LVCMOS33} [get_ports {LED[3]}]
+
+set_property -dict {PACKAGE_PIN AF23 IOSTANDARD LVCMOS33} [get_ports {KEY_POWER}]
+set_property -dict {PACKAGE_PIN AF24 IOSTANDARD LVCMOS33} [get_ports {POWER_OFF}]
+
+
 set_property -dict {PACKAGE_PIN AJ24 IOSTANDARD LVCMOS33} [get_ports {SFP_LED_LINK[0]}]
 set_property -dict {PACKAGE_PIN AJ21 IOSTANDARD LVCMOS33} [get_ports {SFP_LED_ACT[0]}]
 set_property -dict {PACKAGE_PIN AK23 IOSTANDARD LVCMOS33} [get_ports {SFP_LED_LINK[1]}]
