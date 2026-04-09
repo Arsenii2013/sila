@@ -3,3 +3,4 @@ sources:
     - ip/axi_memory.yml
     - ip/axi_register_slice.yml
     - ip/HSSR_gtwizard_port_0.yml
+    - ip/xadc_wizard.yml

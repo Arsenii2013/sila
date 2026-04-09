@@ -148,6 +148,12 @@ module topHSSM(
         .mmr(mmr[HSSM_axi_params::DEVICE_INFO])
     );
 
+    xadc_wrapper xadc_wrapper_i (
+        .app_clk(app_clk),
+        .app_aresetn(app_aresetn[HSSM_reset_params::COMMON]),
+        .mmr(mmr[HSSM_axi_params::XADC])
+    );
+
     logic [63:0] cycle_cnt;
     logic [31:0] pulse_cnt;
 

@@ -181,6 +181,11 @@ module topHSSR(
         .mmr(mmr[HSSR_axi_params::DEVICE_INFO])
     );
 
+    xadc_wrapper xadc_wrapper_i (
+        .app_clk(app_clk),
+        .app_aresetn(app_aresetn[HSSR_reset_params::COMMON]),
+        .mmr(mmr[HSSR_axi_params::XADC])
+    );
 
     timestamper #(
         .CYCLE_CNT_WIDTH(64), 

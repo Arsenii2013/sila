@@ -8,6 +8,7 @@
 `include "gen_map_axi_core.rdl"
 `include "diff_io_axi_core.rdl"
 `include "i2c_mux_axi_core.rdl"
+`include "xadc_wrapper_axi_core.rdl"
 `include "rdl_axi_params.rdl"
 
 addrmap HSSR_reg_map {
@@ -39,6 +40,7 @@ addrmap HSSR_reg_map {
         SIG_GEN_MAP;
         DIFF_IO;
         I2C_MUX = `DEBUG_DEVICE;
+        XADC;
         MAX_DEVICE  = `MAX_DEVICE;
     };
 
@@ -51,6 +53,7 @@ addrmap HSSR_reg_map {
     gen_map_axi_core         signal_gen_map  @ device_numbers::SIG_GEN_MAP  * `MMR_BLOCK_SIZE;
     diff_io_axi_core         diff_io_ctrl    @ device_numbers::DIFF_IO      * `MMR_BLOCK_SIZE;
     i2c_mux_axi_core         i2c_mux         @ device_numbers::I2C_MUX      * `MMR_BLOCK_SIZE;
+    xadc_wrapper_axi_core    xadc_wrapper    @ device_numbers::XADC         * `MMR_BLOCK_SIZE;
 
 
     regfile {

@@ -10,3 +10,4 @@ sources:
     - ip/HSSM_gtwizard_port_5.yml
     - ip/HSSM_gtwizard_port_6.yml
     - ip/HSSM_gtwizard_port_7.yml
+    - ip/xadc_wizard.yml

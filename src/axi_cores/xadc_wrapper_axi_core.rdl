@@ -1,0 +1,14 @@
+addrmap xadc_wrapper_axi_core{
+    name = "Проброс XADC";
+    desc = "
+        Проброс XADC
+    ";
+    reg {
+        name = "TEMP";
+        desc = "
+            Температура
+        ";
+        field {sw=r; hw=na; } zero[4] = 0;
+        field {sw=r; hw=na; } temp[12] = 0;
+    } temp  @ 0x200;
+};

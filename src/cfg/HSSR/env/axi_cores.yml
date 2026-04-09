@@ -12,4 +12,5 @@ sources:
     - src/axi_cores/gen_map_axi_core.rdl
     - src/axi_cores/diff_io_axi_core.rdl
     - src/axi_cores/i2c_mux_axi_core.rdl
+    - src/axi_cores/xadc_wrapper_axi_core.rdl
     - src/axi_cores/HSSR_reg_map.rdl

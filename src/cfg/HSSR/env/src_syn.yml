@@ -48,4 +48,5 @@ sources:
     - src/syn/i2c_mux.sv
     - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv
+    - src/syn/xadc_wrapper.sv
     - src/syn/topHSSR.sv

@@ -38,6 +38,11 @@ class HSSRTester #(
         driver.sync();
     endtask
 
+    task read_XADC_temp(output axi_params::gp0_data_t temp);
+        generic_generator.read(base_from_device_number(HSSR_axi_params::XADC), temp);
+        driver.sync();
+    endtask
+
     task send_prog_ev(evn::ev_t ev);
         generic_generator.write(base_from_device_number(HSSR_axi_params::SYSTEM_CSR) + 'h10, ev | 32'h1000000);
     endtask
@@ -57,7 +62,7 @@ class HSSRTester #(
             '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_CLEAR,  0, 80},
             '{diff_io_pkg::POSITIVE, diff_io_pkg::FORCE_SET,    0, 160},
             '{diff_io_pkg::NEGATIVE, diff_io_pkg::GENERATOR,    0, 320},
-            '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR,    0, 640},
+            '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR,    0, 6820},
             '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR,    1, 0},
             '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR,    2, 0},
             '{diff_io_pkg::POSITIVE, diff_io_pkg::GENERATOR,    4, 0},
@@ -143,10 +148,13 @@ class HSSRTester #(
     endtask
 
     task periodic_dump();
+        axi_params::gp0_data_t temp;
         forever begin
             display_key.get();
             $display("%s Periodic Dump", name);
             evr_generator_i.dump();
+            read_XADC_temp(temp);
+            $display("%s Temerature is: %x", name, temp);
             display_key.put();
             #1ms;
         end
