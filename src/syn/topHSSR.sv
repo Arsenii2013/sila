@@ -13,10 +13,10 @@ package HSSR_board_pkg;
     localparam START_N                 = 16;
 
     localparam polarity_t START_POLARITY [START_N] = 
-        '{POSITIVE, NEGATIVE, POSITIVE, NEGATIVE, 
-          NEGATIVE, NEGATIVE, NEGATIVE, POSITIVE, 
-          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE, 
-          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE};
+        '{NEGATIVE, POSITIVE, NEGATIVE, POSITIVE, 
+          POSITIVE, POSITIVE, POSITIVE, NEGATIVE, 
+          POSITIVE, NEGATIVE, POSITIVE, POSITIVE, 
+          POSITIVE, NEGATIVE, POSITIVE, POSITIVE};
 
     localparam diff_io_mode_t START_MODES [START_N] = 
         '{PRECISE, PRECISE, PRECISE, PRECISE, 
@@ -462,7 +462,7 @@ module topHSSR(
         .DIFF_IO_MODES(HSSR_board_pkg::START_MODES)
     ) diff_io_i (
         .app_clk(app_clk),
-        .clear_clk(clear_clk),
+        .clear_clk(app_clk),
         .app_rst(app_reset[HSSR_reset_params::DIFF_IO]),
         .iodelayctrl_refclk(sysclk),
         .mmr(mmr[HSSR_axi_params::DIFF_IO]),
