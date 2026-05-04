@@ -68,6 +68,9 @@ class Tester #(
     virtual task select_I2C_mux(i2c_mux_sel_t sel);
     endtask
 
+    virtual task read_XADC_temp(output axi_params::gp0_data_t temp);
+    endtask
+
     virtual function set_name(string new_name);
         name = new_name;
     endfunction

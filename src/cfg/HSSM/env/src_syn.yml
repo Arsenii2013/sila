@@ -43,4 +43,5 @@ sources:
     - src/syn/PS_wrapper.sv
     - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv
+    - src/syn/xadc_wrapper.sv
     - src/syn/topHSSM.sv

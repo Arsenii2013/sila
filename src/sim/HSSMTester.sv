@@ -31,6 +31,11 @@ class HSSMTester #(
         driver.sync();
     endtask
 
+    task read_XADC_temp(output axi_params::gp0_data_t temp);
+        generic_generator.read(base_from_device_number(HSSR_axi_params::XADC), temp);
+        driver.sync();
+    endtask
+
     function set_name(string new_name);
         super.set_name(new_name);
         evg_generator_i.name = new_name;
@@ -125,10 +130,13 @@ class HSSMTester #(
     endtask
 
     task periodic_dump();
+        axi_params::gp0_data_t temp;
         forever begin
             display_key.get();
             $display("%s Periodic Dump", name);
             evg_generator_i.dump();
+            read_XADC_temp(temp);
+            $display("%s Temerature is: %x", name, temp);
             display_key.put();
             #1ms;
         end

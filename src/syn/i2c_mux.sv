@@ -42,12 +42,15 @@ module i2c_mux #(
     inout  logic    PLL1_SCL,
     inout  logic    PLL2_SDA,
     inout  logic    PLL2_SCL,
+    inout  logic    NST117_SDA,
+    inout  logic    NST117_SCL,
     inout  logic    SFP_SDA [SFP_N],
     inout  logic    SFP_SCL [SFP_N]
 );
     i2c_tri_state_if SI750_tri();
     i2c_tri_state_if PLL1_tri();
     i2c_tri_state_if PLL2_tri();
+    i2c_tri_state_if NST117_tri();
     i2c_tri_state_if SFP_tri[SFP_N]();
 
 // Tri state buffers
@@ -67,6 +70,11 @@ module i2c_mux #(
         .SCL(PLL2_SCL),
         .SDA(PLL2_SDA)
     );
+    I2C_oibuf NST117_iobuf(
+        .i2c(NST117_tri),
+        .SCL(NST117_SCL),
+        .SDA(NST117_SDA)
+    );
     end endgenerate
     generate;
     for(genvar sfp_i = 0; sfp_i < SFP_N; sfp_i ++) begin : SFP_iobufs
@@ -79,7 +87,7 @@ module i2c_mux #(
     endgenerate
 
 // I2C mux
-    localparam DEVICES_N    = SFP_N + 3;
+    localparam DEVICES_N    = SFP_N + 4;
     typedef logic [$clog2(DEVICES_N)-1: 0] sel_t;
 
     sel_t i2c_sel;
@@ -91,7 +99,7 @@ module i2c_mux #(
                 .DEVICES_N(DEVICES_N)
             ) I2C_tri_mux_inst(
                 .PS_i2c(I2C_s),
-                .devices_i2c('{SI750_tri, PLL1_tri, PLL2_tri, SFP_tri[0]}),
+                .devices_i2c('{SI750_tri, PLL1_tri, PLL2_tri, NST117_tri, SFP_tri[0]}),
                 .sel(i2c_sel)
             );
         8 :
@@ -99,9 +107,9 @@ module i2c_mux #(
                 .DEVICES_N(DEVICES_N)
             ) I2C_tri_mux_inst(
                 .PS_i2c(I2C_s),
-                .devices_i2c('{SI750_tri,  PLL1_tri,   PLL2_tri,   SFP_tri[0], 
-                               SFP_tri[1], SFP_tri[2], SFP_tri[3], SFP_tri[4], 
-                               SFP_tri[5], SFP_tri[6], SFP_tri[7]}),
+                .devices_i2c('{SI750_tri,  PLL1_tri,   PLL2_tri,   NST117_tri, 
+                               SFP_tri[0], SFP_tri[1], SFP_tri[2], SFP_tri[3],
+                               SFP_tri[4], SFP_tri[5], SFP_tri[6], SFP_tri[7]}),
                 .sel(i2c_sel)
             );
         default :

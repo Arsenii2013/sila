@@ -13,10 +13,10 @@ package HSSR_board_pkg;
     localparam START_N                 = 16;
 
     localparam polarity_t START_POLARITY [START_N] = 
-        '{POSITIVE, NEGATIVE, POSITIVE, NEGATIVE, 
-          NEGATIVE, NEGATIVE, NEGATIVE, POSITIVE, 
-          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE, 
-          NEGATIVE, POSITIVE, NEGATIVE, NEGATIVE};
+        '{NEGATIVE, POSITIVE, NEGATIVE, POSITIVE, 
+          POSITIVE, POSITIVE, POSITIVE, NEGATIVE, 
+          POSITIVE, NEGATIVE, POSITIVE, POSITIVE, 
+          POSITIVE, NEGATIVE, POSITIVE, POSITIVE};
 
     localparam diff_io_mode_t START_MODES [START_N] = 
         '{PRECISE, PRECISE, PRECISE, PRECISE, 
@@ -181,6 +181,11 @@ module topHSSR(
         .mmr(mmr[HSSR_axi_params::DEVICE_INFO])
     );
 
+    xadc_wrapper xadc_wrapper_i (
+        .app_clk(app_clk),
+        .app_aresetn(app_aresetn[HSSR_reset_params::COMMON]),
+        .mmr(mmr[HSSR_axi_params::XADC])
+    );
 
     timestamper #(
         .CYCLE_CNT_WIDTH(64), 
@@ -238,6 +243,14 @@ module topHSSR(
         .app_clk(app_clk)
     );
 
+    assign EMIO_0[0].i = IO[1];
+    IOBUF power_off_buf_inst (
+        .O(EMIO_0[1].o),
+        .IO(IO[3]),
+        .I(EMIO_0[1].i),
+        .T(EMIO_0[1].t)
+    );
+
     i2c_mux #(
         .SFP_N(gtx::HSSR_PORT_N),
         .DEVICE("HSSR")
@@ -254,6 +267,8 @@ module topHSSR(
         .PLL1_SCL(PLL1_SCL),
         .PLL2_SDA(PLL2_SDA),
         .PLL2_SCL(PLL2_SCL),
+        .NST117_SDA(IO[2]),
+        .NST117_SCL(IO[0]),
         .SFP_SDA(SFP_SDA),
         .SFP_SCL(SFP_SCL)
     );
@@ -351,6 +366,7 @@ module topHSSR(
         .I(clk_fb_buf)
     );
 
+    evn::ev_t ev_optic;
     evr #(
         .PORT_N(gtx::HSSR_PORT_N)
     ) evr_i (
@@ -366,10 +382,19 @@ module topHSSR(
         .app_rst(app_reset[HSSR_reset_params::EVR]),
         .mmr(mmr[HSSR_axi_params::EVR]),
         
-        .ev(ev), 
+        .ev(ev_optic), 
         .trig('0),
 
         .delay(delay)
+    );
+
+    system_csr system_csr(
+        .app_clk(app_clk),
+        .app_rst(app_reset[HSSR_reset_params::SYSTEM_CSR]),
+        .mmr(mmr[HSSR_axi_params::SYSTEM_CSR]),
+
+        .ev_in(ev_optic),
+        .ev_out(ev)
     );
 
     ODDRDS DC_CLK_ODDRDS_inst(
@@ -437,7 +462,7 @@ module topHSSR(
         .DIFF_IO_MODES(HSSR_board_pkg::START_MODES)
     ) diff_io_i (
         .app_clk(app_clk),
-        .clear_clk(clear_clk),
+        .clear_clk(app_clk),
         .app_rst(app_reset[HSSR_reset_params::DIFF_IO]),
         .iodelayctrl_refclk(sysclk),
         .mmr(mmr[HSSR_axi_params::DIFF_IO]),

@@ -82,7 +82,12 @@ module topHSSM(
     //-------------LEDs--------------\\
     output logic       LED          [HSSM_board_pkg::LED_N],
     output logic       SFP_LED_LINK [gtx::HSSM_PORT_N],
-    output logic       SFP_LED_ACT  [gtx::HSSM_PORT_N]
+    output logic       SFP_LED_ACT  [gtx::HSSM_PORT_N],
+
+    //------Linux power control------\\
+
+    input  logic       KEY_POWER,
+    inout  logic       POWER_OFF
 );
     logic PS_clk, PS_aresetn, PS_reset;
 
@@ -141,6 +146,12 @@ module topHSSM(
         .app_clk(app_clk),
         .app_rst(app_reset[HSSM_reset_params::DEVICE_INFO]),
         .mmr(mmr[HSSM_axi_params::DEVICE_INFO])
+    );
+
+    xadc_wrapper xadc_wrapper_i (
+        .app_clk(app_clk),
+        .app_aresetn(app_aresetn[HSSM_reset_params::COMMON]),
+        .mmr(mmr[HSSM_axi_params::XADC])
     );
 
     logic [63:0] cycle_cnt;
@@ -203,20 +214,26 @@ module topHSSM(
         .app_aresetn(app_aresetn[HSSM_aresetn_params::COMMON]),
         .app_clk(app_clk)
     );
-    `ifdef SYNTHESIS
-    IOBUF PHY0_RST_IOBUF_inst (
-        .O(EMIO_0[0].i),
-        .IO(PHY0_RST),
-        .I(EMIO_0[0].o),
-        .T(EMIO_0[0].t)
-    );
-    IOBUF PHY1_RST_IOBUF_inst (
+
+    assign EMIO_0[0].i = KEY_POWER;
+    IOBUF power_off_buf_inst (
         .O(EMIO_0[1].i),
-        .IO(PHY1_RST),
+        .IO(POWER_OFF),
         .I(EMIO_0[1].o),
         .T(EMIO_0[1].t)
     );
-    `endif // SYNTHESIS
+    IOBUF PHY0_RST_IOBUF_inst (
+        .O(EMIO_0[2].i),
+        .IO(PHY0_RST),
+        .I(EMIO_0[2].o),
+        .T(EMIO_0[2].t)
+    );
+    IOBUF PHY1_RST_IOBUF_inst (
+        .O(EMIO_0[3].i),
+        .IO(PHY1_RST),
+        .I(EMIO_0[3].o),
+        .T(EMIO_0[3].t)
+    );
 
     i2c_mux #(
         .SFP_N(8),

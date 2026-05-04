@@ -17,7 +17,8 @@
 module ls_spi_master #(
                 parameter PRESCALER   = 100, 
                 parameter CPOL        = 0,
-                parameter DATA_WIDTH  = 8
+                parameter DATA_WIDTH  = 8,
+                parameter T_SETUP     = 1
               )
 (
     //----------------------------------
@@ -54,9 +55,9 @@ module ls_spi_master #(
 localparam CPHA       = 1;
 
 localparam SCK_PERIOD = PRESCALER; // in clk ticks
-localparam SCK_DRIVE  = 1;
+localparam SCK_DRIVE  = T_SETUP;
 localparam SCK_SAMPLE = SCK_PERIOD/2 + 1;
-localparam SCK_STOP   = CPHA ? SCK_DRIVE-1 : SCK_SAMPLE-1;
+localparam SCK_STOP   = CPHA ? 0 : SCK_SAMPLE-1;
 
 bit [$clog2(SCK_PERIOD)-1:0] SCK_cnt;
 bit [        DATA_WIDTH-1:0] bufreg;
@@ -137,7 +138,7 @@ always_ff @(posedge clk) begin
 
         case(SCK_cnt)
             //-------------------------------------
-            SCK_DRIVE: begin 
+            1: begin 
                 MOSI                     <= shiftreg[DATA_WIDTH-1];
                 shiftreg[DATA_WIDTH-1:1] <= shiftreg[DATA_WIDTH-2:0];
             end

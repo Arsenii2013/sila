@@ -80,7 +80,8 @@ module sn74hc595_controller #(
     ls_spi_master #(
         .PRESCALER(SRCLK_PRESCALER), 
         .CPOL(0),
-        .DATA_WIDTH(8)
+        .DATA_WIDTH(8),
+        .T_SETUP(20)
     ) ls_spi_master_inst (
         .SCK(SRCLK),
         .MOSI(SER),

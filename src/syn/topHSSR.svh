@@ -6,6 +6,7 @@ package HSSR_axi_params;
 
 import HSSR_reg_map_pkg::*;
 
+localparam HSSR_reg_map__device_numbers_e    SYSTEM_CSR_EVAL   = HSSR_reg_map__device_numbers__SYSTEM_CSR;
 localparam HSSR_reg_map__device_numbers_e    DEVICE_INFO_EVAL  = HSSR_reg_map__device_numbers__DEVICE_INFO;
 localparam HSSR_reg_map__device_numbers_e    EVR_EVAL          = HSSR_reg_map__device_numbers__EVR;
 localparam HSSR_reg_map__device_numbers_e    TIMESTAMPER_EVAL  = HSSR_reg_map__device_numbers__TIMESTAMPER;
@@ -17,7 +18,9 @@ localparam HSSR_reg_map__device_numbers_e    SIG_GEN_MAP_EVAL  = HSSR_reg_map__d
 localparam HSSR_reg_map__device_numbers_e    DIFF_IO_EVAL      = HSSR_reg_map__device_numbers__DIFF_IO;
 localparam HSSR_reg_map__diff_io_params_e    DIFF_IO_N_EVAL    = HSSR_reg_map__diff_io_params__DIFF_IO_N;
 localparam HSSR_reg_map__device_numbers_e    I2C_MUX_EVAL      = HSSR_reg_map__device_numbers__I2C_MUX;
+localparam HSSR_reg_map__device_numbers_e    XADC_EVAL         = HSSR_reg_map__device_numbers__XADC;
 
+localparam SYSTEM_CSR     = unsigned'(SYSTEM_CSR_EVAL);
 localparam DEVICE_INFO    = unsigned'(DEVICE_INFO_EVAL);
 localparam EVR            = unsigned'(EVR_EVAL);
 localparam TIMESTAMPER    = unsigned'(TIMESTAMPER_EVAL);
@@ -29,13 +32,15 @@ localparam SIG_GEN_MAP    = unsigned'(SIG_GEN_MAP_EVAL);
 localparam DIFF_IO        = unsigned'(DIFF_IO_EVAL);
 localparam DIFF_IO_N      = unsigned'(DIFF_IO_N_EVAL);
 localparam I2C_MUX        = unsigned'(I2C_MUX_EVAL);
+localparam XADC           = unsigned'(XADC_EVAL);
 
 endpackage
 
 package HSSR_reset_params;
 
 localparam COMMON       = 0;
-localparam DEVICE_INFO  = COMMON      + 1;
+localparam SYSTEM_CSR   = COMMON      + 1;
+localparam DEVICE_INFO  = SYSTEM_CSR  + 1;
 localparam TIMESTAMPER  = DEVICE_INFO + 1;
 localparam GTWIZARD     = TIMESTAMPER + 1;
 localparam EVR          = GTWIZARD    + 1;

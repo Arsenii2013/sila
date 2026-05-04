@@ -1,4 +1,5 @@
 
+`include "system_csr_axi_core.rdl"
 `include "device_info_axi_core.rdl"
 `include "link_csr_axi_core.rdl"
 `include "timestamper_axi_core.rdl"
@@ -7,6 +8,7 @@
 `include "gen_map_axi_core.rdl"
 `include "diff_io_axi_core.rdl"
 `include "i2c_mux_axi_core.rdl"
+`include "xadc_wrapper_axi_core.rdl"
 `include "rdl_axi_params.rdl"
 
 addrmap HSSR_reg_map {
@@ -30,6 +32,7 @@ addrmap HSSR_reg_map {
 
     enum device_numbers{
         DEVICE_INFO = 0;
+        SYSTEM_CSR;
         EVR;
         TIMESTAMPER;
         EV_MAP;
@@ -37,10 +40,12 @@ addrmap HSSR_reg_map {
         SIG_GEN_MAP;
         DIFF_IO;
         I2C_MUX = `DEBUG_DEVICE;
+        XADC;
         MAX_DEVICE  = `MAX_DEVICE;
     };
 
     device_info_axi_core     device_info     @ device_numbers::DEVICE_INFO  * `MMR_BLOCK_SIZE;
+    system_csr_axi_core      system_csr      @ device_numbers::SYSTEM_CSR   * `MMR_BLOCK_SIZE;
     link_csr_axi_core        evr_ctrl        @ device_numbers::EVR          * `MMR_BLOCK_SIZE;
     timestamper_axi_core     timestamper     @ device_numbers::TIMESTAMPER  * `MMR_BLOCK_SIZE;
     ev_map_axi_core          ev_map          @ device_numbers::EV_MAP       * `MMR_BLOCK_SIZE;
@@ -48,6 +53,7 @@ addrmap HSSR_reg_map {
     gen_map_axi_core         signal_gen_map  @ device_numbers::SIG_GEN_MAP  * `MMR_BLOCK_SIZE;
     diff_io_axi_core         diff_io_ctrl    @ device_numbers::DIFF_IO      * `MMR_BLOCK_SIZE;
     i2c_mux_axi_core         i2c_mux         @ device_numbers::I2C_MUX      * `MMR_BLOCK_SIZE;
+    xadc_wrapper_axi_core    xadc_wrapper    @ device_numbers::XADC         * `MMR_BLOCK_SIZE;
 
 
     regfile {

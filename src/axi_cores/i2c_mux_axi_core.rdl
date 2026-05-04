@@ -7,6 +7,7 @@ addrmap i2c_mux_axi_core{
         SI570 = 0;
         PLL1;
         PLL2;
+        NST117;
         SFP0;
         SFP1;
         SFP2;

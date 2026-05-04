@@ -1,0 +1,19 @@
+type : xadc_wiz
+
+config :
+  ADC_CONVERSION_RATE       : 1000
+  CHANNEL_ENABLE_VP_VN      : false
+  DCLK_FREQUENCY            : 175
+  ENABLE_RESET              : false
+  ENABLE_VCCDDRO_ALARM      : false
+  ENABLE_VCCPAUX_ALARM      : false
+  ENABLE_VCCPINT_ALARM      : false
+  EXTERNAL_MUX_CHANNEL      : VP_VN
+  INTERFACE_SELECTION       : Enable_AXI
+  OT_ALARM                  : false
+  SEQUENCER_MODE            : Off
+  SINGLE_CHANNEL_SELECTION  : TEMPERATURE
+  USER_TEMP_ALARM           : false
+  VCCAUX_ALARM              : false
+  VCCINT_ALARM              : false
+  XADC_STARUP_SELECTION     : single_channel

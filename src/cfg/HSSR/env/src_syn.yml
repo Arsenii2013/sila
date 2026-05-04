@@ -39,6 +39,7 @@ sources:
     - src/lib/common/blink.sv
     - src/lib/common/pf.sv
 
+    - src/syn/system_csr.sv
     - src/syn/device_info.sv
     - src/syn/timestamper.sv
     - src/syn/event_comparator.sv
@@ -47,4 +48,5 @@ sources:
     - src/syn/i2c_mux.sv
     - src/lib/common/stable.sv
     - src/lib/xilinx/ODDRDS.sv
+    - src/syn/xadc_wrapper.sv
     - src/syn/topHSSR.sv
